@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="Ez.Handball.Ingestion/Ez.Handball.Ingestion.csproj" />
-  <Project Path="Ez.Handball.Shared/Ez.Handball.Shared.csproj" />
-  <Project Path="Ez.Handball.Tests/Ez.Handball.Tests.csproj" />
-</Solution>
