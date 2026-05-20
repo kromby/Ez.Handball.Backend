@@ -36,7 +36,7 @@ public class FetchMatchDetailsFunction
         {
             try
             {
-                var detailsPath = $"raw/matches/{match.GameId}/details.json";
+                var detailsPath = $"matches/{match.GameId}/details.json";
                 var isFinished = match.Status == "S";
                 var blobExists = await _blobArchiver.ExistsAsync(detailsPath);
 
@@ -51,8 +51,8 @@ public class FetchMatchDetailsFunction
                 var awayPlayersJson = await _apiClient.GetMatchPlayerStatsJsonAsync(match.GameId, match.AwayTeamId);
 
                 await _blobArchiver.SaveAsync(detailsPath, detailsJson);
-                await _blobArchiver.SaveAsync($"raw/matches/{match.GameId}/players-{match.HomeTeamId}.json", homePlayersJson);
-                await _blobArchiver.SaveAsync($"raw/matches/{match.GameId}/players-{match.AwayTeamId}.json", awayPlayersJson);
+                await _blobArchiver.SaveAsync($"matches/{match.GameId}/players-{match.HomeTeamId}.json", homePlayersJson);
+                await _blobArchiver.SaveAsync($"matches/{match.GameId}/players-{match.AwayTeamId}.json", awayPlayersJson);
 
                 logger?.LogInformation("Archived details and player stats for match {MatchId}", match.GameId);
             }

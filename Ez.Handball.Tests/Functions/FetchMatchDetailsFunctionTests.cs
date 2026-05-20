@@ -30,7 +30,7 @@ public class FetchMatchDetailsFunctionTests
         };
         var blobContent = Serialize(new MatchListResponse { Data = [match] });
 
-        _blobArchiver.Setup(b => b.ExistsAsync("raw/matches/1001/details.json", default))
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/1001/details.json", default))
             .ReturnsAsync(false);
         _apiClient.Setup(a => a.GetMatchDetailsJsonAsync("1001", default))
             .ReturnsAsync("""{"matchId":"1001"}""");
@@ -41,9 +41,9 @@ public class FetchMatchDetailsFunctionTests
 
         await CreateSut().ProcessAsync(blobContent);
 
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/1001/details.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/1001/players-10.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/1001/players-20.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/1001/details.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/1001/players-10.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/1001/players-20.json", It.IsAny<string>(), default), Times.Once);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class FetchMatchDetailsFunctionTests
         };
         var blobContent = Serialize(new MatchListResponse { Data = [match] });
 
-        _blobArchiver.Setup(b => b.ExistsAsync("raw/matches/2001/details.json", default))
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/2001/details.json", default))
             .ReturnsAsync(true);
 
         await CreateSut().ProcessAsync(blobContent);
@@ -80,7 +80,7 @@ public class FetchMatchDetailsFunctionTests
         };
         var blobContent = Serialize(new MatchListResponse { Data = [match] });
 
-        _blobArchiver.Setup(b => b.ExistsAsync("raw/matches/3001/details.json", default))
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/3001/details.json", default))
             .ReturnsAsync(false);
         _apiClient.Setup(a => a.GetMatchDetailsJsonAsync("3001", default))
             .ReturnsAsync("""{"matchId":"3001"}""");
@@ -91,9 +91,9 @@ public class FetchMatchDetailsFunctionTests
 
         await CreateSut().ProcessAsync(blobContent);
 
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/3001/details.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/3001/players-10.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/3001/players-20.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/3001/details.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/3001/players-10.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/3001/players-20.json", It.IsAny<string>(), default), Times.Once);
     }
 
     [Fact]
@@ -115,9 +115,9 @@ public class FetchMatchDetailsFunctionTests
         };
         var blobContent = Serialize(new MatchListResponse { Data = [matchFailing, matchSucceeding] });
 
-        _blobArchiver.Setup(b => b.ExistsAsync("raw/matches/4001/details.json", default))
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/4001/details.json", default))
             .ReturnsAsync(false);
-        _blobArchiver.Setup(b => b.ExistsAsync("raw/matches/4002/details.json", default))
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/4002/details.json", default))
             .ReturnsAsync(false);
 
         _apiClient.Setup(a => a.GetMatchDetailsJsonAsync("4001", default))
@@ -132,9 +132,9 @@ public class FetchMatchDetailsFunctionTests
 
         await CreateSut().ProcessAsync(blobContent);
 
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/4001/details.json", It.IsAny<string>(), default), Times.Never);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/4002/details.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/4002/players-30.json", It.IsAny<string>(), default), Times.Once);
-        _blobArchiver.Verify(b => b.SaveAsync("raw/matches/4002/players-40.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/4001/details.json", It.IsAny<string>(), default), Times.Never);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/4002/details.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/4002/players-30.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/4002/players-40.json", It.IsAny<string>(), default), Times.Once);
     }
 }
