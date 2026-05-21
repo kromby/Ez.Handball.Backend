@@ -18,7 +18,7 @@ public class ParsePlayersFunction
 
     [Function("ParsePlayers")]
     public async Task RunAsync(
-        [BlobTrigger("raw/matches/{matchId}/players-{clubId}.json", Connection = "AzureWebJobsStorage")] string blobContent,
+        [BlobTrigger("raw/matches/{matchId}/players-{clubId}.json", Connection = "HandballStorageConnection")] string blobContent,
         string matchId,
         string clubId,
         FunctionContext context)
@@ -42,10 +42,9 @@ public class ParsePlayersFunction
 
         if (matches.Count == 0)
         {
-            logger?.LogError(
-                "Match {MatchId} not found in table — skipping player stats for clubId {ClubId}",
-                matchId, clubId);
-            return;
+            // Throw so the blob trigger retries — ParseMatch may not have completed yet.
+            throw new InvalidOperationException(
+                $"Match {matchId} not found in Matches table; will retry");
         }
 
         var match = matches[0];
@@ -59,6 +58,7 @@ public class ParsePlayersFunction
 
             _ = int.TryParse(player.Goals, out var goals);
             _ = int.TryParse(player.YellowCards, out var yellowCards);
+            _ = int.TryParse(player.TwoMinuteSuspensions, out var twoMinuteSuspensions);
             _ = int.TryParse(player.RedCards, out var redCards);
 
             await _tableWriter.UpsertAsync("Players", new PlayerEntity
@@ -66,7 +66,9 @@ public class ParsePlayersFunction
                 PartitionKey = teamId,
                 RowKey = playerId,
                 Name = player.Name,
-                Position = player.Position
+                Position = player.Position,
+                JerseyNumber = player.PlayerJerseyNumber,
+                DateOfBirth = ParseDateOfBirth(player.Identifier)
             });
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
@@ -75,13 +77,26 @@ public class ParsePlayersFunction
                 RowKey = playerId,
                 Goals = goals,
                 YellowCards = yellowCards,
-                RedCards = redCards,
-                MinutesPlayed = 0
+                TwoMinuteSuspensions = twoMinuteSuspensions,
+                RedCards = redCards
             });
         }
 
         logger?.LogInformation(
             "Parsed player stats for match {MatchId}, club {ClubId}, team {TeamId}",
             matchId, clubId, teamId);
+    }
+
+    private static DateTimeOffset? ParseDateOfBirth(string? identifier)
+    {
+        if (identifier is null || identifier.Length < 6) return null;
+        var century = identifier[^1] switch { '9' => 1900, '0' => 2000, _ => -1 };
+        if (century < 0) return null;
+        var ddmmyy = identifier[..6];
+        if (!int.TryParse(ddmmyy[4..6], out var yy)) return null;
+        var ddmmyyyy = $"{ddmmyy[..4]}{century + yy:D4}";
+        return DateTimeOffset.TryParseExact(ddmmyyyy, "ddMMyyyy",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var dob) ? dob : null;
     }
 }

@@ -14,6 +14,6 @@ public class PlayerStatEntity : ITableEntity
 
     public int Goals { get; set; }
     public int YellowCards { get; set; }
+    public int TwoMinuteSuspensions { get; set; }
     public int RedCards { get; set; }
-    public int MinutesPlayed { get; set; }
 }

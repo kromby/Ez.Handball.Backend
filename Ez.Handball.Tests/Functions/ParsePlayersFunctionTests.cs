@@ -80,8 +80,8 @@ public class ParsePlayersFunctionTests
                 e.RowKey == "42" &&
                 e.Goals == 3 &&
                 e.YellowCards == 1 &&
-                e.RedCards == 0 &&
-                e.MinutesPlayed == 0),
+                e.TwoMinuteSuspensions == 0 &&
+                e.RedCards == 0),
             default), Times.Once);
     }
 

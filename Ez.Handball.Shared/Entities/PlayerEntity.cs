@@ -14,4 +14,6 @@ public class PlayerEntity : ITableEntity
 
     public string Name { get; set; } = string.Empty;
     public string Position { get; set; } = string.Empty;
+    public string? JerseyNumber { get; set; }
+    public DateTimeOffset? DateOfBirth { get; set; }
 }

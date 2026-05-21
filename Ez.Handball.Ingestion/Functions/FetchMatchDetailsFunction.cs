@@ -19,7 +19,7 @@ public class FetchMatchDetailsFunction
 
     [Function("FetchMatchDetails")]
     public async Task RunAsync(
-        [BlobTrigger("raw/tournaments/{tournamentId}/matches.json", Connection = "AzureWebJobsStorage")] string blobContent,
+        [BlobTrigger("raw/tournaments/{tournamentId}/matches.json", Connection = "HandballStorageConnection")] string blobContent,
         string tournamentId,
         FunctionContext context)
     {

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
-    .ConfigureFunctionsWebApplication()
     .ConfigureServices((context, services) =>
     {
         var config = context.Configuration;
@@ -17,7 +16,7 @@ var host = new HostBuilder()
             client.BaseAddress = new Uri(config["HsiApiBaseUrl"] ?? "https://hsi.is");
         });
 
-        var storageConnection = config["AzureWebJobsStorage"]
+        var storageConnection = config["HandballStorageConnection"]
             ?? "UseDevelopmentStorage=true";
 
         services.AddSingleton(_ => new BlobServiceClient(storageConnection));

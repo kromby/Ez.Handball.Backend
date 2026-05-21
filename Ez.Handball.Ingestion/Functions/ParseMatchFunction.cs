@@ -19,7 +19,7 @@ public class ParseMatchFunction
 
     [Function("ParseMatch")]
     public async Task RunAsync(
-        [BlobTrigger("raw/matches/{matchId}/details.json", Connection = "AzureWebJobsStorage")] string blobContent,
+        [BlobTrigger("raw/matches/{matchId}/details.json", Connection = "HandballStorageConnection")] string blobContent,
         string matchId,
         FunctionContext context)
     {

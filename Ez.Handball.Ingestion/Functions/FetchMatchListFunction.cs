@@ -37,7 +37,7 @@ public class FetchMatchListFunction
 
     public async Task<SyncResult> SyncAsync(ILogger? logger = null)
     {
-        var tournaments = await _tableWriter.QueryAsync<TournamentEntity>("Tournaments", string.Empty);
+        var tournaments = await _tableWriter.QueryAsync<TournamentEntity>("Tournaments", "Enabled eq true");
         var synced = 0;
         var failed = new List<string>();
 

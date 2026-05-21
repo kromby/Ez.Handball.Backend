@@ -37,6 +37,10 @@ public class PlayerStatDto
     [JsonPropertyName("PLAYER_JERSEY_NUMBER")]
     public string? PlayerJerseyNumber { get; set; }
 
+    // First 6 chars are DDMMYY date of birth
+    [JsonPropertyName("IDENTIFIER")]
+    public string? Identifier { get; set; }
+
     // All stat values are returned as strings by the API — parse to int as needed
     [JsonPropertyName("GOALS")]
     public string Goals { get; set; } = "0";
