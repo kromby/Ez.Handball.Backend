@@ -111,3 +111,12 @@ The `Tournaments` table must be seeded before the parse functions will work. Use
 ### Testing approach
 
 Each function has a testable `ProcessAsync` method that takes deserialized inputs and optional `ILogger?` — the `RunAsync` Azure Functions entry point is a thin wrapper. Function tests use Moq for all three service interfaces. The Azurite integration tests (`BlobArchiverTests`, `TableWriterTests`) create and delete a dedicated test container/table per test class via `IAsyncLifetime`.
+
+### Backfill after schema changes
+
+`PlayerEntity` and `PlayerStatEntity` carry denormalized lookup fields (`Gender`, `ClubId`, `ClubName`, `TournamentId`, `Season`). After deploying any change that adds or alters these fields, re-trigger the parse step so already-ingested matches pick them up. The blob archive is the source of truth and re-parses are idempotent (`TableUpdateMode.Replace`).
+
+Two equivalent approaches:
+
+- Touch every blob under `raw/matches/*/details.json` and `raw/matches/*/players-*.json` to re-fire the blob triggers, or
+- Re-run `POST /api/sync` and let the pipeline replay end-to-end.

@@ -16,4 +16,6 @@ public class PlayerStatEntity : ITableEntity
     public int YellowCards { get; set; }
     public int TwoMinuteSuspensions { get; set; }
     public int RedCards { get; set; }
+    public string TournamentId { get; set; } = string.Empty;
+    public string Season { get; set; } = string.Empty;
 }

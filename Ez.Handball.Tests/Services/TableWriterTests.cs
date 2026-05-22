@@ -84,4 +84,15 @@ public class TableWriterTests : IAsyncLifetime
         Assert.Single(results);
         Assert.Equal("8444", results[0].RowKey);
     }
+
+    [Fact]
+    public async Task QueryAsync_ReturnsEmpty_WhenTableMissing()
+    {
+        // Azure table names must be alphanumeric, 3-63 chars, start with a letter — no underscores.
+        var missing = "Missing" + Guid.NewGuid().ToString("N");
+
+        var results = await _writer.QueryAsync<TournamentEntity>(missing, "RowKey eq 'anything'");
+
+        Assert.Empty(results);
+    }
 }

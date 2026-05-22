@@ -16,4 +16,7 @@ public class PlayerEntity : ITableEntity
     public string Position { get; set; } = string.Empty;
     public string? JerseyNumber { get; set; }
     public DateTimeOffset? DateOfBirth { get; set; }
+    public string Gender { get; set; } = string.Empty;
+    public string ClubId { get; set; } = string.Empty;
+    public string? ClubName { get; set; }
 }

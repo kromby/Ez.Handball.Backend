@@ -48,9 +48,41 @@ public class ParsePlayersFunction
         }
 
         var match = matches[0];
+        var tournamentId = match.PartitionKey;
         var teamId = match.HomeTeamId.StartsWith($"{clubId}-")
             ? match.HomeTeamId
             : match.AwayTeamId;
+
+        var tournaments = await _tableWriter.QueryAsync<TournamentEntity>(
+            "Tournaments", $"RowKey eq '{tournamentId}'");
+        string season = string.Empty;
+        if (tournaments is { Count: > 0 })
+        {
+            season = tournaments[0].PartitionKey;
+        }
+        else
+        {
+            logger?.LogWarning(
+                "Tournament {TournamentId} not found in Tournaments table for match {MatchId}; PlayerStatEntity.Season will be empty",
+                tournamentId, matchId);
+        }
+
+        // teamId is "{clubId}-{gender}" — split once and reuse for every player.
+        var dashIndex = teamId.IndexOf('-');
+        var derivedClubId = dashIndex > 0 ? teamId[..dashIndex] : string.Empty;
+        var derivedGender = dashIndex > 0 ? teamId[(dashIndex + 1)..] : string.Empty;
+
+        ClubEntity? club = null;
+        if (!string.IsNullOrEmpty(derivedClubId))
+        {
+            club = await _tableWriter.GetAsync<ClubEntity>("Clubs", "club", derivedClubId);
+            if (club is null)
+            {
+                logger?.LogWarning(
+                    "Club {ClubId} not found in Clubs table for match {MatchId}; PlayerEntity.ClubName will be null",
+                    derivedClubId, matchId);
+            }
+        }
 
         foreach (var player in players.Where(p => p.Player == "1"))
         {
@@ -68,7 +100,10 @@ public class ParsePlayersFunction
                 Name = player.Name,
                 Position = player.Position,
                 JerseyNumber = player.PlayerJerseyNumber,
-                DateOfBirth = ParseDateOfBirth(player.Identifier)
+                DateOfBirth = ParseDateOfBirth(player.Identifier),
+                Gender = derivedGender,
+                ClubId = derivedClubId,
+                ClubName = club?.Name
             });
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
@@ -78,7 +113,9 @@ public class ParsePlayersFunction
                 Goals = goals,
                 YellowCards = yellowCards,
                 TwoMinuteSuspensions = twoMinuteSuspensions,
-                RedCards = redCards
+                RedCards = redCards,
+                TournamentId = tournamentId,
+                Season = season
             });
         }
 
