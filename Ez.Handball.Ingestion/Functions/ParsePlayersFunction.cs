@@ -52,6 +52,11 @@ public class ParsePlayersFunction
             ? match.HomeTeamId
             : match.AwayTeamId;
 
+        // teamId is "{clubId}-{gender}" — split once and reuse for every player.
+        var dashIndex = teamId.IndexOf('-');
+        var derivedClubId = dashIndex > 0 ? teamId[..dashIndex] : string.Empty;
+        var derivedGender = dashIndex > 0 ? teamId[(dashIndex + 1)..] : string.Empty;
+
         foreach (var player in players.Where(p => p.Player == "1"))
         {
             var playerId = player.PlayerId;
@@ -68,7 +73,9 @@ public class ParsePlayersFunction
                 Name = player.Name,
                 Position = player.Position,
                 JerseyNumber = player.PlayerJerseyNumber,
-                DateOfBirth = ParseDateOfBirth(player.Identifier)
+                DateOfBirth = ParseDateOfBirth(player.Identifier),
+                Gender = derivedGender,
+                ClubId = derivedClubId
             });
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity

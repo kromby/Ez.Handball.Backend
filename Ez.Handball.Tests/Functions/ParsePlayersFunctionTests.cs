@@ -70,7 +70,9 @@ public class ParsePlayersFunctionTests
                 e.PartitionKey == teamId &&
                 e.RowKey == "42" &&
                 e.Name == "Jón Jónsson" &&
-                e.Position == "Goalkeeper"),
+                e.Position == "Goalkeeper" &&
+                e.Gender == "karlar" &&
+                e.ClubId == "385"),
             default), Times.Once);
 
         // Assert — PlayerStatEntity upsert
@@ -119,7 +121,9 @@ public class ParsePlayersFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.Is<PlayerEntity>(e =>
                 e.PartitionKey == awayTeamId &&
-                e.RowKey == "99"),
+                e.RowKey == "99" &&
+                e.Gender == "karlar" &&
+                e.ClubId == "390"),
             default), Times.Once);
 
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
