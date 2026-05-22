@@ -26,8 +26,8 @@ public class PlayerLookupService : IPlayerLookupService
         await foreach (var candidate in _query.QueryAsync<PlayerEntity>(
                            Tables.Players, $"RowKey eq '{playerId}'", ct))
         {
-            row = candidate;
-            break;
+            if (row is null || candidate.Timestamp > row.Timestamp)
+                row = candidate;
         }
 
         if (row is null) return null;

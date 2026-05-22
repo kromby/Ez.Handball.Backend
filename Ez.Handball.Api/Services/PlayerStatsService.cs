@@ -59,6 +59,8 @@ public class PlayerStatsService : IPlayerStatsService
                 TournamentId: s.TournamentId,
                 TournamentName: name,
                 Season: s.Season,
+                TeamId: s.TeamId,
+                ClubName: s.ClubName,
                 Goals: s.Goals,
                 YellowCards: s.YellowCards,
                 TwoMinuteSuspensions: s.TwoMinuteSuspensions,
