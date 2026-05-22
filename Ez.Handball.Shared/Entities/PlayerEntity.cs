@@ -18,4 +18,5 @@ public class PlayerEntity : ITableEntity
     public DateTimeOffset? DateOfBirth { get; set; }
     public string Gender { get; set; } = string.Empty;
     public string ClubId { get; set; } = string.Empty;
+    public string? ClubName { get; set; }
 }

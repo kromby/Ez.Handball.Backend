@@ -57,6 +57,18 @@ public class ParsePlayersFunction
         var derivedClubId = dashIndex > 0 ? teamId[..dashIndex] : string.Empty;
         var derivedGender = dashIndex > 0 ? teamId[(dashIndex + 1)..] : string.Empty;
 
+        ClubEntity? club = null;
+        if (!string.IsNullOrEmpty(derivedClubId))
+        {
+            club = await _tableWriter.GetAsync<ClubEntity>("Clubs", "club", derivedClubId);
+            if (club is null)
+            {
+                logger?.LogWarning(
+                    "Club {ClubId} not found in Clubs table for match {MatchId}; PlayerEntity.ClubName will be null",
+                    derivedClubId, matchId);
+            }
+        }
+
         foreach (var player in players.Where(p => p.Player == "1"))
         {
             var playerId = player.PlayerId;
@@ -75,7 +87,8 @@ public class ParsePlayersFunction
                 JerseyNumber = player.PlayerJerseyNumber,
                 DateOfBirth = ParseDateOfBirth(player.Identifier),
                 Gender = derivedGender,
-                ClubId = derivedClubId
+                ClubId = derivedClubId,
+                ClubName = club?.Name
             });
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity

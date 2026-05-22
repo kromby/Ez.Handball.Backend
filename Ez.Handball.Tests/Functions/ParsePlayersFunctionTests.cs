@@ -48,6 +48,15 @@ public class ParsePlayersFunctionTests
             .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
             .ReturnsAsync(new List<MatchEntity> { match });
 
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity
+            {
+                PartitionKey = "club",
+                RowKey = clubId,
+                Name = "Stjarnan"
+            });
+
         var player = new PlayerStatDto
         {
             PlayerId = "42",
@@ -72,7 +81,8 @@ public class ParsePlayersFunctionTests
                 e.Name == "Jón Jónsson" &&
                 e.Position == "Goalkeeper" &&
                 e.Gender == "karlar" &&
-                e.ClubId == "385"),
+                e.ClubId == "385" &&
+                e.ClubName == "Stjarnan"),
             default), Times.Once);
 
         // Assert — PlayerStatEntity upsert
@@ -101,6 +111,15 @@ public class ParsePlayersFunctionTests
             .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
             .ReturnsAsync(new List<MatchEntity> { match });
 
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity
+            {
+                PartitionKey = "club",
+                RowKey = clubId,
+                Name = "Breiðablik"
+            });
+
         var player = new PlayerStatDto
         {
             PlayerId = "99",
@@ -123,7 +142,8 @@ public class ParsePlayersFunctionTests
                 e.PartitionKey == awayTeamId &&
                 e.RowKey == "99" &&
                 e.Gender == "karlar" &&
-                e.ClubId == "390"),
+                e.ClubId == "390" &&
+                e.ClubName == "Breiðablik"),
             default), Times.Once);
 
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
