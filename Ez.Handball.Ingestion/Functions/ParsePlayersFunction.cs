@@ -53,6 +53,20 @@ public class ParsePlayersFunction
             ? match.HomeTeamId
             : match.AwayTeamId;
 
+        var tournaments = await _tableWriter.QueryAsync<TournamentEntity>(
+            "Tournaments", $"RowKey eq '{tournamentId}'");
+        string season = string.Empty;
+        if (tournaments is { Count: > 0 })
+        {
+            season = tournaments[0].PartitionKey;
+        }
+        else
+        {
+            logger?.LogWarning(
+                "Tournament {TournamentId} not found in Tournaments table for match {MatchId}; PlayerStatEntity.Season will be empty",
+                tournamentId, matchId);
+        }
+
         // teamId is "{clubId}-{gender}" — split once and reuse for every player.
         var dashIndex = teamId.IndexOf('-');
         var derivedClubId = dashIndex > 0 ? teamId[..dashIndex] : string.Empty;
@@ -100,7 +114,8 @@ public class ParsePlayersFunction
                 YellowCards = yellowCards,
                 TwoMinuteSuspensions = twoMinuteSuspensions,
                 RedCards = redCards,
-                TournamentId = tournamentId
+                TournamentId = tournamentId,
+                Season = season
             });
         }
 

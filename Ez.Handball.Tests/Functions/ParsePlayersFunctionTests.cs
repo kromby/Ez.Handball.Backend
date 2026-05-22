@@ -49,6 +49,13 @@ public class ParsePlayersFunctionTests
             .ReturnsAsync(new List<MatchEntity> { match });
 
         _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
+
+        _tableWriter
             .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
             .ReturnsAsync(new ClubEntity
             {
@@ -94,7 +101,8 @@ public class ParsePlayersFunctionTests
                 e.YellowCards == 1 &&
                 e.TwoMinuteSuspensions == 0 &&
                 e.RedCards == 0 &&
-                e.TournamentId == "8444"),
+                e.TournamentId == "8444" &&
+                e.Season == "2025"),
             default), Times.Once);
     }
 
@@ -111,6 +119,13 @@ public class ParsePlayersFunctionTests
         _tableWriter
             .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
             .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
 
         _tableWriter
             .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
@@ -153,7 +168,8 @@ public class ParsePlayersFunctionTests
                 e.RowKey == "99" &&
                 e.Goals == 5 &&
                 e.RedCards == 1 &&
-                e.TournamentId == "8444"),
+                e.TournamentId == "8444" &&
+                e.Season == "2025"),
             default), Times.Once);
     }
 
