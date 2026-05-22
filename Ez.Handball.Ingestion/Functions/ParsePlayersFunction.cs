@@ -48,6 +48,7 @@ public class ParsePlayersFunction
         }
 
         var match = matches[0];
+        var tournamentId = match.PartitionKey;
         var teamId = match.HomeTeamId.StartsWith($"{clubId}-")
             ? match.HomeTeamId
             : match.AwayTeamId;
@@ -98,7 +99,8 @@ public class ParsePlayersFunction
                 Goals = goals,
                 YellowCards = yellowCards,
                 TwoMinuteSuspensions = twoMinuteSuspensions,
-                RedCards = redCards
+                RedCards = redCards,
+                TournamentId = tournamentId
             });
         }
 

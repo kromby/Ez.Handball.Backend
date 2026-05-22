@@ -93,7 +93,8 @@ public class ParsePlayersFunctionTests
                 e.Goals == 3 &&
                 e.YellowCards == 1 &&
                 e.TwoMinuteSuspensions == 0 &&
-                e.RedCards == 0),
+                e.RedCards == 0 &&
+                e.TournamentId == "8444"),
             default), Times.Once);
     }
 
@@ -151,7 +152,8 @@ public class ParsePlayersFunctionTests
                 e.PartitionKey == matchId &&
                 e.RowKey == "99" &&
                 e.Goals == 5 &&
-                e.RedCards == 1),
+                e.RedCards == 1 &&
+                e.TournamentId == "8444"),
             default), Times.Once);
     }
 
