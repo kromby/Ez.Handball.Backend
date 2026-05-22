@@ -1,7 +1,6 @@
+using Azure;
 using Azure.Data.Tables;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace Ez.Handball.Api.Services;
 
@@ -21,9 +20,15 @@ public class TableQuery : ITableQuery
         where T : class, ITableEntity, new()
     {
         var table = _client.GetTableClient(tableName);
-        await foreach (var row in table.QueryAsync<T>(filter, cancellationToken: ct))
+        var results = new List<T>();
+        try
         {
-            yield return row;
+            await foreach (var row in table.QueryAsync<T>(filter, cancellationToken: ct))
+                results.Add(row);
         }
+        catch (RequestFailedException ex) when (ex.Status == 404) { }
+
+        foreach (var item in results)
+            yield return item;
     }
 }
