@@ -230,4 +230,52 @@ public class ParsePlayersFunctionTests
             It.IsAny<PlayerStatEntity>(),
             default), Times.Never);
     }
+
+    [Fact]
+    public async Task ProcessAsync_ClubLookupReturnsNull_WritesNullClubName_AndProceeds()
+    {
+        // Arrange
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+
+        var match = BuildMatch(matchId: matchId, homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        // Club lookup returns null
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync((ClubEntity?)null);
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Goalkeeper",
+            Player = "1",
+            Goals = "1"
+        };
+
+        var blobContent = BuildPlayerStatsJson(new[] { player });
+
+        // Act — must not throw
+        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+
+        // Assert — PlayerEntity still written, ClubName is null
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e =>
+                e.PartitionKey == teamId &&
+                e.RowKey == "42" &&
+                e.ClubName == null &&
+                e.Gender == "karlar" &&
+                e.ClubId == "385"),
+            default), Times.Once);
+
+        // PlayerStat write still happens
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
+            It.IsAny<PlayerStatEntity>(),
+            default), Times.Once);
+    }
 }
