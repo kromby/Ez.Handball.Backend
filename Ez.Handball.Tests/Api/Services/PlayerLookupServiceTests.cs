@@ -64,4 +64,85 @@ public class PlayerLookupServiceTests
         Assert.Equal(35, result.Age);
         Assert.Equal(new DateTimeOffset(1990, 7, 19, 0, 0, 0, TimeSpan.Zero), result.DateOfBirth);
     }
+
+    [Fact]
+    public async Task GetPlayerAsync_NoMatch_ReturnsNull()
+    {
+        SetupPlayerRows("nonexistent");
+
+        var sut = CreateSut();
+
+        var result = await sut.GetPlayerAsync("nonexistent");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPlayerAsync_NullClubName_PassesThrough()
+    {
+        const string playerId = "1";
+        SetupPlayerRows(playerId, new PlayerEntity
+        {
+            PartitionKey = "385-karlar",
+            RowKey = playerId,
+            Name = "X",
+            Gender = "karlar",
+            ClubId = "385",
+            ClubName = null
+        });
+
+        var sut = CreateSut();
+
+        var result = await sut.GetPlayerAsync(playerId);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.ClubName);
+    }
+
+    [Fact]
+    public async Task GetPlayerAsync_NullDateOfBirth_ReturnsNullAge()
+    {
+        const string playerId = "1";
+        SetupPlayerRows(playerId, new PlayerEntity
+        {
+            PartitionKey = "385-karlar",
+            RowKey = playerId,
+            Name = "X",
+            DateOfBirth = null,
+            Gender = "karlar",
+            ClubId = "385"
+        });
+
+        var sut = CreateSut();
+
+        var result = await sut.GetPlayerAsync(playerId);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.DateOfBirth);
+        Assert.Null(result.Age);
+    }
+
+    [Theory]
+    [InlineData("2026-07-19", 36)]  // today is the birthday
+    [InlineData("2026-07-18", 35)]  // day before
+    [InlineData("2026-07-20", 36)]  // day after
+    public async Task GetPlayerAsync_AgeAroundBirthday(string todayIso, int expectedAge)
+    {
+        const string playerId = "1";
+        SetupPlayerRows(playerId, new PlayerEntity
+        {
+            PartitionKey = "385-karlar",
+            RowKey = playerId,
+            Name = "X",
+            DateOfBirth = new DateTimeOffset(1990, 7, 19, 0, 0, 0, TimeSpan.Zero),
+            Gender = "karlar",
+            ClubId = "385"
+        });
+
+        var sut = CreateSut(today: DateOnly.Parse(todayIso));
+
+        var result = await sut.GetPlayerAsync(playerId);
+
+        Assert.Equal(expectedAge, result!.Age);
+    }
 }
