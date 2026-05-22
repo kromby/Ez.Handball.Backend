@@ -40,9 +40,18 @@ public class TableWriter : ITableWriter
     {
         var table = _serviceClient.GetTableClient(tableName);
         var results = new List<T>();
-        await foreach (var entity in table.QueryAsync<T>(filter, cancellationToken: ct))
+        try
         {
-            results.Add(entity);
+            await foreach (var entity in table.QueryAsync<T>(filter, cancellationToken: ct))
+            {
+                results.Add(entity);
+            }
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            // Table doesn't exist yet — treat as an empty result. Callers handle "empty" already
+            // (e.g., ParseMatch/ParsePlayers throw and let the blob trigger retry, by which point
+            // the table has usually been created by a sibling parse function).
         }
         return results;
     }
