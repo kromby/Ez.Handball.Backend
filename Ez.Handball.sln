@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ez.Handball.Ingestion", "Ez
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ez.Handball.Tests", "Ez.Handball.Tests\Ez.Handball.Tests.csproj", "{6FA06DF7-8755-4509-84DD-27A35F4DDD45}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ez.Handball.Api", "Ez.Handball.Api\Ez.Handball.Api.csproj", "{BBE9FF00-E285-46DB-B774-9DD72582EBDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{6FA06DF7-8755-4509-84DD-27A35F4DDD45}.Release|x64.Build.0 = Release|Any CPU
 		{6FA06DF7-8755-4509-84DD-27A35F4DDD45}.Release|x86.ActiveCfg = Release|Any CPU
 		{6FA06DF7-8755-4509-84DD-27A35F4DDD45}.Release|x86.Build.0 = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|x64.Build.0 = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Debug|x86.Build.0 = Debug|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|x64.ActiveCfg = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|x64.Build.0 = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|x86.ActiveCfg = Release|Any CPU
+		{BBE9FF00-E285-46DB-B774-9DD72582EBDE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
