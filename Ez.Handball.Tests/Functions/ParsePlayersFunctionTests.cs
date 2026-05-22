@@ -296,4 +296,55 @@ public class ParsePlayersFunctionTests
             It.IsAny<PlayerStatEntity>(),
             default), Times.Once);
     }
+
+    [Fact]
+    public async Task ProcessAsync_TournamentLookupReturnsEmpty_WritesEmptySeason_AndProceeds()
+    {
+        // Arrange
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+
+        var match = BuildMatch(matchId: matchId, tournamentId: "8444", homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
+
+        // Tournaments lookup returns empty
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>());
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Goalkeeper",
+            Player = "1",
+            Goals = "1"
+        };
+
+        var blobContent = BuildPlayerStatsJson(new[] { player });
+
+        // Act — must not throw
+        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+
+        // Assert — PlayerStat still written, TournamentId from match, Season empty
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
+            It.Is<PlayerStatEntity>(e =>
+                e.PartitionKey == matchId &&
+                e.RowKey == "42" &&
+                e.TournamentId == "8444" &&
+                e.Season == string.Empty),
+            default), Times.Once);
+
+        // PlayerEntity still written
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.IsAny<PlayerEntity>(),
+            default), Times.Once);
+    }
 }
