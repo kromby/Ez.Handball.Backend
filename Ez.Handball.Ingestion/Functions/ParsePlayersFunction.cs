@@ -115,7 +115,9 @@ public class ParsePlayersFunction
                 TwoMinuteSuspensions = twoMinuteSuspensions,
                 RedCards = redCards,
                 TournamentId = tournamentId,
-                Season = season
+                Season = season,
+                TeamId = teamId,
+                ClubName = club?.Name
             });
         }
 
