@@ -1,33 +1,31 @@
-using Ez.Handball.Api.Models;
+using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Domain;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Extensions.Logging;
 
-namespace Ez.Handball.Api.Services;
+namespace Ez.Handball.Infrastructure.TableAccess;
 
-public class PlayerStatsService : IPlayerStatsService
+internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
 {
     private readonly ITableQuery _query;
-    private readonly ILogger<PlayerStatsService> _logger;
+    private readonly ILogger<TablePlayerStatsRepository> _logger;
 
-    public PlayerStatsService(ITableQuery query, ILogger<PlayerStatsService> logger)
+    public TablePlayerStatsRepository(ITableQuery query, ILogger<TablePlayerStatsRepository> logger)
     {
         _query = query;
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<PlayerStatRow>> GetStatsAsync(
-        string playerId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<PlayerStat>> GetByPlayerAsync(string playerId, CancellationToken ct)
     {
         var stats = new List<PlayerStatEntity>();
         await foreach (var row in _query.QueryAsync<PlayerStatEntity>(
-                           Tables.PlayerStats, $"RowKey eq '{playerId}'", ct))
+                           Tables.PlayerStats, $"RowKey eq '{ODataFilter.Escape(playerId)}'", ct))
         {
             stats.Add(row);
         }
+        if (stats.Count == 0) return Array.Empty<PlayerStat>();
 
-        if (stats.Count == 0) return Array.Empty<PlayerStatRow>();
-
-        // Resolve tournament names with one query per distinct season.
         var nameByKey = new Dictionary<(string Season, string TournamentId), string>();
         var seasons = stats.Select(s => s.Season)
             .Where(s => !string.IsNullOrEmpty(s))
@@ -43,7 +41,7 @@ public class PlayerStatsService : IPlayerStatsService
             }
         }
 
-        var rows = new List<PlayerStatRow>(stats.Count);
+        var result = new List<PlayerStat>(stats.Count);
         foreach (var s in stats)
         {
             string? name = null;
@@ -54,7 +52,7 @@ public class PlayerStatsService : IPlayerStatsService
                     s.TournamentId, s.Season, s.PartitionKey);
             }
 
-            rows.Add(new PlayerStatRow(
+            result.Add(new PlayerStat(
                 MatchId: s.PartitionKey,
                 TournamentId: s.TournamentId,
                 TournamentName: name,
@@ -67,6 +65,6 @@ public class PlayerStatsService : IPlayerStatsService
                 RedCards: s.RedCards));
         }
 
-        return rows;
+        return result;
     }
 }

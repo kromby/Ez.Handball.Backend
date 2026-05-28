@@ -1,10 +1,10 @@
-namespace Ez.Handball.Api.Models;
+namespace Ez.Handball.Domain;
 
-public record PlayerProfile(
+public sealed record Player(
     string PlayerId,
     string Name,
     string? JerseyNumber,
-    DateTimeOffset? DateOfBirth,
+    DateOnly? DateOfBirth,
     int? Age,
     string TeamId,
     string ClubId,

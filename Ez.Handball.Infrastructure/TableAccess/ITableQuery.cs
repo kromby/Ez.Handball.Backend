@@ -1,6 +1,6 @@
 using Azure.Data.Tables;
 
-namespace Ez.Handball.Api.Services;
+namespace Ez.Handball.Infrastructure.TableAccess;
 
 public interface ITableQuery
 {

@@ -26,4 +26,8 @@
     <ProjectReference Include="..\Ez.Handball.Shared\Ez.Handball.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ez.Handball.Tests" />
+  </ItemGroup>
+
 </Project>

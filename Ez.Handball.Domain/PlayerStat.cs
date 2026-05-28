@@ -1,6 +1,6 @@
-namespace Ez.Handball.Api.Models;
+namespace Ez.Handball.Domain;
 
-public record PlayerStatRow(
+public sealed record PlayerStat(
     string MatchId,
     string TournamentId,
     string? TournamentName,

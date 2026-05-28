@@ -1,4 +1,4 @@
-namespace Ez.Handball.Api;
+namespace Ez.Handball.Infrastructure;
 
 public static class Tables
 {
