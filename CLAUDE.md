@@ -99,6 +99,15 @@ Gender values are `"karlar"` (men) or `"kvenna"` (women). The synthetic `teamId`
 
 The `Tournaments` table must be seeded before the parse functions will work. Use `POST /api/seed/tournaments?season=2025`. Current IDs hardcoded in `SeedTournamentsFunction`:
 
+| ID | Competition |
+|----|------------|
+| 8444 | Olís deild karla |
+| 8434 | Olís deild kvenna |
+| 8424 | Grill 66 deild karla |
+| 8443 | Grill 66 deild kvenna |
+| 8437 | Powerade bikar karla |
+| 8436 | Powerade bikar kvenna |
+
 The `?season=` parameter is the integer **start year**; it is stored as the
 `YYYY-YY` label (e.g. `?season=2025` → PartitionKey `"2025-26"`). The label is
 the canonical value, denormalized onto `PlayerStatEntity.Season`.
@@ -113,15 +122,6 @@ partition makes season resolution ambiguous. To re-label cleanly:
 2. Re-seed: `POST /api/seed/tournaments?season=2025`.
 3. Re-run `POST /api/sync` — the parse step replaces `PlayerStats.Season`
    in place (rows are keyed by matchId/playerId, so no duplicates).
-
-| ID | Competition |
-|----|------------|
-| 8444 | Olís deild karla |
-| 8434 | Olís deild kvenna |
-| 8424 | Grill 66 deild karla |
-| 8443 | Grill 66 deild kvenna |
-| 8437 | Powerade bikar karla |
-| 8436 | Powerade bikar kvenna |
 
 ### Testing approach
 
