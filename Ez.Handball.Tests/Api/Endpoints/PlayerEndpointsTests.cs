@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Ez.Handball.Api.Models;
-using Ez.Handball.Api.Services;
+using Ez.Handball.Application.UseCases;
+using Ez.Handball.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,15 +14,15 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 {
     public class Factory : WebApplicationFactory<Program>
     {
-        public Mock<IPlayerLookupService> Lookup { get; } = new();
-        public Mock<IPlayerStatsService> Stats { get; } = new();
+        public Mock<IGetPlayerProfileUseCase> Profile { get; } = new();
+        public Mock<IGetPlayerStatsUseCase>   Stats   { get; } = new();
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
             builder.UseEnvironment("Development");
             builder.ConfigureServices(services =>
             {
-                Replace(services, Lookup.Object);
+                Replace(services, Profile.Object);
                 Replace(services, Stats.Object);
             });
             return base.CreateHost(builder);
@@ -42,7 +42,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     public PlayerEndpointsTests(Factory factory)
     {
         _factory = factory;
-        _factory.Lookup.Reset();
+        _factory.Profile.Reset();
         _factory.Stats.Reset();
         _client = _factory.CreateClient();
     }
@@ -50,9 +50,9 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     [Fact]
     public async Task GetPlayer_NotFound_Returns404WithErrorJson()
     {
-        _factory.Lookup
-            .Setup(s => s.GetPlayerAsync("nope", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((PlayerProfile?)null);
+        _factory.Profile
+            .Setup(s => s.ExecuteAsync("nope", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerProfileResult.NotFound());
 
         var response = await _client.GetAsync("/api/players/nope");
 
@@ -64,14 +64,14 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     [Fact]
     public async Task GetPlayer_Existing_Returns200WithProfile()
     {
-        var profile = new PlayerProfile(
+        var player = new Player(
             "12345", "Aron Pálmarsson", "23",
-            new DateTimeOffset(1990, 7, 19, 0, 0, 0, TimeSpan.Zero),
+            new DateOnly(1990, 7, 19),
             35, "385-karlar", "385", "Stjarnan", "karlar");
 
-        _factory.Lookup
-            .Setup(s => s.GetPlayerAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(profile);
+        _factory.Profile
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -87,9 +87,9 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     [Fact]
     public async Task GetStats_PlayerNotFound_Returns404()
     {
-        _factory.Lookup
-            .Setup(s => s.GetPlayerAsync("nope", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((PlayerProfile?)null);
+        _factory.Stats
+            .Setup(s => s.ExecuteAsync("nope", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerStatsResult.NotFound());
 
         var response = await _client.GetAsync("/api/players/nope/stats");
 
@@ -99,15 +99,9 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     [Fact]
     public async Task GetStats_PlayerExistsNoStats_Returns200WithEmptyArray()
     {
-        var profile = new PlayerProfile(
-            "12345", "X", null, null, null, "385-karlar", "385", null, "karlar");
-
-        _factory.Lookup
-            .Setup(s => s.GetPlayerAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(profile);
         _factory.Stats
-            .Setup(s => s.GetStatsAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<PlayerStatRow>());
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerStatsResult.Found("12345", Array.Empty<PlayerStat>()));
 
         var response = await _client.GetAsync("/api/players/12345/stats");
 
