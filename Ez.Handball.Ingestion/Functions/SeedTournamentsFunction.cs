@@ -1,5 +1,6 @@
 using System.Net;
 using Ez.Handball.Ingestion.Services;
+using Ez.Handball.Shared;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -34,7 +35,16 @@ public class SeedTournamentsFunction
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "seed/tournaments")] HttpRequestData req,
         FunctionContext context)
     {
-        var season = req.Query["season"] ?? DateTime.UtcNow.Year.ToString();
+        var (season, seeded) = await ProcessAsync(req.Query["season"]);
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        await response.WriteAsJsonAsync(new { season, seeded });
+        return response;
+    }
+
+    public async Task<(string Season, int Seeded)> ProcessAsync(string? seasonParam)
+    {
+        var season = SeasonLabel.Resolve(seasonParam, DateTime.UtcNow.Year);
 
         foreach (var (id, name, gender, division, enabled, priority) in TournamentDefinitions)
         {
@@ -50,8 +60,6 @@ public class SeedTournamentsFunction
             });
         }
 
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(new { season, seeded = TournamentDefinitions.Count });
-        return response;
+        return (season, TournamentDefinitions.Count);
     }
 }
