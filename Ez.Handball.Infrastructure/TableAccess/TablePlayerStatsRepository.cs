@@ -20,7 +20,7 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
     {
         var stats = new List<PlayerStatEntity>();
         await foreach (var row in _query.QueryAsync<PlayerStatEntity>(
-                           Tables.PlayerStats, $"RowKey eq '{playerId}'", ct))
+                           Tables.PlayerStats, $"RowKey eq '{ODataFilter.Escape(playerId)}'", ct))
         {
             stats.Add(row);
         }

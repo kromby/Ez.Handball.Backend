@@ -25,7 +25,7 @@ internal sealed class TablePlayerRepository : IPlayerRepository
     {
         PlayerEntity? row = null;
         await foreach (var r in _query.QueryAsync<PlayerEntity>(
-                           Tables.Players, $"RowKey eq '{playerId}'", ct))
+                           Tables.Players, $"RowKey eq '{ODataFilter.Escape(playerId)}'", ct))
         {
             row = r;
             break;
