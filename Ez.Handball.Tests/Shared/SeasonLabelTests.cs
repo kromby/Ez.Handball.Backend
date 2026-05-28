@@ -26,7 +26,7 @@ public class SeasonLabelTests
     [InlineData("")]
     [InlineData("not-a-year")]
     [InlineData("2025-26")] // already-formatted label is not an integer -> fallback
-    public void Resolve_FallsBackToCurrentYearWhenParamNotInteger(string? param)
+    public void Resolve_FallsBackToFallbackYearWhenParamNotInteger(string? param)
     {
         Assert.Equal("2030-31", SeasonLabel.Resolve(param, fallbackYear: 2030));
     }

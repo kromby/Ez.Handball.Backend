@@ -2,8 +2,9 @@ namespace Ez.Handball.Shared;
 
 /// <summary>
 /// Formats a season's start year into the Icelandic "YYYY-YY" label
-/// (e.g. 2025 -> "2025-26"). The label is the canonical value stored as the
-/// Tournaments PartitionKey and denormalized onto PlayerStatEntity.Season.
+/// (e.g. 2025 -> "2025-26"). This label is the canonical season value:
+/// SeedTournamentsFunction stores it as the Tournaments PartitionKey, and
+/// it is denormalized onto PlayerStatEntity.Season at parse time.
 /// </summary>
 public static class SeasonLabel
 {
