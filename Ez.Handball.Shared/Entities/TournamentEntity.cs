@@ -17,4 +17,5 @@ public class TournamentEntity : ITableEntity
     public string Gender { get; set; } = string.Empty;
     public string Division { get; set; } = string.Empty;
     public bool Enabled { get; set; }
+    public int Priority { get; set; }
 }
