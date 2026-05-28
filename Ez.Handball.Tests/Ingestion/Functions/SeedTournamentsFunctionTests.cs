@@ -51,4 +51,18 @@ public class SeedTournamentsFunctionTests
                 e.Name == "Olís deild karla"),
             default), Times.Once);
     }
+
+    [Fact]
+    public async Task ProcessAsync_NullSeasonParam_FallsBackToCurrentYearLabel()
+    {
+        var expected = Ez.Handball.Shared.SeasonLabel.Format(DateTime.UtcNow.Year);
+
+        var (season, _) = await CreateSut().ProcessAsync(null);
+
+        Assert.Equal(expected, season);
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e => e.PartitionKey == expected),
+            default), Times.Exactly(SeedTournamentsFunction.TournamentDefinitions.Count));
+    }
 }
