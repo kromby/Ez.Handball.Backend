@@ -12,8 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ez.Handball.Infrastructure\Ez.Handball.Infrastructure.csproj" />
     <ProjectReference Include="..\Ez.Handball.Shared\Ez.Handball.Shared.csproj" />
+    <ProjectReference Include="..\Ez.Handball.Application\Ez.Handball.Application.csproj" />
+    <ProjectReference Include="..\Ez.Handball.Infrastructure\Ez.Handball.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

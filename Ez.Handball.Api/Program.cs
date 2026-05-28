@@ -1,7 +1,6 @@
-using Azure.Data.Tables;
 using Ez.Handball.Api.Middleware;
-using Ez.Handball.Api.Services;
-using Ez.Handball.Infrastructure.TableAccess;
+using Ez.Handball.Application.UseCases;
+using Ez.Handball.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +16,6 @@ builder.Services.AddCors(options =>
     {
         if (allowedOrigins.Length == 0)
         {
-            // No origins configured → effectively same-origin only.
             return;
         }
         policy
@@ -32,11 +30,11 @@ builder.Services.AddHttpLogging(_ => { });
 var storageConnection = builder.Configuration["Storage:ConnectionString"]
     ?? "UseDevelopmentStorage=true";
 
-builder.Services.AddSingleton(_ => new TableServiceClient(storageConnection));
-builder.Services.AddSingleton<ITableQuery, TableQuery>();
-builder.Services.AddSingleton<Func<DateOnly>>(_ => () => DateOnly.FromDateTime(DateTime.UtcNow));
-builder.Services.AddSingleton<IPlayerLookupService, PlayerLookupService>();
-builder.Services.AddSingleton<IPlayerStatsService, PlayerStatsService>();
+builder.Services.AddTableStorageInfrastructure(storageConnection);
+
+builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
+builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
+builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 
 var app = builder.Build();
 
@@ -46,33 +44,58 @@ app.UseCors(CorsPolicy);
 
 app.MapGet("/api/players/{playerId}", async (
     string playerId,
-    IPlayerLookupService lookup,
+    IGetPlayerProfileUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
         return Results.BadRequest(new { error = "invalid_player_id" });
 
-    var profile = await lookup.GetPlayerAsync(playerId, ct);
-    return profile is null
-        ? Results.NotFound(new { error = "player_not_found" })
-        : Results.Ok(profile);
+    var result = await uc.ExecuteAsync(playerId, ct);
+    return result switch
+    {
+        GetPlayerProfileResult.NotFound       => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerProfileResult.Found f        => Results.Ok(f.Player),
+        _                                     => Results.Problem()
+    };
 });
 
 app.MapGet("/api/players/{playerId}/stats", async (
     string playerId,
-    IPlayerLookupService lookup,
-    IPlayerStatsService stats,
+    IGetPlayerStatsUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
         return Results.BadRequest(new { error = "invalid_player_id" });
 
-    var profile = await lookup.GetPlayerAsync(playerId, ct);
-    if (profile is null)
-        return Results.NotFound(new { error = "player_not_found" });
+    var result = await uc.ExecuteAsync(playerId, ct);
+    return result switch
+    {
+        GetPlayerStatsResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerStatsResult.Found f          => Results.Ok(new { playerId = f.PlayerId, stats = f.Stats }),
+        _                                     => Results.Problem()
+    };
+});
 
-    var rows = await stats.GetStatsAsync(playerId, ct);
-    return Results.Ok(new { playerId, stats = rows });
+app.MapGet("/api/players/{playerId}/history", async (
+    string playerId,
+    IGetPlayerHistoryUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    var result = await uc.ExecuteAsync(playerId, ct);
+    return result switch
+    {
+        GetPlayerHistoryResult.NotFound       => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerHistoryResult.Found f        => Results.Ok(new
+        {
+            playerId = f.PlayerId,
+            history  = f.History.Entries,
+            totals   = f.History.Totals
+        }),
+        _                                     => Results.Problem()
+    };
 });
 
 app.Run();
