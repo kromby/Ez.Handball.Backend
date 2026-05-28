@@ -55,12 +55,12 @@ public class TablePlayerStatsRepositoryTests
             PartitionKey = "match-1",
             RowKey = "12345",
             Goals = 5, YellowCards = 0, TwoMinuteSuspensions = 1, RedCards = 0,
-            TournamentId = "8444", Season = "2025",
+            TournamentId = "8444", Season = "2025-26",
             TeamId = "385-karlar", ClubName = "Stjarnan"
         });
-        SetupTournaments("2025", new TournamentEntity
+        SetupTournaments("2025-26", new TournamentEntity
         {
-            PartitionKey = "2025", RowKey = "8444",
+            PartitionKey = "2025-26", RowKey = "8444",
             Name = "Olís deild karla", Gender = "karlar", Division = "1", Enabled = true, Priority = 10
         });
 
@@ -70,7 +70,7 @@ public class TablePlayerStatsRepositoryTests
         Assert.Equal("match-1", only.MatchId);
         Assert.Equal("8444", only.TournamentId);
         Assert.Equal("Olís deild karla", only.TournamentName);
-        Assert.Equal("2025", only.Season);
+        Assert.Equal("2025-26", only.Season);
         Assert.Equal("385-karlar", only.TeamId);
         Assert.Equal("Stjarnan", only.ClubName);
         Assert.Equal(5, only.Goals);
@@ -81,18 +81,18 @@ public class TablePlayerStatsRepositoryTests
     public async Task GetByPlayerAsync_MultiSeason_QueriesTournamentsOncePerSeason()
     {
         SetupStats("12345",
-            new PlayerStatEntity { PartitionKey = "m1", RowKey = "12345", TournamentId = "8444", Season = "2025", TeamId = "385-karlar" },
-            new PlayerStatEntity { PartitionKey = "m2", RowKey = "12345", TournamentId = "8444", Season = "2024", TeamId = "385-karlar" });
-        SetupTournaments("2025", new TournamentEntity { PartitionKey = "2025", RowKey = "8444", Name = "Olís 25" });
-        SetupTournaments("2024", new TournamentEntity { PartitionKey = "2024", RowKey = "8444", Name = "Olís 24" });
+            new PlayerStatEntity { PartitionKey = "m1", RowKey = "12345", TournamentId = "8444", Season = "2025-26", TeamId = "385-karlar" },
+            new PlayerStatEntity { PartitionKey = "m2", RowKey = "12345", TournamentId = "8444", Season = "2024-25", TeamId = "385-karlar" });
+        SetupTournaments("2025-26", new TournamentEntity { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís 25" });
+        SetupTournaments("2024-25", new TournamentEntity { PartitionKey = "2024-25", RowKey = "8444", Name = "Olís 24" });
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
         Assert.Equal(2, result.Count);
         _query.Verify(q => q.QueryAsync<TournamentEntity>(
-            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2025'", default), Times.Once);
+            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2025-26'", default), Times.Once);
         _query.Verify(q => q.QueryAsync<TournamentEntity>(
-            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2024'", default), Times.Once);
+            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2024-25'", default), Times.Once);
     }
 
     [Fact]
@@ -101,9 +101,9 @@ public class TablePlayerStatsRepositoryTests
         SetupStats("12345", new PlayerStatEntity
         {
             PartitionKey = "m1", RowKey = "12345",
-            TournamentId = "9999", Season = "2025", TeamId = "385-karlar"
+            TournamentId = "9999", Season = "2025-26", TeamId = "385-karlar"
         });
-        SetupTournaments("2025");  // no rows
+        SetupTournaments("2025-26");  // no rows
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
