@@ -1,6 +1,7 @@
 using Azure.Data.Tables;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Api.Services;
+using Ez.Handball.Infrastructure.TableAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 

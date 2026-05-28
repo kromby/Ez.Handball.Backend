@@ -2,7 +2,7 @@ using Azure;
 using Azure.Data.Tables;
 using System.Runtime.CompilerServices;
 
-namespace Ez.Handball.Api.Services;
+namespace Ez.Handball.Infrastructure.TableAccess;
 
 public class TableQuery : ITableQuery
 {

@@ -1,6 +1,7 @@
-using Ez.Handball.Api;
 using Ez.Handball.Api.Models;
 using Ez.Handball.Api.Services;
+using Ez.Handball.Infrastructure;
+using Ez.Handball.Infrastructure.TableAccess;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;

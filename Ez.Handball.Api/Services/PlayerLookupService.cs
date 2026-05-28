@@ -1,4 +1,6 @@
 using Ez.Handball.Api.Models;
+using Ez.Handball.Infrastructure;
+using Ez.Handball.Infrastructure.TableAccess;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Extensions.Logging;
 
