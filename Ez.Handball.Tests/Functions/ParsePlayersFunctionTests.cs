@@ -218,7 +218,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_MatchNotFound_NoUpserts()
+    public async Task ProcessAsync_MatchNotFound_ThrowsToRetry_AndUpsertsNothing()
     {
         // Arrange
         const string matchId = "9999";
@@ -238,8 +238,10 @@ public class ParsePlayersFunctionTests
 
         var blobContent = BuildPlayerStatsJson(new[] { player });
 
-        // Act
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        // Act — ParseMatch may not have completed yet, so the function throws
+        // to make the blob trigger retry rather than silently dropping the data.
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateSut().ProcessAsync(blobContent, matchId, clubId));
 
         // Assert — nothing upserted when match lookup fails
         _tableWriter.Verify(t => t.UpsertAsync(
