@@ -15,7 +15,7 @@ public class TableQuery : ITableQuery
 
     public async IAsyncEnumerable<T> QueryAsync<T>(
         string tableName,
-        string filter,
+        string? filter,
         [EnumeratorCancellation] CancellationToken ct = default)
         where T : class, ITableEntity, new()
     {

@@ -21,7 +21,7 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
         var filter = BuildFilter(q);
 
         var rows = new List<PlayerStatEntity>();
-        await foreach (var row in _query.QueryAsync<PlayerStatEntity>(Tables.PlayerStats, filter!, ct))
+        await foreach (var row in _query.QueryAsync<PlayerStatEntity>(Tables.PlayerStats, filter, ct))
             rows.Add(row);
 
         if (!string.IsNullOrEmpty(q.Gender))
@@ -38,7 +38,7 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
             .ToList();
 
         var nameById = new Dictionary<string, string>();
-        await foreach (var p in _query.QueryAsync<PlayerEntity>(Tables.Players, null!, ct))
+        await foreach (var p in _query.QueryAsync<PlayerEntity>(Tables.Players, null, ct))
             nameById[p.RowKey] = p.Name;
 
         var result = new List<LeaderboardEntry>(aggregates.Count);
@@ -114,7 +114,7 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
         LeaderboardMetric.TwoMinuteSuspensions => a.TwoMinuteSuspensions,
         LeaderboardMetric.RedCards => a.RedCards,
         LeaderboardMetric.Games => a.Games,
-        _ => a.Goals
+        _ => throw new ArgumentOutOfRangeException(nameof(metric), metric, null)
     };
 
     private static string ClubIdOf(string teamId) => teamId.Split('-', 2)[0];
