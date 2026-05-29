@@ -52,7 +52,7 @@ public class ParsePlayersFunctionTests
             .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
             .ReturnsAsync(new List<TournamentEntity>
             {
-                new() { PartitionKey = "2025", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
             });
 
         _tableWriter
@@ -102,7 +102,7 @@ public class ParsePlayersFunctionTests
                 e.TwoMinuteSuspensions == 0 &&
                 e.RedCards == 0 &&
                 e.TournamentId == "8444" &&
-                e.Season == "2025" &&
+                e.Season == "2025-26" &&
                 e.TeamId == teamId &&
                 e.ClubName == "Stjarnan"),
             default), Times.Once);
@@ -126,7 +126,7 @@ public class ParsePlayersFunctionTests
             .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
             .ReturnsAsync(new List<TournamentEntity>
             {
-                new() { PartitionKey = "2025", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
             });
 
         _tableWriter
@@ -171,7 +171,7 @@ public class ParsePlayersFunctionTests
                 e.Goals == 5 &&
                 e.RedCards == 1 &&
                 e.TournamentId == "8444" &&
-                e.Season == "2025" &&
+                e.Season == "2025-26" &&
                 e.TeamId == awayTeamId &&
                 e.ClubName == "Breiðablik"),
             default), Times.Once);

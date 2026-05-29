@@ -86,7 +86,7 @@ All three endpoints wrap their payload in `{"data": ...}`:
 
 | Table | PartitionKey | RowKey |
 |-------|-------------|--------|
-| Tournaments | season (e.g. `"2025"`) | tournamentId |
+| Tournaments | season label (e.g. `"2025-26"`) | tournamentId |
 | Clubs | `"club"` | clubId (hsi.is ID) |
 | Teams | `"team"` | `"{clubId}-{gender}"` e.g. `"385-karlar"` |
 | Matches | tournamentId | matchId |
@@ -107,6 +107,21 @@ The `Tournaments` table must be seeded before the parse functions will work. Use
 | 8443 | Grill 66 deild kvenna |
 | 8437 | Powerade bikar karla |
 | 8436 | Powerade bikar kvenna |
+
+The `?season=` parameter is the integer **start year**; it is stored as the
+`YYYY-YY` label (e.g. `?season=2025` → PartitionKey `"2025-26"`). The label is
+the canonical value, denormalized onto `PlayerStatEntity.Season`.
+
+#### Re-labelling an existing season (local)
+
+The parse step looks up tournaments by `RowKey eq '{tournamentId}'` with no
+partition filter, so a stale `"2025"` partition alongside a new `"2025-26"`
+partition makes season resolution ambiguous. To re-label cleanly:
+
+1. Clear the `Tournaments` table (drop the old partition).
+2. Re-seed: `POST /api/seed/tournaments?season=2025`.
+3. Re-run `POST /api/sync` — the parse step replaces `PlayerStats.Season`
+   in place (rows are keyed by matchId/playerId, so no duplicates).
 
 ### Testing approach
 
