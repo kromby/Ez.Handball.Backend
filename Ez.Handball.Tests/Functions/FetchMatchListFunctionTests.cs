@@ -23,7 +23,7 @@ public class FetchMatchListFunctionTests
             new() { PartitionKey = "2025", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar", Division = "1" },
             new() { PartitionKey = "2025", RowKey = "8434", Name = "Olís deild kvenna", Gender = "kvenna", Division = "1" }
         };
-        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", string.Empty, default))
+        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "Enabled eq true", default))
             .ReturnsAsync(tournaments);
         _apiClient.Setup(a => a.GetTournamentMatchesJsonAsync("8444", default)).ReturnsAsync("""{"data":[]}""");
         _apiClient.Setup(a => a.GetTournamentMatchesJsonAsync("8434", default)).ReturnsAsync("""{"data":[]}""");
@@ -44,7 +44,7 @@ public class FetchMatchListFunctionTests
             new() { PartitionKey = "2025", RowKey = "8444", Gender = "karlar", Division = "1" },
             new() { PartitionKey = "2025", RowKey = "8434", Gender = "kvenna", Division = "1" }
         };
-        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", string.Empty, default))
+        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "Enabled eq true", default))
             .ReturnsAsync(tournaments);
         _apiClient.Setup(a => a.GetTournamentMatchesJsonAsync("8444", default))
             .ThrowsAsync(new HttpRequestException("timeout"));
@@ -60,7 +60,7 @@ public class FetchMatchListFunctionTests
     [Fact]
     public async Task SyncAsync_ReturnsZero_WhenNoTournamentsInTable()
     {
-        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", string.Empty, default))
+        _tableWriter.Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "Enabled eq true", default))
             .ReturnsAsync(new List<TournamentEntity>());
 
         var result = await CreateSut().SyncAsync();
