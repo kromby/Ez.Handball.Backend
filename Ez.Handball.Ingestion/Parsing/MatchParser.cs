@@ -9,6 +9,10 @@ namespace Ez.Handball.Ingestion.Parsing;
 
 public class MatchParser : IMatchParser
 {
+    // Azure Table Storage's minimum supported Edm.DateTime is 1601-01-01 UTC.
+    private static readonly DateTimeOffset TableStorageMinDate =
+        new(1601, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
     private readonly ITableWriter _tableWriter;
     private readonly ILogger<MatchParser> _logger;
 
@@ -56,7 +60,10 @@ public class MatchParser : IMatchParser
         _ = int.TryParse(details.GamesResultHome, out var homeScore);
         _ = int.TryParse(details.GamesResultGuest, out var awayScore);
 
-        DateTimeOffset date = DateTimeOffset.MinValue;
+        // Azure Table Storage rejects dates before 1601-01-01 (Edm.DateTime min),
+        // so the fallback for an unparseable date must stay within range — never
+        // DateTimeOffset.MinValue (0001-01-01), which would throw on upsert.
+        DateTimeOffset date = TableStorageMinDate;
         if (DateTimeOffset.TryParseExact(
                 details.Date,
                 "dd.MM.yyyy - HH:mm",
@@ -65,6 +72,12 @@ public class MatchParser : IMatchParser
                 out var parsedDate))
         {
             date = parsedDate;
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Could not parse match date '{Date}' for match {MatchId}; storing fallback date",
+                details.Date, matchId);
         }
 
         await _tableWriter.UpsertAsync("Clubs", new ClubEntity

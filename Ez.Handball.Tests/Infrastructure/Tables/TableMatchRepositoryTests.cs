@@ -249,4 +249,23 @@ public class TableMatchRepositoryTests
         Assert.Equal("Stjarnan", result!.HomeTeam.ClubName);
         Assert.Null(result.AwayTeam.ClubName);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_HalftimeExceedsFinal_SecondHalfFlooredAtZero()
+    {
+        // Corrupt source data: halftime (15) greater than final (14) must not yield a negative half.
+        SetupMatch("103414", Match("103414", "8444", "385-karlar", "390-karlar", 14, 25, 15, 12));
+        SetupTournament("8444", new TournamentEntity { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís" });
+        SetupTeams("PartitionKey eq 'team' and (RowKey eq '385-karlar' or RowKey eq '390-karlar')",
+            Team("385-karlar", "385", "Stjarnan"), Team("390-karlar", "390", "Breiðablik"));
+        SetupStats("103414");
+        SetupPlayers("385-karlar");
+        SetupPlayers("390-karlar");
+
+        var result = await CreateSut().GetByIdAsync("103414", default);
+
+        Assert.Equal(0, result!.HomeTeam.Score.SecondHalf);
+        Assert.Equal(15, result.HomeTeam.Score.FirstHalf);
+        Assert.Equal(14, result.HomeTeam.Score.Final);
+    }
 }

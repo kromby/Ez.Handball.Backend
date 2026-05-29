@@ -257,4 +257,26 @@ public class MatchParserTests
             It.Is<MatchEntity>(e => e.Attendance == null),
             default), Times.Once);
     }
+
+    [Fact]
+    public async Task ParseAsync_UnparseableDate_StoresTableStorageSafeFallback()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444", date: "not-a-date");
+
+        await CreateSut().ParseAsync(blobContent, "5003");
+
+        // Azure Table Storage rejects dates before 1601-01-01; the fallback must stay in range.
+        var azureMin = new DateTimeOffset(1601, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.Date >= azureMin),
+            default), Times.Once);
+    }
 }

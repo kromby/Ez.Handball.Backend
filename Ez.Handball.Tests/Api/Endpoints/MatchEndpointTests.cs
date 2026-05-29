@@ -101,4 +101,14 @@ public class MatchEndpointTests : IClassFixture<MatchEndpointTests.Factory>
         Assert.Equal(JsonValueKind.Null, body.GetProperty("venue").ValueKind);
         Assert.Equal(JsonValueKind.Null, body.GetProperty("attendance").ValueKind);
     }
+
+    [Fact]
+    public async Task GetMatch_WhitespaceMatchId_Returns400WithErrorJson()
+    {
+        var response = await _client.GetAsync("/api/matches/%20");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_match_id", body.GetProperty("error").GetString());
+    }
 }

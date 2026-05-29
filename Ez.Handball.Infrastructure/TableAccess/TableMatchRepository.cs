@@ -129,7 +129,8 @@ internal sealed class TableMatchRepository : IMatchRepository
             .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var score = new LineScore(halftimeScore, finalScore - halftimeScore, finalScore);
+        // Floor at 0: corrupt source data where halftime > final must not leak a negative half.
+        var score = new LineScore(halftimeScore, Math.Max(0, finalScore - halftimeScore), finalScore);
 
         return new MatchTeam(teamId, clubId, clubName, score, players);
     }
