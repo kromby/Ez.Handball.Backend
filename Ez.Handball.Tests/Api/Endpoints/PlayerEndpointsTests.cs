@@ -14,6 +14,17 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 {
     public class Factory : WebApplicationFactory<Program>
     {
+        static Factory()
+        {
+            // Program reads Cors:AllowedOrigins eagerly while the host builder is
+            // assembled, so the origin must come from a config source that is
+            // present before the host builds. Environment variables are added by
+            // WebApplication.CreateBuilder by default, so they win that race
+            // (ConfigureAppConfiguration on the factory is applied too late).
+            // "5500" is the Live Server port the static Web UI runs on.
+            Environment.SetEnvironmentVariable("Cors__AllowedOrigins__0", "http://localhost:5500");
+        }
+
         public Mock<IGetPlayerProfileUseCase> Profile { get; } = new();
         public Mock<IGetPlayerStatsUseCase>   Stats   { get; } = new();
 
