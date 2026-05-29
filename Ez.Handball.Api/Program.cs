@@ -1,4 +1,5 @@
 using Ez.Handball.Api.Middleware;
+using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Infrastructure;
 
@@ -35,6 +36,7 @@ builder.Services.AddTableStorageInfrastructure(storageConnection);
 builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
+builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 
 var app = builder.Build();
 
@@ -98,6 +100,57 @@ app.MapGet("/api/players/{playerId}/history", async (
     };
 });
 
+app.MapGet("/api/leaderboard", async Task<IResult> (
+    string? metric,
+    string? season,
+    string? tournamentId,
+    string? gender,
+    int? offset,
+    int? limit,
+    IGetLeaderboardUseCase uc,
+    CancellationToken ct) =>
+{
+    if (!TryParseMetric(metric, out var parsedMetric))
+        return Results.BadRequest(new { error = "invalid_metric" });
+
+    if (!TryNormalizeGender(gender, out var parsedGender))
+        return Results.BadRequest(new { error = "invalid_gender" });
+
+    var off = offset ?? 0;
+    var lim = limit ?? 50;
+    if (off < 0 || lim < 1 || lim > 200)
+        return Results.BadRequest(new { error = "invalid_pagination" });
+
+    var query = new LeaderboardQuery(parsedMetric, season, tournamentId, parsedGender);
+    var result = await uc.ExecuteAsync(query, off, lim, ct);
+    return Results.Ok(result);
+});
+
 app.Run();
+
+static bool TryParseMetric(string? value, out LeaderboardMetric metric)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        metric = LeaderboardMetric.Goals;
+        return true;
+    }
+    return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
+}
+
+static bool TryNormalizeGender(string? value, out string? gender)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        gender = null;
+        return true;
+    }
+    switch (value.ToLowerInvariant())
+    {
+        case "karlar": gender = "karlar"; return true;
+        case "kvenna": gender = "kvenna"; return true;
+        default: gender = null; return false;
+    }
+}
 
 public partial class Program { }  // for WebApplicationFactory<Program>
