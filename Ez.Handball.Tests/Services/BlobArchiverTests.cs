@@ -60,4 +60,20 @@ public class BlobArchiverTests : IAsyncLifetime
         var result = await _archiver.ReadAsync("matches/2/details.json");
         Assert.Equal("""{"new":"data"}""", result);
     }
+
+    [Fact]
+    public async Task ListAsync_ReturnsBlobNamesUnderPrefix()
+    {
+        await _archiver.SaveAsync("matches/10/details.json", "{}");
+        await _archiver.SaveAsync("matches/10/players-1.json", "{}");
+        await _archiver.SaveAsync("tournaments/8444/matches.json", "{}");
+
+        var names = new List<string>();
+        await foreach (var name in _archiver.ListAsync("matches/"))
+            names.Add(name);
+
+        Assert.Contains("matches/10/details.json", names);
+        Assert.Contains("matches/10/players-1.json", names);
+        Assert.DoesNotContain("tournaments/8444/matches.json", names);
+    }
 }

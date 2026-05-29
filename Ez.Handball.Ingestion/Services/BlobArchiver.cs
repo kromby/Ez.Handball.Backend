@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using Azure.Storage.Blobs;
 
@@ -32,5 +33,15 @@ public class BlobArchiver : IBlobArchiver
         var blob = _container.GetBlobClient(path);
         var download = await blob.DownloadContentAsync(ct);
         return download.Value.Content.ToString();
+    }
+
+    public async IAsyncEnumerable<string> ListAsync(
+        string prefix,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in _container.GetBlobsAsync(prefix: prefix, cancellationToken: ct))
+        {
+            yield return item.Name;
+        }
     }
 }

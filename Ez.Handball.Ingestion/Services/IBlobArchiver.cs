@@ -5,4 +5,5 @@ public interface IBlobArchiver
     Task SaveAsync(string path, string json, CancellationToken ct = default);
     Task<bool> ExistsAsync(string path, CancellationToken ct = default);
     Task<string> ReadAsync(string path, CancellationToken ct = default);
+    IAsyncEnumerable<string> ListAsync(string prefix, CancellationToken ct = default);
 }

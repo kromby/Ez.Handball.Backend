@@ -37,6 +37,7 @@ builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
+builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 
 var app = builder.Build();
 
@@ -124,6 +125,21 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     var query = new LeaderboardQuery(parsedMetric, season, tournamentId, parsedGender);
     var result = await uc.ExecuteAsync(query, off, lim, ct);
     return Results.Ok(result);
+app.MapGet("/api/matches/{matchId}", async (
+    string matchId,
+    IGetMatchUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(matchId))
+        return Results.BadRequest(new { error = "invalid_match_id" });
+
+    var result = await uc.ExecuteAsync(matchId, ct);
+    return result switch
+    {
+        GetMatchResult.NotFound       => Results.NotFound(new { error = "match_not_found" }),
+        GetMatchResult.Found f        => Results.Ok(f.Match),
+        _                             => Results.Problem()
+    };
 });
 
 app.Run();

@@ -1,18 +1,19 @@
 using System.Text.Json;
-using Ez.Handball.Ingestion.Functions;
 using Ez.Handball.Ingestion.Models;
+using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
 namespace Ez.Handball.Tests.Functions;
 
-public class ParseMatchFunctionTests
+public class MatchParserTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
 
-    private ParseMatchFunction CreateSut() => new(_tableWriter.Object);
+    private MatchParser CreateSut() => new(_tableWriter.Object, NullLogger<MatchParser>.Instance);
 
     private static string BuildMatchDetailsJson(
         string tournamentId = "8444",
@@ -23,7 +24,11 @@ public class ParseMatchFunctionTests
         string reportStatus = "S",
         string gamesResultHome = "28",
         string gamesResultGuest = "25",
-        string date = "03.09.2025 - 19:30")
+        string date = "03.09.2025 - 19:30",
+        string playingFieldName = "Ásgarður",
+        string? gameSpectators = "412",
+        string homeHalftimeGoals = "14",
+        string guestHalftimeGoals = "12")
     {
         var response = new MatchDetailsResponse
         {
@@ -37,14 +42,18 @@ public class ParseMatchFunctionTests
                 ReportStatus = reportStatus,
                 GamesResultHome = gamesResultHome,
                 GamesResultGuest = gamesResultGuest,
-                Date = date
+                Date = date,
+                PlayingFieldName = playingFieldName,
+                GameSpectators = gameSpectators,
+                HomeHalftimeGoals = homeHalftimeGoals,
+                GuestHalftimeGoals = guestHalftimeGoals
             }
         };
         return JsonSerializer.Serialize(response);
     }
 
     [Fact]
-    public async Task ProcessAsync_HappyPath_UpsertsClubsTeamsAndMatch()
+    public async Task ParseAsync_HappyPath_UpsertsClubsTeamsAndMatch()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -69,7 +78,7 @@ public class ParseMatchFunctionTests
             gamesResultHome: "28",
             gamesResultGuest: "25");
 
-        await CreateSut().ProcessAsync(blobContent, "5001");
+        await CreateSut().ParseAsync(blobContent, "5001");
 
         // Clubs upserted
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
@@ -111,7 +120,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_KvennaTournament_UsesKvennaSuffix()
+    public async Task ParseAsync_KvennaTournament_UsesKvennaSuffix()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -131,7 +140,7 @@ public class ParseMatchFunctionTests
             clubHomeId: "385",
             clubGuestId: "390");
 
-        await CreateSut().ProcessAsync(blobContent, "6001");
+        await CreateSut().ParseAsync(blobContent, "6001");
 
         _tableWriter.Verify(t => t.UpsertAsync("Teams",
             It.Is<TeamEntity>(e => e.RowKey == "385-kvenna" && e.Gender == "kvenna"),
@@ -145,7 +154,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_ClubNames_AreCorrectlyPassedToClubEntity()
+    public async Task ParseAsync_ClubNames_AreCorrectlyPassedToClubEntity()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -165,7 +174,7 @@ public class ParseMatchFunctionTests
             clubGuestId: "200",
             guestClubName: "Haukar");
 
-        await CreateSut().ProcessAsync(blobContent, "7001");
+        await CreateSut().ParseAsync(blobContent, "7001");
 
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.RowKey == "100" && e.Name == "Stjarnan"),
@@ -176,7 +185,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_TournamentNotFound_DoesNotUpsertAnyEntities()
+    public async Task ParseAsync_TournamentNotFound_DoesNotUpsertAnyEntities()
     {
         _tableWriter
             .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '9999'", default))
@@ -184,7 +193,7 @@ public class ParseMatchFunctionTests
 
         var blobContent = BuildMatchDetailsJson(tournamentId: "9999");
 
-        await CreateSut().ProcessAsync(blobContent, "8001");
+        await CreateSut().ParseAsync(blobContent, "8001");
 
         _tableWriter.Verify(t => t.UpsertAsync(
             It.IsAny<string>(),
@@ -198,5 +207,76 @@ public class ParseMatchFunctionTests
             It.IsAny<string>(),
             It.IsAny<MatchEntity>(),
             default), Times.Never);
+    }
+
+    [Fact]
+    public async Task ParseAsync_WritesVenueAttendanceAndHalftimeScores()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(
+            tournamentId: "8444",
+            playingFieldName: "Ásgarður",
+            gameSpectators: "412",
+            homeHalftimeGoals: "14",
+            guestHalftimeGoals: "12");
+
+        await CreateSut().ParseAsync(blobContent, "5001");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e =>
+                e.Venue == "Ásgarður" &&
+                e.Attendance == 412 &&
+                e.HomeHalftimeScore == 14 &&
+                e.AwayHalftimeScore == 12),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_NonNumericSpectators_AttendanceIsNull()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444", gameSpectators: null);
+
+        await CreateSut().ParseAsync(blobContent, "5002");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.Attendance == null),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_UnparseableDate_StoresTableStorageSafeFallback()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444", date: "not-a-date");
+
+        await CreateSut().ParseAsync(blobContent, "5003");
+
+        // Azure Table Storage rejects dates before 1601-01-01; the fallback must stay in range.
+        var azureMin = new DateTimeOffset(1601, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.Date >= azureMin),
+            default), Times.Once);
     }
 }
