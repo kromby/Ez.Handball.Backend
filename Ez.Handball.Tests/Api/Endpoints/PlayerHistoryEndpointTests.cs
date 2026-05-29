@@ -57,7 +57,7 @@ public class PlayerHistoryEndpointTests : IClassFixture<PlayerHistoryEndpointTes
     public async Task GetHistory_PlayerWithEntries_Returns200WithExpectedShape()
     {
         var entry = new PlayerHistoryEntry(
-            Season: "2025", TournamentId: "8444", TournamentName: "Olís deild karla",
+            Season: "2025-26", TournamentId: "8444", TournamentName: "Olís deild karla",
             ClubId: "385", ClubName: "Stjarnan",
             Games: 18, TotalGoals: 87, TotalYellowCards: 4, TotalTwoMinuteSuspensions: 17, TotalRedCards: 0,
             AvgGoals: 87.0 / 18, AvgYellowCards: 4.0 / 18, AvgTwoMinuteSuspensions: 17.0 / 18, AvgRedCards: 0);
@@ -77,7 +77,7 @@ public class PlayerHistoryEndpointTests : IClassFixture<PlayerHistoryEndpointTes
         Assert.Equal(1, body.GetProperty("history").GetArrayLength());
 
         var first = body.GetProperty("history")[0];
-        Assert.Equal("2025", first.GetProperty("season").GetString());
+        Assert.Equal("2025-26", first.GetProperty("season").GetString());
         Assert.Equal("Olís deild karla", first.GetProperty("tournamentName").GetString());
         Assert.Equal(18, first.GetProperty("games").GetInt32());
         Assert.Equal(JsonValueKind.Number, first.GetProperty("avgGoals").ValueKind);

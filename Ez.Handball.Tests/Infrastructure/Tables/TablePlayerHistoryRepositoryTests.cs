@@ -65,13 +65,13 @@ public class TablePlayerHistoryRepositoryTests
     [Fact]
     public async Task GetByPlayerAsync_OneMatch_OneEntry_TotalsMirrorEntry()
     {
-        SetupStats("12345", Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís deild karla", 10));
+        SetupStats("12345", Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís deild karla", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
         var entry = Assert.Single(result.Entries);
-        Assert.Equal("2025", entry.Season);
+        Assert.Equal("2025-26", entry.Season);
         Assert.Equal("8444", entry.TournamentId);
         Assert.Equal("Olís deild karla", entry.TournamentName);
         Assert.Equal("385", entry.ClubId);
@@ -90,10 +90,10 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_ThreeMatchesSameGroup_SumsAndAverages()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0),
-            Stat("m2", "12345", "2025", "8444", "385-karlar", "Stjarnan", 6, 1, 0, 0),
-            Stat("m3", "12345", "2025", "8444", "385-karlar", "Stjarnan", 7, 0, 2, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís deild karla", 10));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0),
+            Stat("m2", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 6, 1, 0, 0),
+            Stat("m3", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 7, 0, 2, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís deild karla", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -110,11 +110,11 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_TwoTournamentsSameSeason_TwoEntries()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
-            Stat("m2", "12345", "2025", "8437", "385-karlar", "Stjarnan", 3, 0, 0, 0));
-        SetupTournaments("2025",
-            Tour("2025", "8444", "Olís deild karla",   10),
-            Tour("2025", "8437", "Powerade bikar karla", 50));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
+            Stat("m2", "12345", "2025-26", "8437", "385-karlar", "Stjarnan", 3, 0, 0, 0));
+        SetupTournaments("2025-26",
+            Tour("2025-26", "8444", "Olís deild karla",   10),
+            Tour("2025-26", "8437", "Powerade bikar karla", 50));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -126,9 +126,9 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_MidSeasonTransfer_TwoEntriesDistinctClubs()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
-            Stat("m2", "12345", "2025", "8444", "410-karlar", "Valur",    3, 0, 0, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís deild karla", 10));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
+            Stat("m2", "12345", "2025-26", "8444", "410-karlar", "Valur",    3, 0, 0, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís deild karla", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -141,26 +141,26 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_MultipleSeasons_TournamentsQueriedOncePerSeason()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
-            Stat("m2", "12345", "2024", "8444", "385-karlar", "Stjarnan", 4, 0, 0, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís 25", 10));
-        SetupTournaments("2024", Tour("2024", "8444", "Olís 24", 10));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
+            Stat("m2", "12345", "2024-25", "8444", "385-karlar", "Stjarnan", 4, 0, 0, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís 25", 10));
+        SetupTournaments("2024-25", Tour("2024-25", "8444", "Olís 24", 10));
 
         await CreateSut().GetByPlayerAsync("12345", default);
 
         _query.Verify(q => q.QueryAsync<TournamentEntity>(
-            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2025'", default), Times.Once);
+            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2025-26'", default), Times.Once);
         _query.Verify(q => q.QueryAsync<TournamentEntity>(
-            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2024'", default), Times.Once);
+            Ez.Handball.Infrastructure.Tables.Tournaments, "PartitionKey eq '2024-25'", default), Times.Once);
     }
 
     [Fact]
     public async Task GetByPlayerAsync_MissingTournament_NameNull_PriorityMaxValue_SortsLast()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
-            Stat("m2", "12345", "2025", "9999", "385-karlar", "Stjarnan", 3, 0, 0, 0));   // missing
-        SetupTournaments("2025", Tour("2025", "8444", "Olís deild karla", 10));   // no 9999
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0),
+            Stat("m2", "12345", "2025-26", "9999", "385-karlar", "Stjarnan", 3, 0, 0, 0));   // missing
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís deild karla", 10));   // no 9999
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -174,31 +174,31 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_SortOrder_SeasonDesc_PriorityAsc_ClubAsc()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 1, 0, 0, 0),   // 2025, prio 10, Stjarnan
-            Stat("m2", "12345", "2025", "8437", "385-karlar", "Stjarnan", 1, 0, 0, 0),   // 2025, prio 50, Stjarnan
-            Stat("m3", "12345", "2024", "8444", "410-karlar", "Valur",    1, 0, 0, 0));  // 2024, prio 10, Valur
-        SetupTournaments("2025",
-            Tour("2025", "8444", "Olís 25",     10),
-            Tour("2025", "8437", "Powerade 25", 50));
-        SetupTournaments("2024", Tour("2024", "8444", "Olís 24", 10));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 1, 0, 0, 0),   // 2025-26, prio 10, Stjarnan
+            Stat("m2", "12345", "2025-26", "8437", "385-karlar", "Stjarnan", 1, 0, 0, 0),   // 2025-26, prio 50, Stjarnan
+            Stat("m3", "12345", "2024-25", "8444", "410-karlar", "Valur",    1, 0, 0, 0));  // 2024-25, prio 10, Valur
+        SetupTournaments("2025-26",
+            Tour("2025-26", "8444", "Olís 25",     10),
+            Tour("2025-26", "8437", "Powerade 25", 50));
+        SetupTournaments("2024-25", Tour("2024-25", "8444", "Olís 24", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
         Assert.Equal(3, result.Entries.Count);
-        Assert.Equal("2025", result.Entries[0].Season);
+        Assert.Equal("2025-26", result.Entries[0].Season);
         Assert.Equal("8444", result.Entries[0].TournamentId);
-        Assert.Equal("2025", result.Entries[1].Season);
+        Assert.Equal("2025-26", result.Entries[1].Season);
         Assert.Equal("8437", result.Entries[1].TournamentId);
-        Assert.Equal("2024", result.Entries[2].Season);
+        Assert.Equal("2024-25", result.Entries[2].Season);
     }
 
     [Fact]
     public async Task GetByPlayerAsync_SortTiebreakerOnClubName_CaseInsensitive()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "410-karlar", "valur",    1, 0, 0, 0),
-            Stat("m2", "12345", "2025", "8444", "385-karlar", "Stjarnan", 1, 0, 0, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís 25", 10));
+            Stat("m1", "12345", "2025-26", "8444", "410-karlar", "valur",    1, 0, 0, 0),
+            Stat("m2", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 1, 0, 0, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís 25", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -211,8 +211,8 @@ public class TablePlayerHistoryRepositoryTests
     [InlineData("385",        "385")]
     public async Task GetByPlayerAsync_ClubIdDerivation(string teamId, string expectedClubId)
     {
-        SetupStats("12345", Stat("m1", "12345", "2025", "8444", teamId, "X", 1, 0, 0, 0));
-        SetupTournaments("2025", Tour("2025", "8444", "Olís 25", 10));
+        SetupStats("12345", Stat("m1", "12345", "2025-26", "8444", teamId, "X", 1, 0, 0, 0));
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís 25", 10));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 
@@ -223,12 +223,12 @@ public class TablePlayerHistoryRepositoryTests
     public async Task GetByPlayerAsync_TotalsArithmetic_CrossGroup()
     {
         SetupStats("12345",
-            Stat("m1", "12345", "2025", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0),
-            Stat("m2", "12345", "2025", "8444", "385-karlar", "Stjarnan", 7, 1, 0, 0),
-            Stat("m3", "12345", "2025", "8437", "385-karlar", "Stjarnan", 3, 0, 0, 1));
-        SetupTournaments("2025",
-            Tour("2025", "8444", "Olís 25",     10),
-            Tour("2025", "8437", "Powerade 25", 50));
+            Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 1, 0),
+            Stat("m2", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 7, 1, 0, 0),
+            Stat("m3", "12345", "2025-26", "8437", "385-karlar", "Stjarnan", 3, 0, 0, 1));
+        SetupTournaments("2025-26",
+            Tour("2025-26", "8444", "Olís 25",     10),
+            Tour("2025-26", "8437", "Powerade 25", 50));
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);
 

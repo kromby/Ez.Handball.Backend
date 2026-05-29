@@ -5,7 +5,7 @@ namespace Ez.Handball.Shared.Entities;
 
 public class TournamentEntity : ITableEntity
 {
-    // PartitionKey = season, e.g. "2025"
+    // PartitionKey = season label, e.g. "2025-26"
     public string PartitionKey { get; set; } = string.Empty;
     // RowKey = tournamentId from hsi.is
     public string RowKey { get; set; } = string.Empty;
