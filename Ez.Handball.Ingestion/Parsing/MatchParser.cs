@@ -99,6 +99,10 @@ public class MatchParser : IMatchParser
             Name = awayClubName
         }, ct);
 
+        _ = int.TryParse(details.HomeHalftimeGoals, out var homeHalftime);
+        _ = int.TryParse(details.GuestHalftimeGoals, out var awayHalftime);
+        int? attendance = int.TryParse(details.GameSpectators, out var spectators) ? spectators : null;
+
         await _tableWriter.UpsertAsync("Matches", new MatchEntity
         {
             PartitionKey = tournamentId,
@@ -108,7 +112,11 @@ public class MatchParser : IMatchParser
             HomeScore = homeScore,
             AwayScore = awayScore,
             Date = date,
-            Status = details.ReportStatus
+            Status = details.ReportStatus,
+            Venue = details.PlayingFieldName,
+            Attendance = attendance,
+            HomeHalftimeScore = homeHalftime,
+            AwayHalftimeScore = awayHalftime
         }, ct);
 
         _logger.LogInformation(

@@ -19,4 +19,9 @@ public class MatchEntity : ITableEntity
     public int AwayScore { get; set; }
     public DateTimeOffset Date { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    public string Venue { get; set; } = string.Empty;   // PLAYING_FIELD_NAME
+    public int? Attendance { get; set; }                 // GAME_SPECTATORS (nullable)
+    public int HomeHalftimeScore { get; set; }           // HOME_HALFTIME_GOALS
+    public int AwayHalftimeScore { get; set; }           // GUEST_HALFTIME_GOALS
 }

@@ -24,7 +24,11 @@ public class MatchParserTests
         string reportStatus = "S",
         string gamesResultHome = "28",
         string gamesResultGuest = "25",
-        string date = "03.09.2025 - 19:30")
+        string date = "03.09.2025 - 19:30",
+        string playingFieldName = "Ásgarður",
+        string? gameSpectators = "412",
+        string homeHalftimeGoals = "14",
+        string guestHalftimeGoals = "12")
     {
         var response = new MatchDetailsResponse
         {
@@ -38,7 +42,11 @@ public class MatchParserTests
                 ReportStatus = reportStatus,
                 GamesResultHome = gamesResultHome,
                 GamesResultGuest = gamesResultGuest,
-                Date = date
+                Date = date,
+                PlayingFieldName = playingFieldName,
+                GameSpectators = gameSpectators,
+                HomeHalftimeGoals = homeHalftimeGoals,
+                GuestHalftimeGoals = guestHalftimeGoals
             }
         };
         return JsonSerializer.Serialize(response);
@@ -199,5 +207,54 @@ public class MatchParserTests
             It.IsAny<string>(),
             It.IsAny<MatchEntity>(),
             default), Times.Never);
+    }
+
+    [Fact]
+    public async Task ParseAsync_WritesVenueAttendanceAndHalftimeScores()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(
+            tournamentId: "8444",
+            playingFieldName: "Ásgarður",
+            gameSpectators: "412",
+            homeHalftimeGoals: "14",
+            guestHalftimeGoals: "12");
+
+        await CreateSut().ParseAsync(blobContent, "5001");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e =>
+                e.Venue == "Ásgarður" &&
+                e.Attendance == 412 &&
+                e.HomeHalftimeScore == 14 &&
+                e.AwayHalftimeScore == 12),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_NonNumericSpectators_AttendanceIsNull()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444", gameSpectators: null);
+
+        await CreateSut().ParseAsync(blobContent, "5002");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.Attendance == null),
+            default), Times.Once);
     }
 }
