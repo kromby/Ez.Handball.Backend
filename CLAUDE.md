@@ -12,10 +12,10 @@ dotnet build Ez.Handball.sln
 dotnet test Ez.Handball.Tests/Ez.Handball.Tests.csproj
 
 # Run a single test class
-dotnet test Ez.Handball.Tests/Ez.Handball.Tests.csproj --filter "FullyQualifiedName~ParseMatchFunctionTests"
+dotnet test Ez.Handball.Tests/Ez.Handball.Tests.csproj --filter "FullyQualifiedName~MatchParserTests"
 
 # Run a single test
-dotnet test Ez.Handball.Tests/Ez.Handball.Tests.csproj --filter "FullyQualifiedName~ParseMatchFunctionTests.ProcessAsync_HappyPath_UpsertsClubsTeamsAndMatch"
+dotnet test Ez.Handball.Tests/Ez.Handball.Tests.csproj --filter "FullyQualifiedName~MatchParserTests.ParseAsync_HappyPath_UpsertsClubsTeamsAndMatch"
 
 # Start local Azure Storage emulator (required for BlobArchiverTests and TableWriterTests)
 azurite --silent --location /tmp/azurite-test &
@@ -28,6 +28,10 @@ curl -X POST "http://localhost:7071/api/seed/tournaments?season=2025"
 
 # Trigger a full sync
 curl -X POST "http://localhost:7071/api/sync"
+
+# Re-parse archived blobs after a schema change (no hsi.is fetch)
+curl -X POST "http://localhost:7071/api/reparse"
+curl -X POST "http://localhost:7071/api/reparse?matchId=103414"
 ```
 
 ## Architecture
@@ -93,7 +97,9 @@ All three endpoints wrap their payload in `{"data": ...}`:
 | Players | teamId (synthetic) | playerId |
 | PlayerStats | matchId | playerId |
 
-Gender values are `"karlar"` (men) or `"kvenna"` (women). The synthetic `teamId` is derived by `ParseMatchFunction` at parse time using the `gender` field from the `Tournaments` table — this lookup must succeed before any match/player data is written.
+Gender values are `"karlar"` (men) or `"kvenna"` (women). The synthetic `teamId` is derived by `MatchParser` at parse time using the `gender` field from the `Tournaments` table — this lookup must succeed before any match/player data is written.
+
+`MatchEntity` carries `Venue`, `Attendance` (nullable), `HomeHalftimeScore`, and `AwayHalftimeScore` in addition to the final score. Second-half scores are derived (`final − halftime`) at read time, not stored.
 
 ### Tournament IDs (2025/2026 season)
 
@@ -125,13 +131,14 @@ partition makes season resolution ambiguous. To re-label cleanly:
 
 ### Testing approach
 
-Each function has a testable `ProcessAsync` method that takes deserialized inputs and optional `ILogger?` — the `RunAsync` Azure Functions entry point is a thin wrapper. Function tests use Moq for all three service interfaces. The Azurite integration tests (`BlobArchiverTests`, `TableWriterTests`) create and delete a dedicated test container/table per test class via `IAsyncLifetime`.
+Parsing logic lives in injectable services (`MatchParser` / `PlayerParser`, behind `IMatchParser` / `IPlayerParser`) with a testable `ParseAsync` method; the blob-trigger functions (`ParseMatchFunction` / `ParsePlayersFunction`) and the `ReparseFunction` HTTP trigger are thin wrappers that delegate to them. Other functions keep a testable `ProcessAsync`/`SyncAsync` core called by a thin `RunAsync` entry point. Function and parser tests use Moq for the service interfaces. The Azurite integration tests (`BlobArchiverTests`, `TableWriterTests`) create and delete a dedicated test container/table per test class via `IAsyncLifetime`.
 
 ### Backfill after schema changes
 
 `PlayerEntity` and `PlayerStatEntity` carry denormalized lookup fields (`Gender`, `ClubId`, `ClubName`, `TournamentId`, `Season`). After deploying any change that adds or alters these fields, re-trigger the parse step so already-ingested matches pick them up. The blob archive is the source of truth and re-parses are idempotent (`TableUpdateMode.Replace`).
 
-Two equivalent approaches:
-
-- Touch every blob under `raw/matches/*/details.json` and `raw/matches/*/players-*.json` to re-fire the blob triggers, or
-- Re-run `POST /api/sync` and let the pipeline replay end-to-end.
+Use `POST /api/reparse` to replay the parse step over the existing `raw/` blobs
+without re-fetching from hsi.is. Scope to one match with `?matchId={id}`. This is
+the preferred backfill after any change to `MatchEntity`, `PlayerEntity`, or
+`PlayerStatEntity`. (Re-running `POST /api/sync` still works but re-fetches every
+match from hsi.is.)
