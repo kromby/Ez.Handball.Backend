@@ -4,5 +4,6 @@ namespace Ez.Handball.Application.Abstractions;
 
 public interface IMatchRepository
 {
-    Task<MatchDetail?> GetByIdAsync(string matchId, CancellationToken ct);
+    // Match metadata, both team headers, and line scores — without player lines.
+    Task<MatchInfo?> GetByIdAsync(string matchId, CancellationToken ct);
 }

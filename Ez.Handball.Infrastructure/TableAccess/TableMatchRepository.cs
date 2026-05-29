@@ -16,7 +16,7 @@ internal sealed class TableMatchRepository : IMatchRepository
         _logger = logger;
     }
 
-    public async Task<MatchDetail?> GetByIdAsync(string matchId, CancellationToken ct)
+    public async Task<MatchInfo?> GetByIdAsync(string matchId, CancellationToken ct)
     {
         var escapedMatchId = ODataFilter.Escape(matchId);
 
@@ -45,37 +45,15 @@ internal sealed class TableMatchRepository : IMatchRepository
                 match.PartitionKey, matchId);
         }
 
-        var homeTeamId = match.HomeTeamId;
-        var awayTeamId = match.AwayTeamId;
         var teamFilter =
-            $"PartitionKey eq 'team' and (RowKey eq '{ODataFilter.Escape(homeTeamId)}' or RowKey eq '{ODataFilter.Escape(awayTeamId)}')";
+            $"PartitionKey eq 'team' and (RowKey eq '{ODataFilter.Escape(match.HomeTeamId)}' or RowKey eq '{ODataFilter.Escape(match.AwayTeamId)}')";
         var teamNames = new Dictionary<string, string>();
         await foreach (var team in _query.QueryAsync<TeamEntity>(Tables.Teams, teamFilter, ct))
         {
             teamNames[team.RowKey] = team.Name;
         }
 
-        var stats = new List<PlayerStatEntity>();
-        await foreach (var s in _query.QueryAsync<PlayerStatEntity>(
-                           Tables.PlayerStats, $"PartitionKey eq '{escapedMatchId}'", ct))
-        {
-            stats.Add(s);
-        }
-
-        var rosters = new Dictionary<string, PlayerEntity>();
-        foreach (var teamId in new[] { homeTeamId, awayTeamId })
-        {
-            await foreach (var p in _query.QueryAsync<PlayerEntity>(
-                               Tables.Players, $"PartitionKey eq '{ODataFilter.Escape(teamId)}'", ct))
-            {
-                rosters[$"{teamId}|{p.RowKey}"] = p;
-            }
-        }
-
-        var homeTeam = BuildTeam(homeTeamId, match.HomeScore, match.HomeHalftimeScore, teamNames, stats, rosters, matchId);
-        var awayTeam = BuildTeam(awayTeamId, match.AwayScore, match.AwayHalftimeScore, teamNames, stats, rosters, matchId);
-
-        return new MatchDetail(
+        return new MatchInfo(
             MatchId: matchId,
             TournamentId: match.PartitionKey,
             TournamentName: tournamentName,
@@ -84,54 +62,20 @@ internal sealed class TableMatchRepository : IMatchRepository
             Venue: string.IsNullOrEmpty(match.Venue) ? null : match.Venue,
             Attendance: match.Attendance,
             Status: match.Status,
-            HomeTeam: homeTeam,
-            AwayTeam: awayTeam);
+            HomeTeam: BuildTeam(match.HomeTeamId, match.HomeScore, match.HomeHalftimeScore, teamNames),
+            AwayTeam: BuildTeam(match.AwayTeamId, match.AwayScore, match.AwayHalftimeScore, teamNames));
     }
 
-    private MatchTeam BuildTeam(
+    private static MatchTeamInfo BuildTeam(
         string teamId, int finalScore, int halftimeScore,
-        IReadOnlyDictionary<string, string> teamNames,
-        IReadOnlyList<PlayerStatEntity> allStats,
-        IReadOnlyDictionary<string, PlayerEntity> rosters,
-        string matchId)
+        IReadOnlyDictionary<string, string> teamNames)
     {
         var clubId = teamId.Split('-', 2)[0];
-
-        var teamStats = allStats.Where(s => s.TeamId == teamId).ToList();
-
-        string? clubName;
-        if (teamNames.TryGetValue(teamId, out var name))
-            clubName = name;
-        else
-            clubName = teamStats.Select(s => s.ClubName).FirstOrDefault(n => !string.IsNullOrEmpty(n));
-
-        var players = teamStats
-            .Select(s =>
-            {
-                rosters.TryGetValue($"{teamId}|{s.RowKey}", out var roster);
-                if (roster is null)
-                {
-                    _logger.LogWarning(
-                        "Player {PlayerId} has a stat row but no Players entry for team {TeamId} in match {MatchId}",
-                        s.RowKey, teamId, matchId);
-                }
-                return new MatchPlayerLine(
-                    PlayerId: s.RowKey,
-                    Name: roster?.Name,
-                    JerseyNumber: roster?.JerseyNumber,
-                    Position: roster?.Position,
-                    Goals: s.Goals,
-                    YellowCards: s.YellowCards,
-                    TwoMinuteSuspensions: s.TwoMinuteSuspensions,
-                    RedCards: s.RedCards);
-            })
-            .OrderBy(p => int.TryParse(p.JerseyNumber, out var n) ? n : int.MaxValue)
-            .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var clubName = teamNames.TryGetValue(teamId, out var name) ? name : null;
 
         // Floor at 0: corrupt source data where halftime > final must not leak a negative half.
         var score = new LineScore(halftimeScore, Math.Max(0, finalScore - halftimeScore), finalScore);
 
-        return new MatchTeam(teamId, clubId, clubName, score, players);
+        return new MatchTeamInfo(teamId, clubId, clubName, score);
     }
 }
