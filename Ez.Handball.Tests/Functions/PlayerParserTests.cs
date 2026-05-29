@@ -1,18 +1,19 @@
 using System.Text.Json;
-using Ez.Handball.Ingestion.Functions;
 using Ez.Handball.Ingestion.Models;
+using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
 namespace Ez.Handball.Tests.Functions;
 
-public class ParsePlayersFunctionTests
+public class PlayerParserTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
 
-    private ParsePlayersFunction CreateSut() => new(_tableWriter.Object);
+    private PlayerParser CreateSut() => new(_tableWriter.Object, NullLogger<PlayerParser>.Instance);
 
     private static string BuildPlayerStatsJson(IEnumerable<PlayerStatDto> players)
     {
@@ -36,7 +37,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_HappyPath_UpsertsPlayerAndPlayerStats()
+    public async Task ParseAsync_HappyPath_UpsertsPlayerAndPlayerStats()
     {
         // Arrange
         const string matchId = "5001";
@@ -78,7 +79,7 @@ public class ParsePlayersFunctionTests
         var blobContent = BuildPlayerStatsJson(new[] { player });
 
         // Act
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
         // Assert — PlayerEntity upsert
         _tableWriter.Verify(t => t.UpsertAsync("Players",
@@ -109,7 +110,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_AwayClubResolution_UsesAwayTeamId()
+    public async Task ParseAsync_AwayClubResolution_UsesAwayTeamId()
     {
         // Arrange
         const string matchId = "5001";
@@ -152,7 +153,7 @@ public class ParsePlayersFunctionTests
         var blobContent = BuildPlayerStatsJson(new[] { player });
 
         // Act
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
         // Assert — teamId resolves to away team
         _tableWriter.Verify(t => t.UpsertAsync("Players",
@@ -178,7 +179,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_StaffEntry_IsFiltered_NoUpserts()
+    public async Task ParseAsync_StaffEntry_IsFiltered_NoUpserts()
     {
         // Arrange
         const string matchId = "5001";
@@ -203,7 +204,7 @@ public class ParsePlayersFunctionTests
         var blobContent = BuildPlayerStatsJson(new[] { staff });
 
         // Act
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
         // Assert — nothing upserted
         _tableWriter.Verify(t => t.UpsertAsync(
@@ -218,7 +219,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_MatchNotFound_ThrowsToRetry_AndUpsertsNothing()
+    public async Task ParseAsync_MatchNotFound_ThrowsToRetry_AndUpsertsNothing()
     {
         // Arrange
         const string matchId = "9999";
@@ -241,7 +242,7 @@ public class ParsePlayersFunctionTests
         // Act — ParseMatch may not have completed yet, so the function throws
         // to make the blob trigger retry rather than silently dropping the data.
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CreateSut().ProcessAsync(blobContent, matchId, clubId));
+            () => CreateSut().ParseAsync(blobContent, matchId, clubId));
 
         // Assert — nothing upserted when match lookup fails
         _tableWriter.Verify(t => t.UpsertAsync(
@@ -256,7 +257,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_ClubLookupReturnsNull_WritesNullClubName_AndProceeds()
+    public async Task ParseAsync_ClubLookupReturnsNull_WritesNullClubName_AndProceeds()
     {
         // Arrange
         const string matchId = "5001";
@@ -285,7 +286,7 @@ public class ParsePlayersFunctionTests
         var blobContent = BuildPlayerStatsJson(new[] { player });
 
         // Act — must not throw
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
         // Assert — PlayerEntity still written, ClubName is null
         _tableWriter.Verify(t => t.UpsertAsync("Players",
@@ -304,7 +305,7 @@ public class ParsePlayersFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_TournamentLookupReturnsEmpty_WritesEmptySeason_AndProceeds()
+    public async Task ParseAsync_TournamentLookupReturnsEmpty_WritesEmptySeason_AndProceeds()
     {
         // Arrange
         const string matchId = "5001";
@@ -337,7 +338,7 @@ public class ParsePlayersFunctionTests
         var blobContent = BuildPlayerStatsJson(new[] { player });
 
         // Act — must not throw
-        await CreateSut().ProcessAsync(blobContent, matchId, clubId);
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
         // Assert — PlayerStat still written, TournamentId from match, Season empty
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",

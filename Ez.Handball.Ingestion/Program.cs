@@ -37,6 +37,7 @@ internal static class Program
                 services.AddSingleton(_ => new TableServiceClient(storageConnection));
                 services.AddSingleton<ITableWriter, TableWriter>();
                 services.AddSingleton<IMatchParser, MatchParser>();
+                services.AddSingleton<IPlayerParser, PlayerParser>();
             })
             .Build();
 
