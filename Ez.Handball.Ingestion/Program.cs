@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,8 @@ internal static class Program
 
                 services.AddSingleton(_ => new TableServiceClient(storageConnection));
                 services.AddSingleton<ITableWriter, TableWriter>();
+                services.AddSingleton<IMatchParser, MatchParser>();
+                services.AddSingleton<IPlayerParser, PlayerParser>();
             })
             .Build();
 

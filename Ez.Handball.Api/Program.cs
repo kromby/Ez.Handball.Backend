@@ -35,6 +35,7 @@ builder.Services.AddTableStorageInfrastructure(storageConnection);
 builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
+builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 
 var app = builder.Build();
 
@@ -95,6 +96,23 @@ app.MapGet("/api/players/{playerId}/history", async (
             totals   = f.History.Totals
         }),
         _                                     => Results.Problem()
+    };
+});
+
+app.MapGet("/api/matches/{matchId}", async (
+    string matchId,
+    IGetMatchUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(matchId))
+        return Results.BadRequest(new { error = "invalid_match_id" });
+
+    var result = await uc.ExecuteAsync(matchId, ct);
+    return result switch
+    {
+        GetMatchResult.NotFound       => Results.NotFound(new { error = "match_not_found" }),
+        GetMatchResult.Found f        => Results.Ok(f.Match),
+        _                             => Results.Problem()
     };
 });
 

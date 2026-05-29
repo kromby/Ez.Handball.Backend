@@ -16,6 +16,8 @@ public static class InfrastructureRegistration
         services.AddScoped<IPlayerRepository, TablePlayerRepository>();
         services.AddScoped<IPlayerStatsRepository, TablePlayerStatsRepository>();
         services.AddScoped<IPlayerHistoryRepository, TablePlayerHistoryRepository>();
+        services.AddScoped<IMatchRepository, TableMatchRepository>();
+        services.AddScoped<IMatchPlayerLinesRepository, TableMatchPlayerLinesRepository>();
         return services;
     }
 }
