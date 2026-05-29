@@ -1,18 +1,19 @@
 using System.Text.Json;
-using Ez.Handball.Ingestion.Functions;
 using Ez.Handball.Ingestion.Models;
+using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
 namespace Ez.Handball.Tests.Functions;
 
-public class ParseMatchFunctionTests
+public class MatchParserTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
 
-    private ParseMatchFunction CreateSut() => new(_tableWriter.Object);
+    private MatchParser CreateSut() => new(_tableWriter.Object, NullLogger<MatchParser>.Instance);
 
     private static string BuildMatchDetailsJson(
         string tournamentId = "8444",
@@ -44,7 +45,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_HappyPath_UpsertsClubsTeamsAndMatch()
+    public async Task ParseAsync_HappyPath_UpsertsClubsTeamsAndMatch()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -69,7 +70,7 @@ public class ParseMatchFunctionTests
             gamesResultHome: "28",
             gamesResultGuest: "25");
 
-        await CreateSut().ProcessAsync(blobContent, "5001");
+        await CreateSut().ParseAsync(blobContent, "5001");
 
         // Clubs upserted
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
@@ -111,7 +112,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_KvennaTournament_UsesKvennaSuffix()
+    public async Task ParseAsync_KvennaTournament_UsesKvennaSuffix()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -131,7 +132,7 @@ public class ParseMatchFunctionTests
             clubHomeId: "385",
             clubGuestId: "390");
 
-        await CreateSut().ProcessAsync(blobContent, "6001");
+        await CreateSut().ParseAsync(blobContent, "6001");
 
         _tableWriter.Verify(t => t.UpsertAsync("Teams",
             It.Is<TeamEntity>(e => e.RowKey == "385-kvenna" && e.Gender == "kvenna"),
@@ -145,7 +146,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_ClubNames_AreCorrectlyPassedToClubEntity()
+    public async Task ParseAsync_ClubNames_AreCorrectlyPassedToClubEntity()
     {
         var tournamentEntity = new TournamentEntity
         {
@@ -165,7 +166,7 @@ public class ParseMatchFunctionTests
             clubGuestId: "200",
             guestClubName: "Haukar");
 
-        await CreateSut().ProcessAsync(blobContent, "7001");
+        await CreateSut().ParseAsync(blobContent, "7001");
 
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.RowKey == "100" && e.Name == "Stjarnan"),
@@ -176,7 +177,7 @@ public class ParseMatchFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_TournamentNotFound_DoesNotUpsertAnyEntities()
+    public async Task ParseAsync_TournamentNotFound_DoesNotUpsertAnyEntities()
     {
         _tableWriter
             .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '9999'", default))
@@ -184,7 +185,7 @@ public class ParseMatchFunctionTests
 
         var blobContent = BuildMatchDetailsJson(tournamentId: "9999");
 
-        await CreateSut().ProcessAsync(blobContent, "8001");
+        await CreateSut().ParseAsync(blobContent, "8001");
 
         _tableWriter.Verify(t => t.UpsertAsync(
             It.IsAny<string>(),
