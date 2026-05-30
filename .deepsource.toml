@@ -1,0 +1,17 @@
+version = 1
+
+exclude_patterns = [
+  "**/bin/**",
+  "**/obj/**",
+]
+
+test_patterns = [
+  "Ez.Handball.Tests/**",
+]
+
+[[analyzers]]
+name = "csharp"
+enabled = true
+
+  [analyzers.meta]
+  cyclomatic_complexity_threshold = "medium"
