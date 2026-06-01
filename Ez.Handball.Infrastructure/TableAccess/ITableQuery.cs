@@ -4,6 +4,6 @@ namespace Ez.Handball.Infrastructure.TableAccess;
 
 public interface ITableQuery
 {
-    IAsyncEnumerable<T> QueryAsync<T>(string tableName, string filter, CancellationToken ct = default)
+    IAsyncEnumerable<T> QueryAsync<T>(string tableName, string? filter, CancellationToken ct = default)
         where T : class, ITableEntity, new();
 }
