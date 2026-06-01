@@ -125,6 +125,8 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     var query = new LeaderboardQuery(parsedMetric, season, tournamentId, parsedGender);
     var result = await uc.ExecuteAsync(query, off, lim, ct);
     return Results.Ok(result);
+});
+
 app.MapGet("/api/matches/{matchId}", async (
     string matchId,
     IGetMatchUseCase uc,
