@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ez.Handball.Domain\Ez.Handball.Domain.csproj" />
+    <ProjectReference Include="..\Ez.Handball.Shared\Ez.Handball.Shared.csproj" />
   </ItemGroup>
 
 </Project>

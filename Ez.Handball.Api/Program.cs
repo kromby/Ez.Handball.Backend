@@ -1,7 +1,14 @@
+using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Infrastructure;
+using Ez.Handball.Infrastructure.Security;
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,17 +40,96 @@ var storageConnection = builder.Configuration["Storage:ConnectionString"]
 
 builder.Services.AddTableStorageInfrastructure(storageConnection);
 
+builder.Services.AddAuthInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+// Configure JwtBearer from the DI-registered JwtSettings (the same instance the token
+// issuer uses) so the validating key can never diverge from the signing key. Reading the
+// key eagerly from builder.Configuration here would capture a stale value if a later config
+// source (e.g. WebApplicationFactory's in-memory overrides) is layered after this point,
+// producing IDX10511 signature-validation failures against freshly issued tokens.
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<JwtSettings>((options, jwt) =>
+    {
+        options.MapInboundClaims = false; // keep "sub" as "sub" for ClaimsPrincipal.UserId()
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwt.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwt.SigningKey)) { KeyId = "ezhb-hs256" }, // must match JwtTokenService.SigningKeyId
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+builder.Services.AddAuthorization();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Per-IP fixed windows. Per-email partitioning (spec) is deferred: the limiter runs
+    // before model binding, so the request body isn't available here yet.
+    // Limits are resolved at request time from DI config so later config sources
+    // (e.g. WebApplicationFactory in-memory overrides) take effect.
+    options.AddPolicy("auth-global", httpContext =>
+    {
+        var cfg = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var permit = cfg.GetValue("Auth:RateLimit:PermitLimit", 20);
+        var window = cfg.GetValue("Auth:RateLimit:WindowSeconds", 60);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permit,
+                Window = TimeSpan.FromSeconds(window)
+            });
+    });
+
+    options.AddPolicy("auth-sensitive", httpContext =>
+    {
+        var cfg = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var permit = cfg.GetValue("Auth:RateLimit:SensitivePermitLimit", 5);
+        var window = cfg.GetValue("Auth:RateLimit:WindowSeconds", 60);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permit,
+                Window = TimeSpan.FromSeconds(window)
+            });
+    });
+});
+
 builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
+builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
+builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
+builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
+builder.Services.AddScoped<ILogoutUseCase, LogoutUseCase>();
+builder.Services.AddScoped<IVerifyEmailUseCase, VerifyEmailUseCase>();
+builder.Services.AddScoped<IRequestPasswordResetUseCase, RequestPasswordResetUseCase>();
+builder.Services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
+builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
+builder.Services.AddScoped<IResendVerificationUseCase, ResendVerificationUseCase>();
 
 var app = builder.Build();
 
 app.UseMiddleware<ErrorJsonMiddleware>();
 app.UseHttpLogging();
 app.UseCors(CorsPolicy);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/api/players/{playerId}", async (
     string playerId,
@@ -143,6 +229,8 @@ app.MapGet("/api/matches/{matchId}", async (
         _                             => Results.Problem()
     };
 });
+
+app.MapAuthEndpoints();
 
 app.Run();
 
