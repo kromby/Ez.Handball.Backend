@@ -1,3 +1,4 @@
+using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
@@ -212,6 +213,8 @@ app.MapGet("/api/matches/{matchId}", async (
         _                             => Results.Problem()
     };
 });
+
+app.MapAuthEndpoints();
 
 app.Run();
 
