@@ -2,6 +2,11 @@ using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Infrastructure;
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,17 +38,80 @@ var storageConnection = builder.Configuration["Storage:ConnectionString"]
 
 builder.Services.AddTableStorageInfrastructure(storageConnection);
 
+builder.Services.AddAuthInfrastructure(builder.Configuration);
+
+var jwtSection = builder.Configuration.GetSection("Jwt");
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false; // keep "sub" as "sub" for ClaimsPrincipal.UserId()
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSection["Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSection["SigningKey"]!)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+builder.Services.AddAuthorization();
+
+var permitLimit = builder.Configuration.GetValue("Auth:RateLimit:PermitLimit", 20);
+var windowSeconds = builder.Configuration.GetValue("Auth:RateLimit:WindowSeconds", 60);
+var sensitiveLimit = builder.Configuration.GetValue("Auth:RateLimit:SensitivePermitLimit", 5);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Per-IP fixed windows. Per-email partitioning (spec) is deferred: the limiter runs
+    // before model binding, so the request body isn't available here yet.
+    options.AddPolicy("auth-global", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds)
+            }));
+
+    options.AddPolicy("auth-sensitive", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = sensitiveLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds)
+            }));
+});
+
 builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
+builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
+builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
+builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
+builder.Services.AddScoped<ILogoutUseCase, LogoutUseCase>();
+builder.Services.AddScoped<IVerifyEmailUseCase, VerifyEmailUseCase>();
+builder.Services.AddScoped<IRequestPasswordResetUseCase, RequestPasswordResetUseCase>();
+builder.Services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
+builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
 
 var app = builder.Build();
 
 app.UseMiddleware<ErrorJsonMiddleware>();
 app.UseHttpLogging();
 app.UseCors(CorsPolicy);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/api/players/{playerId}", async (
     string playerId,
