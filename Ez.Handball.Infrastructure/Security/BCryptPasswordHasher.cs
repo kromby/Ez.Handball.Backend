@@ -6,6 +6,9 @@ internal sealed class BCryptPasswordHasher : IPasswordHasher
 {
     private const int WorkFactor = 12;
 
+    // Computed once at startup; same work factor as real hashes so the verify cost matches.
+    private static readonly string DummyHash = BCrypt.Net.BCrypt.HashPassword("not-a-real-password", WorkFactor);
+
     public string Hash(string password) =>
         BCrypt.Net.BCrypt.HashPassword(password, WorkFactor);
 
@@ -20,4 +23,6 @@ internal sealed class BCryptPasswordHasher : IPasswordHasher
             return false; // stored hash malformed → treat as non-match, never throw
         }
     }
+
+    public bool VerifyDummy(string password) => Verify(password, DummyHash);
 }

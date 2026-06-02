@@ -86,6 +86,13 @@ public class JwtTokenServiceTests
     }
 
     [Fact]
+    public void Constructor_ShortSigningKey_Throws()
+    {
+        var bad = Settings with { SigningKey = "too-short" };
+        Assert.Throws<ArgumentException>(() => new JwtTokenService(bad, () => Now));
+    }
+
+    [Fact]
     public void StoredHashesAreRowKeySafeHex()
     {
         var issued = CreateSut().CreateRefreshToken("u-123");

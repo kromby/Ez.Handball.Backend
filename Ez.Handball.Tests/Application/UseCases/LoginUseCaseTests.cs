@@ -52,6 +52,7 @@ public class LoginUseCaseTests
         var result = await CreateSut().ExecuteAsync(new LoginCommand("x@y.is", "whatever8"), CancellationToken.None);
 
         Assert.IsType<LoginResult.InvalidCredentials>(result);
+        _hasher.Verify(h => h.VerifyDummy(It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -64,5 +65,6 @@ public class LoginUseCaseTests
 
         Assert.IsType<LoginResult.InvalidCredentials>(result);
         _users.Verify(u => u.UpdateAsync(It.IsAny<UserEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+        _hasher.Verify(h => h.VerifyDummy(It.IsAny<string>()), Times.Never);
     }
 }

@@ -36,7 +36,11 @@ public sealed class LoginUseCase : ILoginUseCase
     {
         var email = AuthValidation.NormalizeEmail(cmd.Email);
         var user = await _users.GetByEmailAsync(email, ct);
-        if (user is null) return new LoginResult.InvalidCredentials();
+        if (user is null)
+        {
+            _hasher.VerifyDummy(cmd.Password); // equalize timing vs the real verify path (no enumeration)
+            return new LoginResult.InvalidCredentials();
+        }
         if (!_hasher.Verify(cmd.Password, user.PasswordHash)) return new LoginResult.InvalidCredentials();
 
         var now = _now();

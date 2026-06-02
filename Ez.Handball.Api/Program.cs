@@ -40,7 +40,7 @@ var storageConnection = builder.Configuration["Storage:ConnectionString"]
 
 builder.Services.AddTableStorageInfrastructure(storageConnection);
 
-builder.Services.AddAuthInfrastructure(builder.Configuration);
+builder.Services.AddAuthInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

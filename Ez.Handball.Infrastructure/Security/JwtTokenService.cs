@@ -27,7 +27,10 @@ internal sealed class JwtTokenService : ITokenService
     {
         _settings = settings;
         _now = now;
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey)) { KeyId = SigningKeyId };
+        var keyBytes = Encoding.UTF8.GetBytes(settings.SigningKey);
+        if (keyBytes.Length < 32)
+            throw new ArgumentException("JWT signing key must be at least 256 bits (32 bytes) for HS256.", nameof(settings));
+        var key = new SymmetricSecurityKey(keyBytes) { KeyId = SigningKeyId };
         _credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
@@ -79,7 +82,7 @@ internal sealed class JwtTokenService : ITokenService
             secretHash = HashBytes(secret);
             return true;
         }
-        catch (FormatException) { return false; }
+        catch (Exception ex) when (ex is FormatException or ArgumentException) { return false; }
     }
 
     public IssuedToken CreateEmailToken()
@@ -100,7 +103,7 @@ internal sealed class JwtTokenService : ITokenService
             tokenHash = HashBytes(secret);
             return true;
         }
-        catch (FormatException) { return false; }
+        catch (Exception ex) when (ex is FormatException or ArgumentException) { return false; }
     }
 
     private static string HashBytes(byte[] secret) =>

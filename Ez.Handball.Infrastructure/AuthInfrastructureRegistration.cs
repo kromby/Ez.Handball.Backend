@@ -11,7 +11,7 @@ public static class AuthInfrastructureRegistration
 {
     // Sibling to AddTableStorageInfrastructure. Assumes TableServiceClient is already registered.
     public static IServiceCollection AddAuthInfrastructure(
-        this IServiceCollection services, IConfiguration config)
+        this IServiceCollection services, IConfiguration config, bool isDevelopment)
     {
         var jwt = new JwtSettings(
             SigningKey: config["Jwt:SigningKey"] ?? throw new InvalidOperationException("Jwt:SigningKey is required"),
@@ -35,7 +35,10 @@ public static class AuthInfrastructureRegistration
 
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
-        services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+        if (isDevelopment)
+            services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+        else
+            services.AddSingleton<IEmailSender, NoopEmailSender>();
 
         return services;
     }

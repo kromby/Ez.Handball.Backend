@@ -26,4 +26,8 @@ public class BCryptPasswordHasherTests
     {
         Assert.NotEqual(_sut.Hash("hunter2hunter2"), _sut.Hash("hunter2hunter2"));
     }
+
+    [Fact]
+    public void VerifyDummy_AlwaysReturnsFalse_AndDoesNotThrow()
+        => Assert.False(_sut.VerifyDummy("anything"));
 }
