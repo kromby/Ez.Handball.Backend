@@ -13,4 +13,8 @@ public class ClubEntity : ITableEntity
     public ETag ETag { get; set; }
 
     public string Name { get; set; } = string.Empty;
+
+    // Out-of-band club logo URL. Populated outside the ingestion pipeline; MatchParser
+    // preserves it via Merge upserts. Surfaced as Club.LogoUrl.
+    public string? LogoSrc { get; set; }
 }

@@ -4,7 +4,8 @@ namespace Ez.Handball.Ingestion.Services;
 
 public interface ITableWriter
 {
-    Task UpsertAsync<T>(string tableName, T entity, CancellationToken ct = default)
+    Task UpsertAsync<T>(string tableName, T entity, CancellationToken ct = default,
+        TableUpdateMode mode = TableUpdateMode.Replace)
         where T : ITableEntity;
 
     Task<T?> GetAsync<T>(string tableName, string partitionKey, string rowKey, CancellationToken ct = default)

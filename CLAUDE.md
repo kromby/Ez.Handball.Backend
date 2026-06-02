@@ -75,7 +75,7 @@ Blobs are the source of truth — tables can always be rebuilt from them.
 
 - **IHsiApiClient / HsiApiClient** — Wraps the three hsi.is API endpoints. Must set a browser-style Accept header on all requests; the API returns HTTP 406 for `application/json`.
 - **IBlobArchiver / BlobArchiver** — Operates within the configured container (`raw`). Paths passed to it are relative to the container root (e.g. `matches/123/details.json`, not `raw/matches/...`).
-- **ITableWriter / TableWriter** — Generic upsert/get/query over `TableServiceClient`. All writes use `TableUpdateMode.Replace`.
+- **ITableWriter / TableWriter** — Generic upsert/get/query over `TableServiceClient`. `UpsertAsync` defaults to `TableUpdateMode.Replace`; pass `mode: TableUpdateMode.Merge` to preserve columns the writer doesn't set. The `Clubs` upserts in `MatchParser` use `Merge` so the out-of-band `LogoSrc` survives re-parses; all other writes use `Replace`.
 
 ### Key hsi.is API facts
 

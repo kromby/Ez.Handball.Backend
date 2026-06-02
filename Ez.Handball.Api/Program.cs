@@ -112,6 +112,7 @@ builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
+builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -228,6 +229,14 @@ app.MapGet("/api/matches/{matchId}", async (
         GetMatchResult.Found f        => Results.Ok(f.Match),
         _                             => Results.Problem()
     };
+});
+
+app.MapGet("/api/clubs", async (
+    IGetClubsUseCase uc,
+    CancellationToken ct) =>
+{
+    var clubs = await uc.ExecuteAsync(ct);
+    return Results.Ok(clubs);
 });
 
 app.MapAuthEndpoints();

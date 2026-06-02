@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -85,14 +86,14 @@ public class MatchParser : IMatchParser
             PartitionKey = "club",
             RowKey = homeClubId,
             Name = homeClubName
-        }, ct);
+        }, ct, TableUpdateMode.Merge);
 
         await _tableWriter.UpsertAsync("Clubs", new ClubEntity
         {
             PartitionKey = "club",
             RowKey = awayClubId,
             Name = awayClubName
-        }, ct);
+        }, ct, TableUpdateMode.Merge);
 
         await _tableWriter.UpsertAsync("Teams", new TeamEntity
         {
