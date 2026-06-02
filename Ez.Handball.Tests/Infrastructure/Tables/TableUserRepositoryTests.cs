@@ -6,6 +6,7 @@ using Ez.Handball.Shared.Entities;
 
 namespace Ez.Handball.Tests.Infrastructure.Tables;
 
+[Collection("Azurite")]
 public class TableUserRepositoryTests : IAsyncLifetime
 {
     private const string ConnectionString = "UseDevelopmentStorage=true";

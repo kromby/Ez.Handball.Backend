@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Ez.Handball.Tests.Api.Endpoints;
 
+[Collection("Azurite")]
 public class AuthRateLimitTests : IClassFixture<AuthRateLimitTests.Factory>
 {
     public class Factory : WebApplicationFactory<Program>

@@ -5,6 +5,7 @@ using Ez.Handball.Shared.Entities;
 
 namespace Ez.Handball.Tests.Infrastructure.Tables;
 
+[Collection("Azurite")]
 public class TableEmailTokenRepositoryTests : IAsyncLifetime
 {
     private readonly TableServiceClient _client = new("UseDevelopmentStorage=true");

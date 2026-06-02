@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Ez.Handball.Tests.Api.Endpoints;
 
+[Collection("Azurite")]
 public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyncLifetime
 {
     public sealed class StubEmailSender : IEmailSender
