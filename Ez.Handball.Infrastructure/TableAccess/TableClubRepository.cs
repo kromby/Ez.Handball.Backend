@@ -1,3 +1,4 @@
+using System.Globalization;
 using Azure;
 using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
@@ -41,8 +42,10 @@ internal sealed class TableClubRepository : IClubRepository
             clubs.Add(new Club(c.RowKey, c.Name, logoUrl));
         }
 
+        // Club names are Icelandic; order by is-IS collation so letters like Þ/Æ/Ö
+        // land in their Icelandic alphabetical positions, not by Unicode code point.
         return clubs
-            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c.Name, StringComparer.Create(CultureInfo.GetCultureInfo("is-IS"), ignoreCase: true))
             .ToList();
     }
 }

@@ -43,6 +43,25 @@ public class TableClubRepositoryTests
     }
 
     [Fact]
+    public async Task ListAsync_OrdersByIcelandicCollation()
+    {
+        // Icelandic alphabet places Þ, Æ, Ö after Z (in that order). Ordinal would
+        // instead give Æ, Ö, Þ by code point — this asserts the culture-aware order.
+        SetupClubs(
+            Club("4", "Ægir"),
+            Club("1", "Akureyri"),
+            Club("3", "Þór"),
+            Club("2", "Valur"),
+            Club("5", "Ölver"));
+
+        var result = await CreateSut().ListAsync(default);
+
+        Assert.Equal(
+            new[] { "Akureyri", "Valur", "Þór", "Ægir", "Ölver" },
+            result.Select(c => c.Name).ToArray());
+    }
+
+    [Fact]
     public async Task ListAsync_MapsLogoSrcToLogoUrl()
     {
         SetupClubs(Club("385", "KR", "https://logo/kr.png"));
