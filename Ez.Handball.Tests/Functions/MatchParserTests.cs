@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
@@ -83,10 +84,10 @@ public class MatchParserTests
         // Clubs upserted
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.PartitionKey == "club" && e.RowKey == "385" && e.Name == "KR"),
-            default), Times.Once);
+            default, TableUpdateMode.Merge), Times.Once);
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.PartitionKey == "club" && e.RowKey == "390" && e.Name == "Breiðablik"),
-            default), Times.Once);
+            default, TableUpdateMode.Merge), Times.Once);
 
         // Teams upserted
         _tableWriter.Verify(t => t.UpsertAsync("Teams",
@@ -178,10 +179,10 @@ public class MatchParserTests
 
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.RowKey == "100" && e.Name == "Stjarnan"),
-            default), Times.Once);
+            default, TableUpdateMode.Merge), Times.Once);
         _tableWriter.Verify(t => t.UpsertAsync("Clubs",
             It.Is<ClubEntity>(e => e.RowKey == "200" && e.Name == "Haukar"),
-            default), Times.Once);
+            default, TableUpdateMode.Merge), Times.Once);
     }
 
     [Fact]

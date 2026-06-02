@@ -12,12 +12,13 @@ public class TableWriter : ITableWriter
         _serviceClient = serviceClient;
     }
 
-    public async Task UpsertAsync<T>(string tableName, T entity, CancellationToken ct = default)
+    public async Task UpsertAsync<T>(string tableName, T entity, CancellationToken ct = default,
+        TableUpdateMode mode = TableUpdateMode.Replace)
         where T : ITableEntity
     {
         var table = _serviceClient.GetTableClient(tableName);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
-        await table.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);
+        await table.UpsertEntityAsync(entity, mode, ct);
     }
 
     public async Task<T?> GetAsync<T>(string tableName, string partitionKey, string rowKey, CancellationToken ct = default)

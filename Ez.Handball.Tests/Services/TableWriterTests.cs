@@ -86,6 +86,39 @@ public class TableWriterTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UpsertAsync_MergeMode_PreservesUnsetProperties()
+    {
+        const string mergeTable = "TestMergeClubs";
+        var serviceClient = new TableServiceClient(ConnectionString);
+        var writer = new TableWriter(serviceClient);
+        var tableClient = serviceClient.GetTableClient(mergeTable);
+        await tableClient.CreateIfNotExistsAsync();
+        try
+        {
+            // Seed a club carrying an out-of-band LogoSrc.
+            await writer.UpsertAsync(mergeTable, new ClubEntity
+            {
+                PartitionKey = "club", RowKey = "385", Name = "KR", LogoSrc = "https://logo/kr.png"
+            });
+
+            // Re-write only Name with Merge (LogoSrc left null, exactly as MatchParser does).
+            await writer.UpsertAsync(mergeTable, new ClubEntity
+            {
+                PartitionKey = "club", RowKey = "385", Name = "KR Updated"
+            }, mode: TableUpdateMode.Merge);
+
+            var result = await writer.GetAsync<ClubEntity>(mergeTable, "club", "385");
+            Assert.NotNull(result);
+            Assert.Equal("KR Updated", result!.Name);
+            Assert.Equal("https://logo/kr.png", result.LogoSrc);
+        }
+        finally
+        {
+            await tableClient.DeleteAsync();
+        }
+    }
+
+    [Fact]
     public async Task QueryAsync_ReturnsEmpty_WhenTableMissing()
     {
         // Azure table names must be alphanumeric, 3-63 chars, start with a letter — no underscores.
