@@ -12,6 +12,13 @@ internal sealed class JwtTokenService : ITokenService
 {
     private const int SecretBytes = 32; // 256 bits
 
+    /// <summary>
+    /// Stable key id stamped onto issued tokens so the JsonWebTokenHandler used by the
+    /// JwtBearer middleware can resolve the signing key (avoids IDX10517 "kid is missing").
+    /// Must match the KeyId set on the validating IssuerSigningKey in Program.cs.
+    /// </summary>
+    public const string SigningKeyId = "ezhb-hs256";
+
     private readonly JwtSettings _settings;
     private readonly Func<DateTimeOffset> _now;
     private readonly SigningCredentials _credentials;
@@ -20,7 +27,7 @@ internal sealed class JwtTokenService : ITokenService
     {
         _settings = settings;
         _now = now;
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey)) { KeyId = SigningKeyId };
         _credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
