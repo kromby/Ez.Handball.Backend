@@ -103,6 +103,7 @@ builder.Services.AddScoped<IVerifyEmailUseCase, VerifyEmailUseCase>();
 builder.Services.AddScoped<IRequestPasswordResetUseCase, RequestPasswordResetUseCase>();
 builder.Services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
 builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
+builder.Services.AddScoped<IResendVerificationUseCase, ResendVerificationUseCase>();
 
 var app = builder.Build();
 
