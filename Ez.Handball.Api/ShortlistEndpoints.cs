@@ -9,23 +9,22 @@ public static class ShortlistEndpoints
 
     public static void MapShortlistEndpoints(this WebApplication app)
     {
-        app.MapGet(Base, async (
-            HttpContext http, IGetShortlistUseCase uc, CancellationToken ct) =>
+        var group = app.MapGroup(Base).RequireAuthorization();
+
+        group.MapGet("", async (HttpContext http, IGetShortlistUseCase uc, CancellationToken ct) =>
         {
-            var userId = http.User.UserId();
-            if (string.IsNullOrEmpty(userId))
-                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            var userId = AuthenticatedUserId(http, out var unauthorized);
+            if (userId is null) return unauthorized!;
 
             var view = await uc.ExecuteAsync(userId, ct);
             return Results.Ok(new { items = view.Items, count = view.Count, max = view.Max });
-        }).RequireAuthorization();
+        });
 
-        app.MapPut($"{Base}/{{playerId}}", async (
+        group.MapPut("/{playerId}", async (
             string playerId, HttpContext http, IAddToShortlistUseCase uc, CancellationToken ct) =>
         {
-            var userId = http.User.UserId();
-            if (string.IsNullOrEmpty(userId))
-                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            var userId = AuthenticatedUserId(http, out var unauthorized);
+            if (userId is null) return unauthorized!;
 
             var result = await uc.ExecuteAsync(userId, playerId, ct);
             return result switch
@@ -38,17 +37,29 @@ public static class ShortlistEndpoints
                     statusCode: StatusCodes.Status409Conflict),
                 _                                   => Results.Problem()
             };
-        }).RequireAuthorization();
+        });
 
-        app.MapDelete($"{Base}/{{playerId}}", async (
+        group.MapDelete("/{playerId}", async (
             string playerId, HttpContext http, IRemoveFromShortlistUseCase uc, CancellationToken ct) =>
         {
-            var userId = http.User.UserId();
-            if (string.IsNullOrEmpty(userId))
-                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            var userId = AuthenticatedUserId(http, out var unauthorized);
+            if (userId is null) return unauthorized!;
 
             await uc.ExecuteAsync(userId, playerId, ct);
             return Results.NoContent();
-        }).RequireAuthorization();
+        });
+    }
+
+    // Returns the authenticated user id, or null after writing a 401 to `unauthorized`.
+    private static string? AuthenticatedUserId(HttpContext http, out IResult? unauthorized)
+    {
+        var userId = http.User.UserId();
+        if (string.IsNullOrEmpty(userId))
+        {
+            unauthorized = Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            return null;
+        }
+        unauthorized = null;
+        return userId;
     }
 }
