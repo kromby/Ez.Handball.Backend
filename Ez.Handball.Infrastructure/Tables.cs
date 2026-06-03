@@ -12,4 +12,5 @@ public static class Tables
     public const string UserEmailIndex = "UserEmailIndex";
     public const string RefreshTokens = "RefreshTokens";
     public const string EmailTokens = "EmailTokens";
+    public const string Shortlists = "Shortlists";
 }
