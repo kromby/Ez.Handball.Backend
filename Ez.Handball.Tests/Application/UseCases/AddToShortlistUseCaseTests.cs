@@ -85,4 +85,19 @@ public class AddToShortlistUseCaseTests
         Assert.IsType<AddToShortlistResult.Added>(result);
         _shortlist.Verify(r => r.UpsertAsync("u-1", "p-1", Now, null, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task SoftDeletedPlayer_AtCap_ReturnsCapReached_AndDoesNotUpsert()
+    {
+        _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1"));
+        _shortlist.Setup(r => r.GetAsync("u-1", "p-1", It.IsAny<CancellationToken>()))
+                  .ReturnsAsync(new ShortlistEntry("p-1", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(1)));
+        _shortlist.Setup(r => r.CountActiveAsync("u-1", It.IsAny<CancellationToken>())).ReturnsAsync(3);
+
+        var result = await CreateSut(maxSize: 3).ExecuteAsync("u-1", "p-1", CancellationToken.None);
+
+        var cap = Assert.IsType<AddToShortlistResult.CapReached>(result);
+        Assert.Equal(3, cap.Max);
+        _shortlist.Verify(AnyUpsert(), Times.Never);
+    }
 }
