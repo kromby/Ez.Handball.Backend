@@ -9,4 +9,5 @@ public sealed record Player(
     string TeamId,
     string ClubId,
     string? ClubName,
-    string Gender);
+    string Gender,
+    string Position);

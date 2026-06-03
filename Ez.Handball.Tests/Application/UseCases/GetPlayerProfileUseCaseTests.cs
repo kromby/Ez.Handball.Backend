@@ -29,7 +29,8 @@ public class GetPlayerProfileUseCaseTests
         var player = new Player(
             PlayerId: "12345", Name: "Aron Pálmarsson", JerseyNumber: "23",
             DateOfBirth: new DateOnly(1990, 7, 19), Age: 35,
-            TeamId: "385-karlar", ClubId: "385", ClubName: "Stjarnan", Gender: "karlar");
+            TeamId: "385-karlar", ClubId: "385", ClubName: "Stjarnan", Gender: "karlar",
+            Position: "VS");
 
         _players
             .Setup(r => r.GetByIdAsync("12345", It.IsAny<CancellationToken>()))

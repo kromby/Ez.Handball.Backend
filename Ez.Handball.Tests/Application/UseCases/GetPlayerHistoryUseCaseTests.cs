@@ -14,7 +14,7 @@ public class GetPlayerHistoryUseCaseTests
 
     private static Player AnyPlayer(string id) => new(
         PlayerId: id, Name: "X", JerseyNumber: null, DateOfBirth: null, Age: null,
-        TeamId: "385-karlar", ClubId: "385", ClubName: null, Gender: "karlar");
+        TeamId: "385-karlar", ClubId: "385", ClubName: null, Gender: "karlar", Position: "");
 
     [Fact]
     public async Task ExecuteAsync_PlayerMissing_ReturnsNotFound_AndDoesNotCallHistoryRepo()
