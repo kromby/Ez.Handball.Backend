@@ -32,15 +32,7 @@ internal sealed class TableShortlistRepository : IShortlistRepository
     }
 
     public async Task<int> CountActiveAsync(string userId, CancellationToken ct)
-    {
-        var count = 0;
-        await foreach (var e in _query.QueryAsync<ShortlistEntryEntity>(
-                           Tables.Shortlists, $"PartitionKey eq '{ODataFilter.Escape(userId)}'", ct))
-        {
-            if (e.DeletedAt is null) count++; // null filtered in memory — Table Storage omits null props
-        }
-        return count;
-    }
+        => (await ListActiveAsync(userId, ct)).Count;
 
     public async Task UpsertAsync(
         string userId, string playerId, DateTimeOffset createdAt, DateTimeOffset? deletedAt, CancellationToken ct)
