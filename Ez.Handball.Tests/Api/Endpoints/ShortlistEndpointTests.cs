@@ -158,8 +158,10 @@ public class ShortlistEndpointTests : IClassFixture<ShortlistEndpointTests.Facto
     public async Task Add_OverCap_Returns409ShortlistFull()
     {
         var token = await RegisterAndGetTokenAsync();
-        await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/p-1", token));
-        await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/p-2", token));
+        var add1 = await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/p-1", token));
+        var add2 = await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/p-2", token));
+        Assert.Equal(HttpStatusCode.NoContent, add1.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, add2.StatusCode);
 
         var resp = await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/p-3", token));
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
