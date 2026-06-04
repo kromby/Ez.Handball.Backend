@@ -23,6 +23,9 @@ public static class ShortlistEndpoints
         group.MapPut("/{playerId}", async (
             string playerId, HttpContext http, IAddToShortlistUseCase uc, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return Results.BadRequest(new { error = "invalid_player_id" });
+
             var userId = AuthenticatedUserId(http, out var unauthorized);
             if (userId is null) return unauthorized!;
 
@@ -42,6 +45,9 @@ public static class ShortlistEndpoints
         group.MapDelete("/{playerId}", async (
             string playerId, HttpContext http, IRemoveFromShortlistUseCase uc, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return Results.BadRequest(new { error = "invalid_player_id" });
+
             var userId = AuthenticatedUserId(http, out var unauthorized);
             if (userId is null) return unauthorized!;
 

@@ -20,10 +20,11 @@ public class ShortlistEndpointTests : IClassFixture<ShortlistEndpointTests.Facto
         {
             // Program reads Storage:ConnectionString eagerly while the host builder is
             // assembled (to register the TableServiceClient), so the value must come from
-            // a config source present before the host builds. appsettings.Development.json
-            // ships a real Azure connection string; the factory's ConfigureAppConfiguration
-            // in-memory override is layered too late to win that race. Environment variables
-            // are added by WebApplication.CreateBuilder after the JSON files, so they win —
+            // a config source present before the host builds. The local (gitignored,
+            // untracked) appsettings.Development.json points Storage:ConnectionString at a
+            // real Azure account, and the factory's ConfigureAppConfiguration in-memory
+            // override is layered too late to win that race. Environment variables are
+            // added by WebApplication.CreateBuilder after the JSON files, so they win —
             // pinning the app to Azurite for these integration tests.
             Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
 
@@ -152,6 +153,17 @@ public class ShortlistEndpointTests : IClassFixture<ShortlistEndpointTests.Facto
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("player_not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Add_BlankPlayerId_Returns400()
+    {
+        var token = await RegisterAndGetTokenAsync();
+        // "%20" decodes to a whitespace playerId, which the route binds but the boundary rejects.
+        var resp = await _client.SendAsync(Authed(HttpMethod.Put, "/api/users/me/shortlist/%20", token));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_player_id", body.GetProperty("error").GetString());
     }
 
     [Fact]
