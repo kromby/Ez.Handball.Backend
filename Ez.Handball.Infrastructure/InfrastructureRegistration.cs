@@ -19,6 +19,7 @@ public static class InfrastructureRegistration
         services.AddScoped<ILeaderboardRepository, TableLeaderboardRepository>();
         services.AddScoped<IMatchRepository, TableMatchRepository>();
         services.AddScoped<IMatchPlayerLinesRepository, TableMatchPlayerLinesRepository>();
+        services.AddScoped<IShortlistRepository, TableShortlistRepository>();
         return services;
     }
 }

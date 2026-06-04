@@ -1,3 +1,4 @@
+using Ez.Handball.Api;
 using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
@@ -113,6 +114,11 @@ builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
+builder.Services.AddSingleton(new ShortlistSettings(
+    builder.Configuration.GetValue("Shortlist:MaxSize", 20)));
+builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
+builder.Services.AddScoped<IRemoveFromShortlistUseCase, RemoveFromShortlistUseCase>();
+builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -240,6 +246,8 @@ app.MapGet("/api/clubs", async (
 });
 
 app.MapAuthEndpoints();
+
+app.MapShortlistEndpoints();
 
 app.Run();
 

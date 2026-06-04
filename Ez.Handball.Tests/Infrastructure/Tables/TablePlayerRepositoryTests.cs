@@ -57,7 +57,8 @@ public class TablePlayerRepositoryTests
             DateOfBirth = new DateTimeOffset(1990, 7, 19, 0, 0, 0, TimeSpan.Zero),
             Gender = "karlar",
             ClubId = "385",
-            ClubName = "Stjarnan"
+            ClubName = "Stjarnan",
+            Position = "VS"
         });
 
         var sut = CreateSut(today: new DateOnly(2026, 5, 22));
@@ -74,6 +75,7 @@ public class TablePlayerRepositoryTests
         Assert.Equal("karlar", result.Gender);
         Assert.Equal(35, result.Age);
         Assert.Equal(new DateOnly(1990, 7, 19), result.DateOfBirth);
+        Assert.Equal("VS", result.Position);
     }
 
     [Fact]

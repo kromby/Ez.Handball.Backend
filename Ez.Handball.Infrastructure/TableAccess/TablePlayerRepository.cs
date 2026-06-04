@@ -47,7 +47,8 @@ internal sealed class TablePlayerRepository : IPlayerRepository
             TeamId: row.PartitionKey,
             ClubId: row.ClubId,
             ClubName: row.ClubName,
-            Gender: row.Gender);
+            Gender: row.Gender,
+            Position: row.Position);
     }
 
     private static int ComputeAge(DateOnly dob, DateOnly today)
