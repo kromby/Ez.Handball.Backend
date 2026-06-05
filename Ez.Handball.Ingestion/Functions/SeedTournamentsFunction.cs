@@ -44,7 +44,8 @@ public class SeedTournamentsFunction
 
     public async Task<(string Season, int Seeded)> ProcessAsync(string? seasonParam)
     {
-        var season = SeasonLabel.Resolve(seasonParam, DateTime.UtcNow.Year);
+        var startYear = int.TryParse(seasonParam, out var parsed) ? parsed : DateTime.UtcNow.Year;
+        var season = SeasonLabel.Format(startYear);
 
         foreach (var (id, name, gender, division, enabled, priority) in TournamentDefinitions)
         {
@@ -60,6 +61,39 @@ public class SeedTournamentsFunction
             });
         }
 
+        await UpsertSeasonAsync(season, startYear);
+
         return (season, TournamentDefinitions.Count);
+    }
+
+    private async Task UpsertSeasonAsync(string label, int startYear)
+    {
+        var existing = await _tableWriter.QueryAsync<SeasonEntity>("Seasons", "PartitionKey eq 'season'");
+
+        // Newest-season guard: the seeded season becomes current only if it is at
+        // least as new as every OTHER known season (an empty table counts as newest).
+        var maxOtherStartYear = existing
+            .Where(s => s.RowKey != label)
+            .Select(s => s.StartYear)
+            .DefaultIfEmpty(int.MinValue)
+            .Max();
+        var becomesCurrent = startYear >= maxOtherStartYear;
+
+        await _tableWriter.UpsertAsync("Seasons", new SeasonEntity
+        {
+            PartitionKey = "season",
+            RowKey = label,
+            StartYear = startYear,
+            IsCurrent = becomesCurrent
+        });
+
+        if (becomesCurrent)
+        {
+            foreach (var other in existing.Where(s => s.RowKey != label && s.IsCurrent))
+            {
+                other.IsCurrent = false;
+                await _tableWriter.UpsertAsync("Seasons", other);
+            }
+        }
     }
 }
