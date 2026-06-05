@@ -3,6 +3,7 @@ using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
+using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
 using System.Text;
@@ -264,6 +265,8 @@ app.MapGet("/api/tournaments", async (
     return Results.Ok(tournaments);
 });
 
+app.MapGet("/api/genders", () => Results.Ok(Genders.All));
+
 app.MapAuthEndpoints();
 
 app.MapShortlistEndpoints();
@@ -287,12 +290,11 @@ static bool TryNormalizeGender(string? value, out string? gender)
         gender = null;
         return true;
     }
-    switch (value.ToLowerInvariant())
-    {
-        case "karlar": gender = "karlar"; return true;
-        case "kvenna": gender = "kvenna"; return true;
-        default: gender = null; return false;
-    }
+
+    var match = Genders.All.FirstOrDefault(
+        g => string.Equals(g.Value, value, StringComparison.OrdinalIgnoreCase));
+    gender = match?.Value;
+    return match is not null;
 }
 
 public partial class Program { }  // for WebApplicationFactory<Program>
