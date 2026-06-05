@@ -114,6 +114,7 @@ builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
+builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddSingleton(new ShortlistSettings(
     builder.Configuration.GetValue("Shortlist:MaxSize", 20)));
 builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
@@ -243,6 +244,14 @@ app.MapGet("/api/clubs", async (
 {
     var clubs = await uc.ExecuteAsync(ct);
     return Results.Ok(clubs);
+});
+
+app.MapGet("/api/seasons", async (
+    IGetSeasonsUseCase uc,
+    CancellationToken ct) =>
+{
+    var seasons = await uc.ExecuteAsync(ct);
+    return Results.Ok(seasons);
 });
 
 app.MapAuthEndpoints();
