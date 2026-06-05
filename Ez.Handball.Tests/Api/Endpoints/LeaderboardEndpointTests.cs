@@ -162,6 +162,22 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
         Assert.Equal("invalid_gender", body.GetProperty("error").GetString());
     }
 
+    [Fact]
+    public async Task Get_GenderCaseInsensitive_NormalizesToLowercase()
+    {
+        LeaderboardQuery? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<LeaderboardQuery, int, int, CancellationToken>((q, _, _, _) => captured = q)
+            .ReturnsAsync(EmptyLeaderboard());
+
+        var response = await _client.GetAsync("/api/leaderboard?gender=KARLAR");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("karlar", captured!.Gender);
+    }
+
     [Theory]
     [InlineData("/api/leaderboard?offset=-1")]
     [InlineData("/api/leaderboard?limit=0")]

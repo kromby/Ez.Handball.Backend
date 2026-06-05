@@ -290,12 +290,11 @@ static bool TryNormalizeGender(string? value, out string? gender)
         gender = null;
         return true;
     }
-    switch (value.ToLowerInvariant())
-    {
-        case "karlar": gender = "karlar"; return true;
-        case "kvenna": gender = "kvenna"; return true;
-        default: gender = null; return false;
-    }
+
+    var match = Genders.All.FirstOrDefault(
+        g => string.Equals(g.Value, value, StringComparison.OrdinalIgnoreCase));
+    gender = match?.Value;
+    return match is not null;
 }
 
 public partial class Program { }  // for WebApplicationFactory<Program>
