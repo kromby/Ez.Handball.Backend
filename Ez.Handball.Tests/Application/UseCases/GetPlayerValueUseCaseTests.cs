@@ -137,6 +137,23 @@ public class GetPlayerValueUseCaseTests
     }
 
     [Fact]
+    public async Task Manager_WithExplicitRuleSetVersion_IgnoresIt_AndNeverQueriesRuleSets()
+    {
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat> { Stat("2025-26", "8444", 4) });
+
+        var result = await CreateSut().ExecuteAsync(
+            "p1", ValueFlavor.Manager, Ctx(season: "2025-26", ruleSetVersion: 2), default);
+
+        var found = Assert.IsType<GetPlayerValueResult.Found>(result);
+        Assert.Equal("manager-v0", found.Value.Version);
+        // rating = goals + games = 4 + 1 = 5
+        Assert.Equal(5, found.Value.Value);
+        _ruleSets.Verify(
+            r => r.GetAsync(It.IsAny<ValueFlavor>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Manager_NeedsNoRuleSet_AndDoesNotQueryRuleSets()
     {
         _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))

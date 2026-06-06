@@ -53,10 +53,10 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
         var stats = await AggregateAsync(playerId, season, context.TournamentId, ct);
 
         ScoringRuleSet? ruleSet = null;
-        var version = context.RuleSetVersion ?? function.DefaultRuleSetVersion;
-        if (version is int v)
+        if (function.DefaultRuleSetVersion is int defaultVersion)
         {
-            ruleSet = await _ruleSets.GetAsync(flavor, v, ct);
+            var version = context.RuleSetVersion ?? defaultVersion;
+            ruleSet = await _ruleSets.GetAsync(flavor, version, ct);
             if (ruleSet is null) return new GetPlayerValueResult.RuleSetNotFound();
         }
 
