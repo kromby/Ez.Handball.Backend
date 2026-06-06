@@ -1,4 +1,5 @@
 using System.Net;
+using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Azure.Functions.Worker;
@@ -45,7 +46,7 @@ public class SeedScoringRuleSetsFunction
                 PartitionKey = group,
                 RowKey = key,
                 Value = value
-            });
+            }, mode: TableUpdateMode.Replace); // explicit Replace keeps seeding idempotent
         }
 
         return RuleSetDefinitions.Count;

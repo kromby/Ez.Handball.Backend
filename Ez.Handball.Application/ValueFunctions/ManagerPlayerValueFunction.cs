@@ -14,6 +14,10 @@ public sealed class ManagerPlayerValueFunction : IPlayerValueFunction
         double rating = s.Goals + s.Games;
         double marketValue = rating * 1000;
 
+        // Stub component model: unlike FantasyPlayerValueFunction, where each
+        // PlayerValueComponent.Value is a raw stat count, this exposes the derived
+        // market value directly. It will be aligned with Fantasy's breakdown when the
+        // real rating model lands (#20).
         var components = new List<PlayerValueComponent>
         {
             new("marketValue", marketValue, 1, marketValue)
