@@ -22,6 +22,7 @@ public static class InfrastructureRegistration
         services.AddScoped<IShortlistRepository, TableShortlistRepository>();
         services.AddScoped<ISeasonRepository, TableSeasonRepository>();
         services.AddScoped<ITournamentRepository, TableTournamentRepository>();
+        services.AddScoped<IScoringRuleSetRepository, TableScoringRuleSetRepository>();
         return services;
     }
 }

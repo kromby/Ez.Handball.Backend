@@ -14,4 +14,5 @@ public static class Tables
     public const string RefreshTokens = "RefreshTokens";
     public const string EmailTokens = "EmailTokens";
     public const string Shortlists = "Shortlists";
+    public const string Config = "Config";
 }
