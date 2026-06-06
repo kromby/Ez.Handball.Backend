@@ -3,6 +3,7 @@ using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
+using Ez.Handball.Application.ValueFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
@@ -117,6 +118,9 @@ builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
+builder.Services.AddScoped<IGetPlayerValueUseCase, GetPlayerValueUseCase>();
+builder.Services.AddScoped<IPlayerValueFunction, FantasyPlayerValueFunction>();
+builder.Services.AddScoped<IPlayerValueFunction, ManagerPlayerValueFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
     builder.Configuration.GetValue("Shortlist:MaxSize", 20)));
 builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
@@ -193,6 +197,35 @@ app.MapGet("/api/players/{playerId}/history", async (
             history  = f.History.Entries,
             totals   = f.History.Totals
         }),
+        _                                     => Results.Problem()
+    };
+});
+
+app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
+    string playerId,
+    string? flavor,
+    string? season,
+    string? tournamentId,
+    int? ruleSetVersion,
+    string? phase,
+    DateOnly? asOf,
+    IGetPlayerValueUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    if (!TryParseFlavor(flavor, out var parsedFlavor))
+        return Results.BadRequest(new { error = "invalid_flavor" });
+
+    var context = new PlayerValueContext(season, tournamentId, ruleSetVersion, phase, asOf);
+    var result = await uc.ExecuteAsync(playerId, parsedFlavor, context, ct);
+    return result switch
+    {
+        GetPlayerValueResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerValueResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
+        GetPlayerValueResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetPlayerValueResult.Found f          => Results.Ok(f.Value),
         _                                     => Results.Problem()
     };
 });
@@ -281,6 +314,16 @@ static bool TryParseMetric(string? value, out LeaderboardMetric metric)
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
+}
+
+static bool TryParseFlavor(string? value, out ValueFlavor flavor)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        flavor = ValueFlavor.Fantasy;
+        return true;
+    }
+    return Enum.TryParse(value, ignoreCase: true, out flavor) && Enum.IsDefined(flavor);
 }
 
 static bool TryNormalizeGender(string? value, out string? gender)
