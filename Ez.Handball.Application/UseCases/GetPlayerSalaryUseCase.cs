@@ -5,8 +5,8 @@ namespace Ez.Handball.Application.UseCases;
 
 public abstract record GetPlayerSalaryResult
 {
-    public sealed record NotFound : GetPlayerSalaryResult;
-    public sealed record RuleSetNotFound : GetPlayerSalaryResult;
+    public sealed record NotFound : GetPlayerSalaryResult { public static readonly NotFound Instance = new(); }
+    public sealed record RuleSetNotFound : GetPlayerSalaryResult { public static readonly RuleSetNotFound Instance = new(); }
     public sealed record Found(PlayerSalary Salary) : GetPlayerSalaryResult;
 }
 
@@ -33,10 +33,10 @@ public class GetPlayerSalaryUseCase : IGetPlayerSalaryUseCase
         string playerId, int? version, string? season, string? tournamentId, CancellationToken ct)
     {
         var player = await _players.GetByIdAsync(playerId, ct);
-        if (player is null) return new GetPlayerSalaryResult.NotFound();
+        if (player is null) return GetPlayerSalaryResult.NotFound.Instance;
 
         var salary = await _salary.GetSalaryAsync(playerId, version ?? DefaultVersion, season, tournamentId, ct);
-        if (salary is null) return new GetPlayerSalaryResult.RuleSetNotFound();
+        if (salary is null) return GetPlayerSalaryResult.RuleSetNotFound.Instance;
 
         return new GetPlayerSalaryResult.Found(salary);
     }
