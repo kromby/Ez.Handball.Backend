@@ -128,6 +128,7 @@ builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
 builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<FantasyPricing>();
 builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
 builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
 builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
