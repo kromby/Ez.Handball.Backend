@@ -61,7 +61,7 @@ public class TablePlayerStatsRepositoryTests
         SetupTournaments("2025-26", new TournamentEntity
         {
             PartitionKey = "2025-26", RowKey = "8444",
-            Name = "Olís deild karla", Gender = "karlar", Division = "1", Enabled = true, Priority = 10
+            Name = "Olís deild karla", Gender = "karlar", Division = "1", Ingest = true, Priority = 10
         });
 
         var result = await CreateSut().GetByPlayerAsync("12345", default);

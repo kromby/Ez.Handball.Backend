@@ -46,7 +46,7 @@ public class TournamentsEndpointTests : IClassFixture<TournamentsEndpointTests.F
             .Setup(s => s.ExecuteAsync("2025-26", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Tournament>
             {
-                new("8444", "Olís deild karla", "karlar")
+                new("8444", "Olís deild karla", "karlar", TournamentType.League, "olis-karla", "Olís deild karla")
             });
 
         var response = await _client.GetAsync("/api/tournaments?season=2025-26");
@@ -65,12 +65,32 @@ public class TournamentsEndpointTests : IClassFixture<TournamentsEndpointTests.F
     {
         _factory.Uc
             .Setup(s => s.ExecuteAsync(null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Tournament> { new("8444", "Olís deild karla", "karlar") });
+            .ReturnsAsync(new List<Tournament> { new("8444", "Olís deild karla", "karlar", TournamentType.League, "olis-karla", "Olís deild karla") });
 
         var response = await _client.GetAsync("/api/tournaments");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         _factory.Uc.Verify(s => s.ExecuteAsync(null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Get_WithSeason_IncludesTypeAndCompetitionFields()
+    {
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync("2025-26", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Tournament>
+            {
+                new("8427", "Olís deild úrslit karla", "karlar",
+                    TournamentType.Playoffs, "olis-karla", "Olís deild karla")
+            });
+
+        var response = await _client.GetAsync("/api/tournaments?season=2025-26");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var first = (await response.Content.ReadFromJsonAsync<JsonElement>())[0];
+        Assert.Equal("playoffs", first.GetProperty("type").GetString());
+        Assert.Equal("olis-karla", first.GetProperty("competitionId").GetString());
+        Assert.Equal("Olís deild karla", first.GetProperty("competitionName").GetString());
     }
 
     [Fact]

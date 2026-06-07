@@ -118,4 +118,19 @@ public class PlayerValueEndpointTests : IClassFixture<PlayerValueEndpointTests.F
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_rule_set", body.GetProperty("error").GetString());
     }
+
+    [Fact]
+    public async Task Get_InvalidType_Returns400()
+    {
+        var response = await _client.GetAsync("/api/players/p1/value?type=bogus");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_TournamentIdAndCompetitionId_Returns400()
+    {
+        var response = await _client.GetAsync(
+            "/api/players/p1/value?tournamentId=8427&competitionId=olis-karla");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

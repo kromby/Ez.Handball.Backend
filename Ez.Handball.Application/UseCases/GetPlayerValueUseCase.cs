@@ -25,19 +25,22 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
     private readonly IPlayerStatsRepository _stats;
     private readonly ISeasonRepository _seasons;
     private readonly IScoringRuleSetRepository _ruleSets;
+    private readonly ITournamentScopeResolver _scope;
 
     public GetPlayerValueUseCase(
         IEnumerable<IPlayerValueFunction> functions,
         IPlayerRepository players,
         IPlayerStatsRepository stats,
         ISeasonRepository seasons,
-        IScoringRuleSetRepository ruleSets)
+        IScoringRuleSetRepository ruleSets,
+        ITournamentScopeResolver scope)
     {
         _functions = functions.ToDictionary(f => f.Flavor);
         _players = players;
         _stats = stats;
         _seasons = seasons;
         _ruleSets = ruleSets;
+        _scope = scope;
     }
 
     public async Task<GetPlayerValueResult> ExecuteAsync(
@@ -50,7 +53,7 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
             return new GetPlayerValueResult.InvalidFlavor();
 
         var season = await ResolveSeasonAsync(context.Season, ct);
-        var stats = await AggregateAsync(playerId, season, context.TournamentId, ct);
+        var stats = await AggregateAsync(playerId, season, context, ct);
 
         ScoringRuleSet? ruleSet = null;
         if (function.DefaultRuleSetVersion is int defaultVersion)
@@ -72,14 +75,17 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
     }
 
     private async Task<AggregatedStats> AggregateAsync(
-        string playerId, string? season, string? tournamentId, CancellationToken ct)
+        string playerId, string? season, PlayerValueContext context, CancellationToken ct)
     {
         if (season is null) return new AggregatedStats(0, 0, 0, 0, 0);
 
+        var ids = await _scope.ResolveTournamentIdsAsync(
+            season, context.TournamentId, context.CompetitionId, context.Type, ct);
+
         var rows = await _stats.GetByPlayerAsync(playerId, ct);
         var scoped = rows.Where(r => r.Season == season);
-        if (!string.IsNullOrWhiteSpace(tournamentId))
-            scoped = scoped.Where(r => r.TournamentId == tournamentId);
+        if (ids is not null)
+            scoped = scoped.Where(r => ids.Contains(r.TournamentId));
 
         var list = scoped.ToList();
         return new AggregatedStats(

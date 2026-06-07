@@ -1,7 +1,9 @@
 using Ez.Handball.Api;
 using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
+using Ez.Handball.Api.Serialization;
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Application.ValueFunctions;
 using Ez.Handball.Domain;
@@ -37,6 +39,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHttpLogging(_ => { });
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new TournamentTypeJsonConverter()));
 
 var storageConnection = builder.Configuration["Storage:ConnectionString"]
     ?? "UseDevelopmentStorage=true";
@@ -118,6 +123,7 @@ builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
+builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
 builder.Services.AddScoped<IGetPlayerValueUseCase, GetPlayerValueUseCase>();
 builder.Services.AddScoped<IPlayerValueFunction, FantasyPlayerValueFunction>();
 builder.Services.AddScoped<IPlayerValueFunction, ManagerPlayerValueFunction>();
@@ -162,15 +168,26 @@ app.MapGet("/api/players/{playerId}", async (
     };
 });
 
-app.MapGet("/api/players/{playerId}/stats", async (
+app.MapGet("/api/players/{playerId}/stats", async Task<IResult> (
     string playerId,
+    string? season,
+    string? tournamentId,
+    string? competitionId,
+    string? type,
     IGetPlayerStatsUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
         return Results.BadRequest(new { error = "invalid_player_id" });
 
-    var result = await uc.ExecuteAsync(playerId, ct);
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
+    var query = new PlayerStatsQuery(season, tournamentId, competitionId, parsedType);
+    var result = await uc.ExecuteAsync(playerId, query, ct);
     return result switch
     {
         GetPlayerStatsResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
@@ -206,8 +223,9 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     string? flavor,
     string? season,
     string? tournamentId,
+    string? competitionId,
     int? ruleSetVersion,
-    string? phase,
+    string? type,
     DateOnly? asOf,
     IGetPlayerValueUseCase uc,
     CancellationToken ct) =>
@@ -218,7 +236,13 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     if (!TryParseFlavor(flavor, out var parsedFlavor))
         return Results.BadRequest(new { error = "invalid_flavor" });
 
-    var context = new PlayerValueContext(season, tournamentId, ruleSetVersion, phase, asOf);
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
+    var context = new PlayerValueContext(season, tournamentId, competitionId, ruleSetVersion, parsedType, asOf);
     var result = await uc.ExecuteAsync(playerId, parsedFlavor, context, ct);
     return result switch
     {
@@ -234,6 +258,8 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     string? metric,
     string? season,
     string? tournamentId,
+    string? competitionId,
+    string? type,
     string? gender,
     int? offset,
     int? limit,
@@ -246,13 +272,20 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     if (!TryNormalizeGender(gender, out var parsedGender))
         return Results.BadRequest(new { error = "invalid_gender" });
 
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
     var off = offset ?? 0;
     var lim = limit ?? 50;
     if (off < 0 || lim < 1 || lim > 200)
         return Results.BadRequest(new { error = "invalid_pagination" });
 
-    var query = new LeaderboardQuery(parsedMetric, season, tournamentId, parsedGender);
-    var result = await uc.ExecuteAsync(query, off, lim, ct);
+    var request = new LeaderboardRequest(
+        parsedMetric, season, tournamentId, competitionId, parsedType, parsedGender);
+    var result = await uc.ExecuteAsync(request, off, lim, ct);
     return Results.Ok(result);
 });
 
@@ -324,6 +357,22 @@ static bool TryParseFlavor(string? value, out ValueFlavor flavor)
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out flavor) && Enum.IsDefined(flavor);
+}
+
+static bool TryParseTournamentType(string? value, out TournamentType? type)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        type = null;
+        return true;
+    }
+    if (TournamentTypes.TryParse(value, out var parsed))
+    {
+        type = parsed;
+        return true;
+    }
+    type = null;
+    return false;
 }
 
 static bool TryNormalizeGender(string? value, out string? gender)

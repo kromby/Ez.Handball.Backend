@@ -15,8 +15,8 @@ public class GetTournamentsUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ExplicitSeason_QueriesThatSeason_WithoutResolvingCurrent()
     {
-        var expected = new List<Tournament> { new("8444", "Olís deild karla", "karlar") };
-        _tournaments.Setup(r => r.ListEnabledBySeasonAsync("2024-25", It.IsAny<CancellationToken>()))
+        var expected = new List<Tournament> { new("8444", "Olís deild karla", "karlar", TournamentType.League, "olis-karla", "Olís deild karla") };
+        _tournaments.Setup(r => r.ListActiveBySeasonAsync("2024-25", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(expected);
 
         var result = await CreateSut().ExecuteAsync("2024-25", CancellationToken.None);
@@ -30,14 +30,14 @@ public class GetTournamentsUseCaseTests
     {
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Season> { new("2024-25", false), new("2025-26", true) });
-        var expected = new List<Tournament> { new("8444", "Olís deild karla", "karlar") };
-        _tournaments.Setup(r => r.ListEnabledBySeasonAsync("2025-26", It.IsAny<CancellationToken>()))
+        var expected = new List<Tournament> { new("8444", "Olís deild karla", "karlar", TournamentType.League, "olis-karla", "Olís deild karla") };
+        _tournaments.Setup(r => r.ListActiveBySeasonAsync("2025-26", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(expected);
 
         var result = await CreateSut().ExecuteAsync(null, CancellationToken.None);
 
         Assert.Same(expected, result);
-        _tournaments.Verify(r => r.ListEnabledBySeasonAsync("2025-26", It.IsAny<CancellationToken>()), Times.Once);
+        _tournaments.Verify(r => r.ListActiveBySeasonAsync("2025-26", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -45,12 +45,12 @@ public class GetTournamentsUseCaseTests
     {
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Season> { new("2025-26", true) });
-        _tournaments.Setup(r => r.ListEnabledBySeasonAsync("2025-26", It.IsAny<CancellationToken>()))
+        _tournaments.Setup(r => r.ListActiveBySeasonAsync("2025-26", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new List<Tournament>());
 
         await CreateSut().ExecuteAsync("   ", CancellationToken.None);
 
-        _tournaments.Verify(r => r.ListEnabledBySeasonAsync("2025-26", It.IsAny<CancellationToken>()), Times.Once);
+        _tournaments.Verify(r => r.ListActiveBySeasonAsync("2025-26", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -63,6 +63,6 @@ public class GetTournamentsUseCaseTests
 
         Assert.Empty(result);
         _tournaments.Verify(
-            r => r.ListEnabledBySeasonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            r => r.ListActiveBySeasonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
