@@ -99,7 +99,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     public async Task GetStats_PlayerNotFound_Returns404()
     {
         _factory.Stats
-            .Setup(s => s.ExecuteAsync("nope", It.IsAny<CancellationToken>()))
+            .Setup(s => s.ExecuteAsync("nope", It.IsAny<PlayerStatsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetPlayerStatsResult.NotFound());
 
         var response = await _client.GetAsync("/api/players/nope/stats");
@@ -108,10 +108,19 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task GetStats_TournamentIdAndCompetitionId_Returns400()
+    {
+        var response = await _client.GetAsync(
+            "/api/players/p1/stats?season=2025-26&tournamentId=8427&competitionId=olis-karla");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetStats_PlayerExistsNoStats_Returns200WithEmptyArray()
     {
         _factory.Stats
-            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<PlayerStatsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetPlayerStatsResult.Found("12345", Array.Empty<PlayerStat>()));
 
         var response = await _client.GetAsync("/api/players/12345/stats");

@@ -168,15 +168,26 @@ app.MapGet("/api/players/{playerId}", async (
     };
 });
 
-app.MapGet("/api/players/{playerId}/stats", async (
+app.MapGet("/api/players/{playerId}/stats", async Task<IResult> (
     string playerId,
+    string? season,
+    string? tournamentId,
+    string? competitionId,
+    string? type,
     IGetPlayerStatsUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
         return Results.BadRequest(new { error = "invalid_player_id" });
 
-    var result = await uc.ExecuteAsync(playerId, ct);
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
+    var query = new PlayerStatsQuery(season, tournamentId, competitionId, parsedType);
+    var result = await uc.ExecuteAsync(playerId, query, ct);
     return result switch
     {
         GetPlayerStatsResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
