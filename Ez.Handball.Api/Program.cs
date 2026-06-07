@@ -6,6 +6,7 @@ using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Application.RatingFunctions;
+using Ez.Handball.Application.BuyFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
@@ -129,6 +130,9 @@ builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
 builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
+builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
+builder.Services.AddScoped<IBuyPlayerFunction, ManagerBuyPlayerFunction>();
+builder.Services.AddScoped<IGetBuyDecisionUseCase, GetBuyDecisionUseCase>();
 builder.Services.AddScoped<IPlayerRatingFunction, FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<IPlayerRatingFunction, ManagerPlayerRatingFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
@@ -278,6 +282,38 @@ app.MapGet("/api/players/{playerId}/salary", async Task<IResult> (
         _                                     => Results.Problem()
     };
 });
+
+app.MapGet("/api/players/{playerId}/buy", async Task<IResult> (
+    string playerId,
+    string? flavor,
+    string? season,
+    string? tournamentId,
+    int? ruleSetVersion,
+    HttpContext http,
+    IGetBuyDecisionUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    if (!TryParseFlavor(flavor, out var parsedFlavor))
+        return Results.BadRequest(new { error = "invalid_flavor" });
+
+    var userId = http.User.UserId();
+    if (string.IsNullOrEmpty(userId))
+        return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+    var context = new BuyPlayerContext(season, tournamentId, ruleSetVersion);
+    var result = await uc.ExecuteAsync(userId, playerId, parsedFlavor, context, ct);
+    return result switch
+    {
+        BuyDecisionResult.PlayerNotFound  => Results.NotFound(new { error = "player_not_found" }),
+        BuyDecisionResult.InvalidFlavor   => Results.BadRequest(new { error = "invalid_flavor" }),
+        BuyDecisionResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        BuyDecisionResult.Decided d       => Results.Ok(d.Decision),
+        _                                 => Results.Problem()
+    };
+}).RequireAuthorization();
 
 app.MapGet("/api/leaderboard", async Task<IResult> (
     string? metric,
