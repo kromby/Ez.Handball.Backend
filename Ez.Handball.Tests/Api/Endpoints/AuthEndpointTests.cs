@@ -92,7 +92,7 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
     private async Task<JsonElement> RegisterAsync(string email, string password = "hunter2hunter2", string club = "385")
     {
         var resp = await _client.PostAsJsonAsync("/api/auth/register",
-            new { email, password, displayName = "Jón", language = "is", favoriteClubId = club, teamName = "Test Team" });
+            new { email, password, displayName = "Jón", language = "is", favoriteClubId = club, teamName = $"Test {Guid.NewGuid():N}" });
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
         return await resp.Content.ReadFromJsonAsync<JsonElement>();
     }
@@ -193,7 +193,7 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
         await RegisterAsync(email);
 
         var resp = await _client.PostAsJsonAsync("/api/auth/register",
-            new { email, password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName = "Test Team" });
+            new { email, password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName = $"Test {Guid.NewGuid():N}" });
 
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
@@ -204,7 +204,7 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
     public async Task InvalidClub_Returns400()
     {
         var resp = await _client.PostAsJsonAsync("/api/auth/register",
-            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "no-such-club", teamName = "Test Team" });
+            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "no-such-club", teamName = $"Test {Guid.NewGuid():N}" });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();

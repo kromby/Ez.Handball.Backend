@@ -18,11 +18,13 @@ public class RegisterUseCaseTests
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<IEmailSender> _email = new();
     private readonly Mock<ITeamProvisioningService> _provisioning = new();
+    private readonly Mock<IGameTeamNameIndexRepository> _nameIndex = new();
     private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
 
     private RegisterUseCase CreateSut() => new(
         _users.Object, _refresh.Object, _emailTokens.Object, _clubs.Object,
-        _hasher.Object, _tokens.Object, _email.Object, _settings, () => Now, _provisioning.Object);
+        _hasher.Object, _tokens.Object, _email.Object, _settings, () => Now,
+        _provisioning.Object, _nameIndex.Object);
 
     private static RegisterCommand ValidCmd() =>
         new("A@B.is", "hunter2hunter2", "Jón", "is", "385", "Dream Team");
@@ -30,6 +32,7 @@ public class RegisterUseCaseTests
     private void HappyPathStubs()
     {
         _clubs.Setup(c => c.ExistsAsync("385", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _nameIndex.Setup(n => n.TryReserveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _users.Setup(u => u.TryReserveEmailAsync("a@b.is", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _hasher.Setup(h => h.Hash("hunter2hunter2")).Returns("HASHED");
         _tokens.Setup(t => t.CreateEmailToken()).Returns(new IssuedToken("evalue", "ehash", Now.AddHours(24)));
@@ -72,6 +75,7 @@ public class RegisterUseCaseTests
     public async Task DuplicateEmail_ReturnsEmailTaken_AndDoesNotWriteUser()
     {
         _clubs.Setup(c => c.ExistsAsync("385", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _nameIndex.Setup(n => n.TryReserveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _users.Setup(u => u.TryReserveEmailAsync("a@b.is", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var result = await CreateSut().ExecuteAsync(ValidCmd(), CancellationToken.None);
@@ -129,5 +133,59 @@ public class RegisterUseCaseTests
 
         var v = Assert.IsType<RegisterResult.ValidationError>(result);
         Assert.Equal("teamName", v.Field);
+    }
+
+    [Fact]
+    public async Task HappyPath_ReservesNormalizedTeamName_AndProvisionsWithClubColor()
+    {
+        HappyPathStubs();
+
+        var result = await CreateSut().ExecuteAsync(ValidCmd(), CancellationToken.None);
+
+        Assert.IsType<RegisterResult.Success>(result);
+        _nameIndex.Verify(n => n.TryReserveAsync("dream team", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        // ValidCmd uses favoriteClubId "385" → color is whatever ManagerColor derives for it.
+        var expectedColor = Ez.Handball.Domain.ManagerColor.ForClub("385");
+        _provisioning.Verify(p => p.ProvisionAsync(
+            It.IsAny<string>(), GameFlavor.Fantasy, "Dream Team", expectedColor, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TeamNameTaken_ReturnsTeamNameTaken_AndDoesNotReserveEmailOrCreateUser()
+    {
+        _clubs.Setup(c => c.ExistsAsync("385", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _nameIndex.Setup(n => n.TryReserveAsync("dream team", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var result = await CreateSut().ExecuteAsync(ValidCmd(), CancellationToken.None);
+
+        Assert.IsType<RegisterResult.TeamNameTaken>(result);
+        _users.Verify(u => u.TryReserveEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _users.Verify(u => u.AddAsync(It.IsAny<UserEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EmailTaken_AfterNameReserved_ReleasesTeamName()
+    {
+        _clubs.Setup(c => c.ExistsAsync("385", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _nameIndex.Setup(n => n.TryReserveAsync("dream team", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _users.Setup(u => u.TryReserveEmailAsync("a@b.is", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var result = await CreateSut().ExecuteAsync(ValidCmd(), CancellationToken.None);
+
+        Assert.IsType<RegisterResult.EmailTaken>(result);
+        _nameIndex.Verify(n => n.ReleaseAsync("dream team", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task BlockedTeamName_ReturnsValidationError_teamName()
+    {
+        _clubs.Setup(c => c.ExistsAsync("385", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var cmd = new RegisterCommand("a@b.is", "hunter2hunter2", "Jón", "is", "385", "admin");
+
+        var result = await CreateSut().ExecuteAsync(cmd, CancellationToken.None);
+
+        var v = Assert.IsType<RegisterResult.ValidationError>(result);
+        Assert.Equal("teamName", v.Field);
+        _nameIndex.Verify(n => n.TryReserveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
