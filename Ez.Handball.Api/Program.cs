@@ -3,7 +3,7 @@ using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
-using Ez.Handball.Application.ValueFunctions;
+using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
@@ -118,9 +118,9 @@ builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
-builder.Services.AddScoped<IGetPlayerValueUseCase, GetPlayerValueUseCase>();
-builder.Services.AddScoped<IPlayerValueFunction, FantasyPlayerValueFunction>();
-builder.Services.AddScoped<IPlayerValueFunction, ManagerPlayerValueFunction>();
+builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
+builder.Services.AddScoped<IPlayerRatingFunction, FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<IPlayerRatingFunction, ManagerPlayerRatingFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
     builder.Configuration.GetValue("Shortlist:MaxSize", 20)));
 builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
@@ -201,7 +201,7 @@ app.MapGet("/api/players/{playerId}/history", async (
     };
 });
 
-app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
+app.MapGet("/api/players/{playerId}/rating", async Task<IResult> (
     string playerId,
     string? flavor,
     string? season,
@@ -209,7 +209,7 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     int? ruleSetVersion,
     string? phase,
     DateOnly? asOf,
-    IGetPlayerValueUseCase uc,
+    IGetPlayerRatingUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
@@ -218,14 +218,14 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     if (!TryParseFlavor(flavor, out var parsedFlavor))
         return Results.BadRequest(new { error = "invalid_flavor" });
 
-    var context = new PlayerValueContext(season, tournamentId, ruleSetVersion, phase, asOf);
+    var context = new PlayerRatingContext(season, tournamentId, ruleSetVersion, phase, asOf);
     var result = await uc.ExecuteAsync(playerId, parsedFlavor, context, ct);
     return result switch
     {
-        GetPlayerValueResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
-        GetPlayerValueResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
-        GetPlayerValueResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
-        GetPlayerValueResult.Found f          => Results.Ok(f.Value),
+        GetPlayerRatingResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerRatingResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
+        GetPlayerRatingResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetPlayerRatingResult.Found f          => Results.Ok(f.Rating),
         _                                     => Results.Problem()
     };
 });

@@ -1,17 +1,17 @@
-using Ez.Handball.Application.ValueFunctions;
+using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 
-namespace Ez.Handball.Tests.Application.ValueFunctions;
+namespace Ez.Handball.Tests.Application.RatingFunctions;
 
-public class ManagerPlayerValueFunctionTests
+public class ManagerPlayerRatingFunctionTests
 {
-    private static PlayerValueInputs Inputs(AggregatedStats stats) =>
-        new("p1", stats, RuleSet: null, new PlayerValueContext(null, null, null, null, null));
+    private static PlayerRatingInputs Inputs(AggregatedStats stats) =>
+        new("p1", stats, RuleSet: null, new PlayerRatingContext(null, null, null, null, null));
 
     [Fact]
     public void Flavor_And_DefaultRuleSetVersion()
     {
-        var fn = new ManagerPlayerValueFunction();
+        var fn = new ManagerPlayerRatingFunction();
 
         Assert.Equal(GameFlavor.Manager, fn.Flavor);
         Assert.Null(fn.DefaultRuleSetVersion);
@@ -23,12 +23,12 @@ public class ManagerPlayerValueFunctionTests
         // rating = goals + games = 18 + 9 = 27; marketValue = 27 * 1000 = 27000
         var stats = new AggregatedStats(Games: 9, Goals: 18, YellowCards: 4, TwoMinuteSuspensions: 2, RedCards: 0);
 
-        var result = new ManagerPlayerValueFunction().Compute(Inputs(stats));
+        var result = new ManagerPlayerRatingFunction().Compute(Inputs(stats));
 
         Assert.Equal("p1", result.PlayerId);
         Assert.Equal("manager", result.Flavor);
         Assert.Equal("manager-v0", result.Version);
-        Assert.Equal(27, result.Value);
+        Assert.Equal(27, result.Rating);
 
         var market = Assert.Single(result.Components);
         Assert.Equal("marketValue", market.Key);
@@ -38,9 +38,9 @@ public class ManagerPlayerValueFunctionTests
     [Fact]
     public void Compute_IgnoresNullRuleSet_DoesNotThrow()
     {
-        var result = new ManagerPlayerValueFunction()
+        var result = new ManagerPlayerRatingFunction()
             .Compute(Inputs(new AggregatedStats(0, 0, 0, 0, 0)));
 
-        Assert.Equal(0, result.Value);
+        Assert.Equal(0, result.Rating);
     }
 }

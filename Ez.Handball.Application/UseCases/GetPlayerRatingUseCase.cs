@@ -1,33 +1,33 @@
 using Ez.Handball.Application.Abstractions;
-using Ez.Handball.Application.ValueFunctions;
+using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.UseCases;
 
-public abstract record GetPlayerValueResult
+public abstract record GetPlayerRatingResult
 {
-    public sealed record NotFound : GetPlayerValueResult;
-    public sealed record InvalidFlavor : GetPlayerValueResult;
-    public sealed record RuleSetNotFound : GetPlayerValueResult;
-    public sealed record Found(PlayerValue Value) : GetPlayerValueResult;
+    public sealed record NotFound : GetPlayerRatingResult;
+    public sealed record InvalidFlavor : GetPlayerRatingResult;
+    public sealed record RuleSetNotFound : GetPlayerRatingResult;
+    public sealed record Found(PlayerRating Rating) : GetPlayerRatingResult;
 }
 
-public interface IGetPlayerValueUseCase
+public interface IGetPlayerRatingUseCase
 {
-    Task<GetPlayerValueResult> ExecuteAsync(
-        string playerId, GameFlavor flavor, PlayerValueContext context, CancellationToken ct);
+    Task<GetPlayerRatingResult> ExecuteAsync(
+        string playerId, GameFlavor flavor, PlayerRatingContext context, CancellationToken ct);
 }
 
-public class GetPlayerValueUseCase : IGetPlayerValueUseCase
+public class GetPlayerRatingUseCase : IGetPlayerRatingUseCase
 {
-    private readonly IReadOnlyDictionary<GameFlavor, IPlayerValueFunction> _functions;
+    private readonly IReadOnlyDictionary<GameFlavor, IPlayerRatingFunction> _functions;
     private readonly IPlayerRepository _players;
     private readonly IPlayerStatsRepository _stats;
     private readonly ISeasonRepository _seasons;
     private readonly IScoringRuleSetRepository _ruleSets;
 
-    public GetPlayerValueUseCase(
-        IEnumerable<IPlayerValueFunction> functions,
+    public GetPlayerRatingUseCase(
+        IEnumerable<IPlayerRatingFunction> functions,
         IPlayerRepository players,
         IPlayerStatsRepository stats,
         ISeasonRepository seasons,
@@ -40,14 +40,14 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
         _ruleSets = ruleSets;
     }
 
-    public async Task<GetPlayerValueResult> ExecuteAsync(
-        string playerId, GameFlavor flavor, PlayerValueContext context, CancellationToken ct)
+    public async Task<GetPlayerRatingResult> ExecuteAsync(
+        string playerId, GameFlavor flavor, PlayerRatingContext context, CancellationToken ct)
     {
         var player = await _players.GetByIdAsync(playerId, ct);
-        if (player is null) return new GetPlayerValueResult.NotFound();
+        if (player is null) return new GetPlayerRatingResult.NotFound();
 
         if (!_functions.TryGetValue(flavor, out var function))
-            return new GetPlayerValueResult.InvalidFlavor();
+            return new GetPlayerRatingResult.InvalidFlavor();
 
         var season = await ResolveSeasonAsync(context.Season, ct);
         var stats = await AggregateAsync(playerId, season, context.TournamentId, ct);
@@ -57,11 +57,11 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
         {
             var version = context.RuleSetVersion ?? defaultVersion;
             ruleSet = await _ruleSets.GetAsync(flavor, version, ct);
-            if (ruleSet is null) return new GetPlayerValueResult.RuleSetNotFound();
+            if (ruleSet is null) return new GetPlayerRatingResult.RuleSetNotFound();
         }
 
-        var value = function.Compute(new PlayerValueInputs(playerId, stats, ruleSet, context));
-        return new GetPlayerValueResult.Found(value);
+        var value = function.Compute(new PlayerRatingInputs(playerId, stats, ruleSet, context));
+        return new GetPlayerRatingResult.Found(value);
     }
 
     private async Task<string?> ResolveSeasonAsync(string? season, CancellationToken ct)

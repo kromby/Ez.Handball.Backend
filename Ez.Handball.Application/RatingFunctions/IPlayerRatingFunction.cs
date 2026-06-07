@@ -1,16 +1,16 @@
 using Ez.Handball.Domain;
 
-namespace Ez.Handball.Application.ValueFunctions;
+namespace Ez.Handball.Application.RatingFunctions;
 
-public sealed record PlayerValueInputs(
+public sealed record PlayerRatingInputs(
     string PlayerId,
     AggregatedStats Stats,
     ScoringRuleSet? RuleSet,   // null when the flavor needs no rule set
-    PlayerValueContext Context);
+    PlayerRatingContext Context);
 
-public interface IPlayerValueFunction
+public interface IPlayerRatingFunction
 {
     GameFlavor Flavor { get; }
     int? DefaultRuleSetVersion { get; } // fantasy => 1; manager => null (stub)
-    PlayerValue Compute(PlayerValueInputs inputs);
+    PlayerRating Compute(PlayerRatingInputs inputs);
 }
