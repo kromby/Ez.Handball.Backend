@@ -283,6 +283,38 @@ app.MapGet("/api/players/{playerId}/salary", async Task<IResult> (
     };
 });
 
+app.MapGet("/api/players/{playerId}/buy", async Task<IResult> (
+    string playerId,
+    string? flavor,
+    string? season,
+    string? tournamentId,
+    int? ruleSetVersion,
+    HttpContext http,
+    IGetBuyDecisionUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    if (!TryParseFlavor(flavor, out var parsedFlavor))
+        return Results.BadRequest(new { error = "invalid_flavor" });
+
+    var userId = http.User.UserId();
+    if (string.IsNullOrEmpty(userId))
+        return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+    var context = new BuyPlayerContext(season, tournamentId, ruleSetVersion);
+    var result = await uc.ExecuteAsync(userId, playerId, parsedFlavor, context, ct);
+    return result switch
+    {
+        BuyDecisionResult.PlayerNotFound  => Results.NotFound(new { error = "player_not_found" }),
+        BuyDecisionResult.InvalidFlavor   => Results.BadRequest(new { error = "invalid_flavor" }),
+        BuyDecisionResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        BuyDecisionResult.Decided d       => Results.Ok(d.Decision),
+        _                                 => Results.Problem()
+    };
+}).RequireAuthorization();
+
 app.MapGet("/api/leaderboard", async Task<IResult> (
     string? metric,
     string? season,
