@@ -6,9 +6,11 @@ namespace Ez.Handball.Application.BuyFunctions;
 // ManagerPlayerRatingFunction. Always allows, with a placeholder zero cost.
 public sealed class ManagerBuyPlayerFunction : IBuyPlayerFunction
 {
+    public const string Version = "manager-v0";
+
     public GameFlavor Flavor => GameFlavor.Manager;
 
     public BuyDecision Evaluate(BuyPlayerInputs inputs) =>
         new(inputs.PlayerId, "manager", true, new PlayerCost(0, "ISK"),
-            System.Array.Empty<BuyRuleViolation>(), "manager-v0");
+            System.Array.Empty<BuyRuleViolation>(), Version);
 }

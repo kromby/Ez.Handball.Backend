@@ -92,6 +92,17 @@ public class GetBuyDecisionUseCaseTests
     }
 
     [Fact]
+    public async Task Fantasy_ExplicitVersion_FlowsToSalaryButConstraintsStayV1()
+    {
+        // ruleSetVersion is the pricing axis (fantasy-price-v{n}); squad constraints are a
+        // separate axis pinned to v1 in this release, not driven by ruleSetVersion.
+        await CreateSut().ExecuteAsync("u1", "p1", GameFlavor.Fantasy, new BuyPlayerContext("2025-26", "8444", 3), default);
+
+        _salary.Verify(s => s.GetSalaryAsync("p1", 3, "2025-26", "8444", It.IsAny<CancellationToken>()), Times.Once);
+        _constraints.Verify(c => c.GetAsync(1, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Manager_ShortCircuits_NoFantasyIo()
     {
         var result = await CreateSut().ExecuteAsync("u1", "p1", GameFlavor.Manager, new BuyPlayerContext(null, null, null), default);

@@ -12,7 +12,7 @@ public class StubSquadRepositoryTests
     private StubSquadRepository CreateSut() => new(_constraints.Object);
 
     [Fact]
-    public async Task Get_NewManager_EmptySquadWithStartingCapBudget()
+    public async Task Get_NewUser_EmptySquadWithStartingCapBudget()
     {
         _constraints.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int>(), 100_000_000, "ISK"));

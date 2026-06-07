@@ -55,7 +55,7 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         if (flavor == GameFlavor.Manager)
         {
             var stubInputs = new BuyPlayerInputs(
-                playerId, player.Position, new PlayerCost(0, "ISK"), "manager-v0",
+                playerId, player.Position, new PlayerCost(0, "ISK"), ManagerBuyPlayerFunction.Version,
                 new SquadConstraints(0, 0, new Dictionary<string, int>(), 0, "ISK"),
                 new Squad(System.Array.Empty<SquadSlot>(), 0, "ISK"), context);
             return new BuyDecisionResult.Decided(function.Evaluate(stubInputs));
