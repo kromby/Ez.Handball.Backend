@@ -50,25 +50,21 @@ internal sealed class TableGameBudgetRepository : IGameBudgetRepository
         var table = _client.GetTableClient(Tables.GameBudgets);
         for (var attempt = 0; attempt < MaxRetries; attempt++)
         {
-            GameBudgetEntity e;
             try
             {
-                e = (await table.GetEntityAsync<GameBudgetEntity>(teamId, BalanceRow, cancellationToken: ct)).Value;
+                var e = (await table.GetEntityAsync<GameBudgetEntity>(teamId, BalanceRow, cancellationToken: ct)).Value;
+
+                var next = e.Amount + delta;
+                if (requireNonNegative && next < 0) return false;
+
+                e.Amount = next;
+                e.UpdatedAt = now;
+                await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+                return true;
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return false;
-            }
-
-            var next = e.Amount + delta;
-            if (requireNonNegative && next < 0) return false;
-
-            e.Amount = next;
-            e.UpdatedAt = now;
-            try
-            {
-                await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
-                return true;
+                return false; // budget row missing
             }
             catch (RequestFailedException ex) when (ex.Status == 412)
             {
