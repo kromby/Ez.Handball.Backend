@@ -11,19 +11,22 @@ public class TournamentTypeJsonConverterTests
         Converters = { new TournamentTypeJsonConverter() }
     };
 
-    [Fact]
-    public void Serializes_ToLowercaseString()
+    [Theory]
+    [InlineData(TournamentType.League, "\"league\"")]
+    [InlineData(TournamentType.Playoffs, "\"playoffs\"")]
+    [InlineData(TournamentType.Cup, "\"cup\"")]
+    public void Serializes_ToLowercaseString(TournamentType type, string expectedJson)
     {
-        Assert.Equal("\"league\"", JsonSerializer.Serialize(TournamentType.League, Options));
-        Assert.Equal("\"playoffs\"", JsonSerializer.Serialize(TournamentType.Playoffs, Options));
-        Assert.Equal("\"cup\"", JsonSerializer.Serialize(TournamentType.Cup, Options));
+        Assert.Equal(expectedJson, JsonSerializer.Serialize(type, Options));
     }
 
-    [Fact]
-    public void Deserializes_FromLowercaseString()
+    [Theory]
+    [InlineData("\"league\"", TournamentType.League)]
+    [InlineData("\"playoffs\"", TournamentType.Playoffs)]
+    [InlineData("\"cup\"", TournamentType.Cup)]
+    public void Deserializes_KnownValues(string json, TournamentType expected)
     {
-        Assert.Equal(TournamentType.Playoffs,
-            JsonSerializer.Deserialize<TournamentType>("\"playoffs\"", Options));
+        Assert.Equal(expected, JsonSerializer.Deserialize<TournamentType>(json, Options));
     }
 
     [Fact]

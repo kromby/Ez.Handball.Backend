@@ -1,13 +1,13 @@
 using Ez.Handball.Api;
 using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
+using Ez.Handball.Api.Serialization;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Application.ValueFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
-using Ez.Handball.Api.Serialization;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

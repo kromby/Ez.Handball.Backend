@@ -10,6 +10,8 @@ public sealed class TournamentTypeJsonConverter : JsonConverter<TournamentType>
         ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var raw = reader.GetString();
+        if (raw is null)
+            throw new JsonException("Tournament type cannot be null.");
         if (TournamentTypes.TryParse(raw, out var type))
             return type;
         throw new JsonException($"Unknown tournament type '{raw}'.");
