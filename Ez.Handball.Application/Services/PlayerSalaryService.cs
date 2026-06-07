@@ -1,5 +1,4 @@
 using Ez.Handball.Application.Abstractions;
-using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.Services;
@@ -9,25 +8,24 @@ public sealed class PlayerSalaryService : IPlayerSalaryService
     private readonly IPlayerStatsAggregator _aggregator;
     private readonly IScoringRuleSetRepository _scoring;
     private readonly ISalaryRuleSetRepository _prices;
-    private readonly FantasyPlayerRatingFunction _points;
+    private readonly FantasyPricing _pricing;
 
     public PlayerSalaryService(
         IPlayerStatsAggregator aggregator,
         IScoringRuleSetRepository scoring,
         ISalaryRuleSetRepository prices,
-        FantasyPlayerRatingFunction points)
+        FantasyPricing pricing)
     {
         _aggregator = aggregator;
         _scoring = scoring;
         _prices = prices;
-        _points = points;
+        _pricing = pricing;
     }
 
     public async Task<PlayerSalary?> GetSalaryAsync(
         string playerId, int version, string? season, string? tournamentId, CancellationToken ct)
     {
-        var scoringVersion = _points.DefaultRuleSetVersion!.Value; // fantasy scoring default (1)
-        var scoring = await _scoring.GetAsync(GameFlavor.Fantasy, scoringVersion, ct);
+        var scoring = await _scoring.GetAsync(GameFlavor.Fantasy, _pricing.ScoringVersion, ct);
         if (scoring is null) return null;
 
         var priceRuleSet = await _prices.GetAsync(version, ct);
@@ -35,14 +33,9 @@ public sealed class PlayerSalaryService : IPlayerSalaryService
 
         var stats = await _aggregator.AggregateAsync(playerId, season, tournamentId, null, null, ct);
         var ctx = new PlayerRatingContext(season, tournamentId, null, null, null, null);
-        var points = _points.Compute(new PlayerRatingInputs(playerId, stats, scoring, ctx)).Rating;
 
-        var score = stats.Games >= priceRuleSet.MinGames && stats.Games > 0
-            ? points / stats.Games
-            : 0;
-
-        var band = priceRuleSet.BandFor(score);
+        var result = _pricing.Compute(playerId, stats, scoring, priceRuleSet, ctx);
         return new PlayerSalary(
-            playerId, new PlayerCost(band.Price, priceRuleSet.Currency), score, stats.Games, priceRuleSet.Name);
+            playerId, result.Cost, result.Score, stats.Games, priceRuleSet.Name);
     }
 }

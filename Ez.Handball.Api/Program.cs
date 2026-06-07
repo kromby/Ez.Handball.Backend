@@ -120,6 +120,7 @@ builder.Services.AddScoped<IGetPlayerProfileUseCase, GetPlayerProfileUseCase>();
 builder.Services.AddScoped<IGetPlayerStatsUseCase,   GetPlayerStatsUseCase>();
 builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
+builder.Services.AddScoped<IGetPlayerPoolUseCase, GetPlayerPoolUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
@@ -128,6 +129,7 @@ builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
 builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<FantasyPricing>();
 builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
 builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
 builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
@@ -176,7 +178,20 @@ app.MapGet("/api/players/{playerId}", async (
     return result switch
     {
         GetPlayerProfileResult.NotFound       => Results.NotFound(new { error = "player_not_found" }),
-        GetPlayerProfileResult.Found f        => Results.Ok(f.Player),
+        GetPlayerProfileResult.Found f        => Results.Ok(new
+        {
+            f.Player.PlayerId,
+            f.Player.Name,
+            f.Player.JerseyNumber,
+            f.Player.DateOfBirth,
+            f.Player.Age,
+            f.Player.TeamId,
+            f.Player.ClubId,
+            f.Player.ClubName,
+            f.Player.Gender,
+            f.Player.Position,
+            price = f.Price
+        }),
         _                                     => Results.Problem()
     };
 });
@@ -355,6 +370,50 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     return Results.Ok(result);
 });
 
+app.MapGet("/api/players/pool", async Task<IResult> (
+    string? season,
+    string? tournamentId,
+    string? competitionId,
+    string? type,
+    string? gender,
+    string? position,
+    string? sort,
+    int? offset,
+    int? limit,
+    int? version,
+    IGetPlayerPoolUseCase uc,
+    CancellationToken ct) =>
+{
+    if (!TryParsePoolSort(sort, out var parsedSort))
+        return Results.BadRequest(new { error = "invalid_sort" });
+
+    if (!TryNormalizeGender(gender, out var parsedGender))
+        return Results.BadRequest(new { error = "invalid_gender" });
+
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
+    var off = offset ?? 0;
+    var lim = limit ?? 50;
+    if (off < 0 || lim < 1 || lim > 200)
+        return Results.BadRequest(new { error = "invalid_pagination" });
+
+    var request = new PlayerPoolRequest(
+        season, tournamentId, competitionId, parsedType, parsedGender, position,
+        parsedSort, version ?? 1);
+
+    var result = await uc.ExecuteAsync(request, off, lim, ct);
+    return result switch
+    {
+        PlayerPoolResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        PlayerPoolResult.Found f         => Results.Ok(f.Pool),
+        _                                => Results.Problem()
+    };
+});
+
 app.MapGet("/api/matches/{matchId}", async (
     string matchId,
     IGetMatchUseCase uc,
@@ -441,6 +500,16 @@ static bool TryParseMetric(string? value, out LeaderboardMetric metric)
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
+}
+
+static bool TryParsePoolSort(string? value, out PlayerPoolSort sort)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        sort = PlayerPoolSort.Rating;
+        return true;
+    }
+    return Enum.TryParse(value, ignoreCase: true, out sort) && Enum.IsDefined(sort);
 }
 
 static bool TryParseFlavor(string? value, out GameFlavor flavor)
