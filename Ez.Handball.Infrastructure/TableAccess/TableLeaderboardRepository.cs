@@ -18,6 +18,11 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
 
     public async Task<IReadOnlyList<LeaderboardEntry>> GetRankedAsync(LeaderboardQuery q, CancellationToken ct)
     {
+        // A non-null but empty scope means "matched no tournaments" → no results
+        // (distinct from null, which means "no tournament narrowing requested").
+        if (q.TournamentIds is { Count: 0 })
+            return Array.Empty<LeaderboardEntry>();
+
         var filter = BuildFilter(q);
 
         var rows = new List<PlayerStatEntity>();

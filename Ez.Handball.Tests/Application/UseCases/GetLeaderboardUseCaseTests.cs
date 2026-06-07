@@ -100,4 +100,58 @@ public class GetLeaderboardUseCaseTests
         Assert.Equal(0, result.Total);
         Assert.Empty(result.Entries);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ResolverReturnsEmpty_YieldsEmptyLeaderboard()
+    {
+        SetupResolver(Array.Empty<string>());
+        LeaderboardQuery? captured = null;
+        _repo.Setup(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), It.IsAny<CancellationToken>()))
+             .Callback<LeaderboardQuery, CancellationToken>((q, _) => captured = q)
+             .ReturnsAsync(Array.Empty<LeaderboardEntry>());
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(season: "2025-26", competitionId: "no-such-comp"), offset: 0, limit: 50, CancellationToken.None);
+
+        Assert.Equal(0, result.Total);
+        Assert.NotNull(captured);
+        Assert.NotNull(captured!.TournamentIds);
+        Assert.Empty(captured.TournamentIds!);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PreservesAbsoluteRanksAcrossPages()
+    {
+        SetupResolver(null);
+        SetupRanked(Entry(1, "a"), Entry(2, "b"), Entry(3, "c"), Entry(4, "d"));
+
+        var result = await CreateSut().ExecuteAsync(Req(), offset: 2, limit: 2, CancellationToken.None);
+
+        Assert.Equal(3, result.Entries[0].Rank);
+        Assert.Equal(4, result.Entries[1].Rank);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OffsetPastEnd_ReturnsEmptyEntriesButTrueTotal()
+    {
+        SetupResolver(null);
+        SetupRanked(Entry(1, "a"), Entry(2, "b"));
+
+        var result = await CreateSut().ExecuteAsync(Req(), offset: 50, limit: 50, CancellationToken.None);
+
+        Assert.Equal(2, result.Total);
+        Assert.Empty(result.Entries);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PropagatesCancellationToken()
+    {
+        using var cts = new CancellationTokenSource();
+        SetupResolver(null);
+        SetupRanked();
+
+        await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, cts.Token);
+
+        _repo.Verify(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), cts.Token), Times.Once);
+    }
 }

@@ -111,15 +111,14 @@ public class TableLeaderboardRepositoryTests
     }
 
     [Fact]
-    public async Task GetRankedAsync_EmptyTournamentIds_ScansSeasonOnly()
+    public async Task GetRankedAsync_EmptyTournamentIds_ReturnsEmptyWithoutQuerying()
     {
-        SetupStats("Season eq '2025-26'", Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
-        SetupPlayers(Plr("p1", "385-karlar", "Jón"));
-
         var result = await CreateSut().GetRankedAsync(
             Q(season: "2025-26", tournamentIds: Array.Empty<string>()), default);
 
-        Assert.Single(result);
+        Assert.Empty(result);
+        _query.Verify(q => q.QueryAsync<PlayerStatEntity>(
+            It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
