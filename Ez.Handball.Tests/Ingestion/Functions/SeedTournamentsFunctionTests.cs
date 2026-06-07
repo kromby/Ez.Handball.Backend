@@ -115,6 +115,53 @@ public class SeedTournamentsFunctionTests
     }
 
     [Fact]
+    public async Task ProcessAsync_SeedsLeagueRow_WithTypeAndCompetition()
+    {
+        await CreateSut().ProcessAsync("2025");
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e =>
+                e.RowKey == "8444" &&
+                e.Type == "league" &&
+                e.CompetitionId == "olis-karla" &&
+                e.CompetitionName == "Olís deild karla" &&
+                e.Ingest == true &&
+                e.Active == true),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_SeedsPlayoffRow_SharingLeagueCompetition_NotYetIngested()
+    {
+        await CreateSut().ProcessAsync("2025");
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e =>
+                e.RowKey == "8427" &&
+                e.Type == "playoffs" &&
+                e.CompetitionId == "olis-karla" &&
+                e.Ingest == false &&
+                e.Active == false),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_SeedsCupRow_AsCupType_OwnCompetition()
+    {
+        await CreateSut().ProcessAsync("2025");
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e =>
+                e.RowKey == "8437" &&
+                e.Type == "cup" &&
+                e.CompetitionId == "bikar-karla"),
+            default), Times.Once);
+    }
+
+    [Fact]
     public async Task ProcessAsync_NewerSeason_BecomesCurrent_AndClearsPreviousCurrent()
     {
         _tableWriter

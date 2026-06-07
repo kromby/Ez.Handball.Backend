@@ -40,7 +40,7 @@ public class TablePlayerHistoryRepositoryTests
         new()
         {
             PartitionKey = season, RowKey = id,
-            Name = name, Gender = "karlar", Division = "1", Enabled = true, Priority = priority
+            Name = name, Gender = "karlar", Division = "1", Ingest = true, Priority = priority
         };
 
     private static async IAsyncEnumerable<T> ToAsync<T>(IEnumerable<T> items)

@@ -16,6 +16,15 @@ public class TournamentEntity : ITableEntity
     // "karlar" or "kvenna"
     public string Gender { get; set; } = string.Empty;
     public string Division { get; set; } = string.Empty;
-    public bool Enabled { get; set; }
+    // "league" | "playoffs" | "cup"
+    public string Type { get; set; } = string.Empty;
+    // Stable season-independent competition slug, e.g. "olis-karla".
+    public string CompetitionId { get; set; } = string.Empty;
+    // Display name, e.g. "Olís deild karla".
+    public string CompetitionName { get; set; } = string.Empty;
+    // Ingestion pipeline retrieves match data for this tournament.
+    public bool Ingest { get; set; }
+    // Surfaced/selectable in the UI (the /api/tournaments display list).
+    public bool Active { get; set; }
     public int Priority { get; set; }
 }

@@ -26,7 +26,7 @@ public class TableTournamentRepositoryTests
             Name = name,
             Gender = gender,
             Division = "1",
-            Enabled = true,
+            Active = true,
             Priority = priority
         };
 
