@@ -81,4 +81,17 @@ public class RenameTeamUseCaseTests
         _teams.Verify(t => t.RenameAsync("u-1", GameFlavor.Fantasy, "New Name", It.IsAny<CancellationToken>()), Times.Once);
         _nameIndex.Verify(n => n.ReleaseAsync("old name", It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task RuleSetMissingDuringProjection_ReturnsRuleSetNotFound()
+    {
+        ExistingTeam("Old Name");
+        _nameIndex.Setup(n => n.TryReserveAsync("new name", "u-1:fantasy", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _getManager.Setup(g => g.ExecuteAsync("u-1", It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetManagerResult.RuleSetNotFound.Instance);
+
+        var result = await Sut().ExecuteAsync("u-1", "New Name", default);
+
+        Assert.IsType<RenameTeamResult.RuleSetNotFound>(result);
+    }
 }

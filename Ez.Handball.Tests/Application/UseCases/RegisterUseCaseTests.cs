@@ -188,4 +188,17 @@ public class RegisterUseCaseTests
         Assert.Equal("teamName", v.Field);
         _nameIndex.Verify(n => n.TryReserveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task UserCreationThrowsAfterNameReserved_ReleasesTeamName_AndPropagates()
+    {
+        HappyPathStubs();
+        _users.Setup(u => u.AddAsync(It.IsAny<UserEntity>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new InvalidOperationException("storage blip"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateSut().ExecuteAsync(ValidCmd(), CancellationToken.None));
+
+        _nameIndex.Verify(n => n.ReleaseAsync("dream team", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

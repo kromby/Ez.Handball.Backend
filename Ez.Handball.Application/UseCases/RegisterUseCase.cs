@@ -87,10 +87,20 @@ public sealed class RegisterUseCase : IRegisterUseCase
             CreatedAt = now,
             ChangedAt = now
         };
-        await _users.AddAsync(user, ct);
-
-        var color = ManagerColor.ForClub(cmd.FavoriteClubId);
-        await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), color, ct);
+        // The name index row is insert-only, so a failure while creating the user or provisioning
+        // the team would leave an orphaned reservation that blocks the user's own retry. Release it
+        // on failure. (The email-index orphan is the pre-existing concern tracked separately as #41.)
+        try
+        {
+            await _users.AddAsync(user, ct);
+            var color = ManagerColor.ForClub(cmd.FavoriteClubId);
+            await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), color, ct);
+        }
+        catch
+        {
+            await _nameIndex.ReleaseAsync(normalizedName, ct);
+            throw;
+        }
 
         var emailToken = _tokens.CreateEmailToken();
         await _emailTokens.AddAsync(new EmailTokenEntity

@@ -47,6 +47,7 @@ public static class ManagerEndpoints
                 RenameTeamResult.Success s          => Results.Ok(ManagerBody(s.View)),
                 RenameTeamResult.ValidationError v  => Results.BadRequest(new { error = "validation_error", details = new { field = v.Field } }),
                 RenameTeamResult.TeamNameTaken      => Results.Conflict(new { error = "team_name_taken" }),
+                RenameTeamResult.RuleSetNotFound    => Results.BadRequest(new { error = "invalid_rule_set" }),
                 RenameTeamResult.NoTeam             => Results.NotFound(new { error = "no_team" }),
                 _                                   => Results.Problem()
             };

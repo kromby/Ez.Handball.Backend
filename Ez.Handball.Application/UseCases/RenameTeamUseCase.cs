@@ -10,6 +10,7 @@ public abstract record RenameTeamResult
     public sealed record ValidationError(string Field) : RenameTeamResult;
     public sealed record TeamNameTaken : RenameTeamResult;
     public sealed record NoTeam : RenameTeamResult;
+    public sealed record RuleSetNotFound : RenameTeamResult;
 }
 
 public interface IRenameTeamUseCase
@@ -72,10 +73,13 @@ public sealed class RenameTeamUseCase : IRenameTeamUseCase
     private async Task<RenameTeamResult> ProjectAsync(string userId, CancellationToken ct)
     {
         var manager = await _getManager.ExecuteAsync(userId, null, ct);
-        // The team exists (just renamed) and the rule set is the default, so this is Found in
-        // practice; fall back defensively if the projection cannot be built.
-        return manager is GetManagerResult.Found f
-            ? new RenameTeamResult.Success(f.View)
-            : new RenameTeamResult.NoTeam();
+        // The team exists (just renamed/confirmed) so NoTeam is not expected here; the only
+        // realistic non-Found outcome is a missing rule set, which we surface faithfully.
+        return manager switch
+        {
+            GetManagerResult.Found f         => new RenameTeamResult.Success(f.View),
+            GetManagerResult.RuleSetNotFound => new RenameTeamResult.RuleSetNotFound(),
+            _                                => new RenameTeamResult.NoTeam()
+        };
     }
 }
