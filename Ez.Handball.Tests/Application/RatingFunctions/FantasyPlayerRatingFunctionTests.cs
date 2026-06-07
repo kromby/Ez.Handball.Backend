@@ -10,7 +10,7 @@ public class FantasyPlayerRatingFunctionTests
             GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
             RedCardPoints: -5, AppearancePoints: 1);
 
-    private static PlayerRatingContext Ctx() => new(null, null, null, null, null);
+    private static PlayerRatingContext Ctx() => new(null, null, null, null, null, null);
 
     private static PlayerRatingInputs Inputs(AggregatedStats stats) =>
         new("p1", stats, RuleSet, Ctx());

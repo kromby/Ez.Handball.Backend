@@ -46,7 +46,7 @@ public class GetPlayerRatingUseCase : IGetPlayerRatingUseCase
         if (!_functions.TryGetValue(flavor, out var function))
             return new GetPlayerRatingResult.InvalidFlavor();
 
-        var stats = await _aggregator.AggregateAsync(playerId, context.Season, context.TournamentId, ct);
+        var stats = await _aggregator.AggregateAsync(playerId, context.Season, context.TournamentId, context.CompetitionId, context.Type, ct);
 
         ScoringRuleSet? ruleSet = null;
         if (function.DefaultRuleSetVersion is int defaultVersion)

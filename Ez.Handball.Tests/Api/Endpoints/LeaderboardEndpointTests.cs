@@ -46,13 +46,13 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
     [Fact]
     public async Task Get_NoParams_DefaultsToGoalsMetricOffset0Limit50()
     {
-        LeaderboardQuery? captured = null;
+        LeaderboardRequest? captured = null;
         var capturedOffset = -1;
         var capturedLimit = -1;
         _factory.Uc
             .Setup(s => s.ExecuteAsync(
-                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Callback<LeaderboardQuery, int, int, CancellationToken>((q, o, l, _) =>
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<LeaderboardRequest, int, int, CancellationToken>((q, o, l, _) =>
             {
                 captured = q; capturedOffset = o; capturedLimit = l;
             })
@@ -73,11 +73,11 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
     [Fact]
     public async Task Get_PassesFiltersThrough()
     {
-        LeaderboardQuery? captured = null;
+        LeaderboardRequest? captured = null;
         _factory.Uc
             .Setup(s => s.ExecuteAsync(
-                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Callback<LeaderboardQuery, int, int, CancellationToken>((q, _, _, _) => captured = q)
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<LeaderboardRequest, int, int, CancellationToken>((q, _, _, _) => captured = q)
             .ReturnsAsync(EmptyLeaderboard("YellowCards"));
 
         var response = await _client.GetAsync(
@@ -101,7 +101,7 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
 
         _factory.Uc
             .Setup(s => s.ExecuteAsync(
-                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(board);
 
         var response = await _client.GetAsync("/api/leaderboard");
@@ -130,7 +130,7 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
         var board = new Leaderboard("Goals", 1, 0, 50, new[] { entry });
         _factory.Uc
             .Setup(s => s.ExecuteAsync(
-                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(board);
 
         var response = await _client.GetAsync("/api/leaderboard");
@@ -148,7 +148,7 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_metric", body.GetProperty("error").GetString());
         _factory.Uc.Verify(s => s.ExecuteAsync(
-            It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -165,11 +165,11 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
     [Fact]
     public async Task Get_GenderCaseInsensitive_NormalizesToLowercase()
     {
-        LeaderboardQuery? captured = null;
+        LeaderboardRequest? captured = null;
         _factory.Uc
             .Setup(s => s.ExecuteAsync(
-                It.IsAny<LeaderboardQuery>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Callback<LeaderboardQuery, int, int, CancellationToken>((q, _, _, _) => captured = q)
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<LeaderboardRequest, int, int, CancellationToken>((q, _, _, _) => captured = q)
             .ReturnsAsync(EmptyLeaderboard());
 
         var response = await _client.GetAsync("/api/leaderboard?gender=KARLAR");
@@ -189,5 +189,41 @@ public class LeaderboardEndpointTests : IClassFixture<LeaderboardEndpointTests.F
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_pagination", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Get_TournamentIdAndCompetitionId_Returns400InvalidScope()
+    {
+        var response = await _client.GetAsync(
+            "/api/leaderboard?season=2025-26&tournamentId=8427&competitionId=olis-karla");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_InvalidType_Returns400()
+    {
+        var response = await _client.GetAsync("/api/leaderboard?type=bogus");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_PassesCompetitionAndTypeThrough()
+    {
+        LeaderboardRequest? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<LeaderboardRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<LeaderboardRequest, int, int, CancellationToken>((q, _, _, _) => captured = q)
+            .ReturnsAsync(EmptyLeaderboard());
+
+        var response = await _client.GetAsync(
+            "/api/leaderboard?season=2025-26&competitionId=olis-karla&type=league");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("olis-karla", captured!.CompetitionId);
+        Assert.Equal(TournamentType.League, captured.Type);
+        Assert.Null(captured.TournamentId);
     }
 }

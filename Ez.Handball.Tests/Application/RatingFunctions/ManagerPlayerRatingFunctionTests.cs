@@ -6,7 +6,7 @@ namespace Ez.Handball.Tests.Application.RatingFunctions;
 public class ManagerPlayerRatingFunctionTests
 {
     private static PlayerRatingInputs Inputs(AggregatedStats stats) =>
-        new("p1", stats, RuleSet: null, new PlayerRatingContext(null, null, null, null, null));
+        new("p1", stats, RuleSet: null, new PlayerRatingContext(null, null, null, null, null, null));
 
     [Fact]
     public void Flavor_And_DefaultRuleSetVersion()

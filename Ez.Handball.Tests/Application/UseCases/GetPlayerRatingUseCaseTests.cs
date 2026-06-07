@@ -24,12 +24,10 @@ public class GetPlayerRatingUseCaseTests
 
     private static PlayerRatingContext Ctx(
         string? season = null, string? tournamentId = null, int? ruleSetVersion = null) =>
-        new(season, tournamentId, ruleSetVersion, null, null);
+        new(season, tournamentId, null, ruleSetVersion, null, null);
 
     private void Aggregate(int games, int goals) =>
-        _aggregator.Setup(a => a.AggregateAsync(
-                It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AggregatedStats(games, goals, 0, 0, 0));
+        _aggregator.Setup(a => a.AggregateAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>())).ReturnsAsync(new AggregatedStats(games, goals, 0, 0, 0));
 
     public GetPlayerRatingUseCaseTests()
     {
@@ -71,7 +69,7 @@ public class GetPlayerRatingUseCaseTests
         await CreateSut().ExecuteAsync(
             "p1", GameFlavor.Fantasy, Ctx(season: "2025-26", tournamentId: "8444"), default);
 
-        _aggregator.Verify(a => a.AggregateAsync("p1", "2025-26", "8444", It.IsAny<CancellationToken>()), Times.Once);
+        _aggregator.Verify(a => a.AggregateAsync("p1", "2025-26", "8444", It.IsAny<string?>(), It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

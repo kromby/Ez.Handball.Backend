@@ -33,8 +33,8 @@ public sealed class PlayerSalaryService : IPlayerSalaryService
         var priceRuleSet = await _prices.GetAsync(version, ct);
         if (priceRuleSet is null) return null;
 
-        var stats = await _aggregator.AggregateAsync(playerId, season, tournamentId, ct);
-        var ctx = new PlayerRatingContext(season, tournamentId, null, null, null);
+        var stats = await _aggregator.AggregateAsync(playerId, season, tournamentId, null, null, ct);
+        var ctx = new PlayerRatingContext(season, tournamentId, null, null, null, null);
         var points = _points.Compute(new PlayerRatingInputs(playerId, stats, scoring, ctx)).Rating;
 
         var score = stats.Games >= priceRuleSet.MinGames && stats.Games > 0
