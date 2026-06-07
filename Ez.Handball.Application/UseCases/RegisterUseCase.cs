@@ -72,7 +72,7 @@ public sealed class RegisterUseCase : IRegisterUseCase
             ChangedAt = now
         };
         await _users.AddAsync(user, ct);
-        await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), ct);
+        await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), ManagerColor.ForClub(cmd.FavoriteClubId), ct);
 
         var emailToken = _tokens.CreateEmailToken();
         await _emailTokens.AddAsync(new EmailTokenEntity

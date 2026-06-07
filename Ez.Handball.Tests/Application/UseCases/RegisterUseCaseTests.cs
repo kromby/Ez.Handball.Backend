@@ -118,7 +118,7 @@ public class RegisterUseCaseTests
 
         Assert.IsType<RegisterResult.Success>(result);
         _provisioning.Verify(p => p.ProvisionAsync(
-            It.IsAny<string>(), GameFlavor.Fantasy, "Dream Team", It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<string>(), GameFlavor.Fantasy, "Dream Team", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

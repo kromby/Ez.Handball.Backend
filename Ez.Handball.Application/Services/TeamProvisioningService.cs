@@ -22,7 +22,7 @@ public sealed class TeamProvisioningService : ITeamProvisioningService
         _now = now;
     }
 
-    public async Task ProvisionAsync(string userId, GameFlavor flavor, string teamName, CancellationToken ct)
+    public async Task ProvisionAsync(string userId, GameFlavor flavor, string teamName, string color, CancellationToken ct)
     {
         if (await _teams.ExistsAsync(userId, flavor, ct)) return;
 
@@ -30,7 +30,7 @@ public sealed class TeamProvisioningService : ITeamProvisioningService
         var constraints = await _constraints.GetAsync(ConstraintsVersion, ct);
         var startingCap = constraints?.StartingCap ?? 0;
 
-        await _teams.CreateAsync(userId, flavor, teamName, string.Empty, now, ct);
+        await _teams.CreateAsync(userId, flavor, teamName, color, now, ct);
         await _budget.CreateAsync(GameTeamId.For(userId, flavor), startingCap, now, ct);
     }
 }
