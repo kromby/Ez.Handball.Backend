@@ -15,12 +15,12 @@ public abstract record GetPlayerValueResult
 public interface IGetPlayerValueUseCase
 {
     Task<GetPlayerValueResult> ExecuteAsync(
-        string playerId, ValueFlavor flavor, PlayerValueContext context, CancellationToken ct);
+        string playerId, GameFlavor flavor, PlayerValueContext context, CancellationToken ct);
 }
 
 public class GetPlayerValueUseCase : IGetPlayerValueUseCase
 {
-    private readonly IReadOnlyDictionary<ValueFlavor, IPlayerValueFunction> _functions;
+    private readonly IReadOnlyDictionary<GameFlavor, IPlayerValueFunction> _functions;
     private readonly IPlayerRepository _players;
     private readonly IPlayerStatsRepository _stats;
     private readonly ISeasonRepository _seasons;
@@ -41,7 +41,7 @@ public class GetPlayerValueUseCase : IGetPlayerValueUseCase
     }
 
     public async Task<GetPlayerValueResult> ExecuteAsync(
-        string playerId, ValueFlavor flavor, PlayerValueContext context, CancellationToken ct)
+        string playerId, GameFlavor flavor, PlayerValueContext context, CancellationToken ct)
     {
         var player = await _players.GetByIdAsync(playerId, ct);
         if (player is null) return new GetPlayerValueResult.NotFound();

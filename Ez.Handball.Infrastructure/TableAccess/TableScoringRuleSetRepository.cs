@@ -11,7 +11,7 @@ internal sealed class TableScoringRuleSetRepository : IScoringRuleSetRepository
 
     public TableScoringRuleSetRepository(ITableQuery query) => _query = query;
 
-    public async Task<ScoringRuleSet?> GetAsync(ValueFlavor flavor, int version, CancellationToken ct)
+    public async Task<ScoringRuleSet?> GetAsync(GameFlavor flavor, int version, CancellationToken ct)
     {
         var group = $"{flavor.ToString().ToLowerInvariant()}-v{version}";
         var filter = $"PartitionKey eq '{ODataFilter.Escape(group)}'";

@@ -316,11 +316,11 @@ static bool TryParseMetric(string? value, out LeaderboardMetric metric)
     return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
 }
 
-static bool TryParseFlavor(string? value, out ValueFlavor flavor)
+static bool TryParseFlavor(string? value, out GameFlavor flavor)
 {
     if (string.IsNullOrWhiteSpace(value))
     {
-        flavor = ValueFlavor.Fantasy;
+        flavor = GameFlavor.Fantasy;
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out flavor) && Enum.IsDefined(flavor);

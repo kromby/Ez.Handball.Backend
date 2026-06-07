@@ -10,7 +10,7 @@ public sealed record PlayerValueInputs(
 
 public interface IPlayerValueFunction
 {
-    ValueFlavor Flavor { get; }
+    GameFlavor Flavor { get; }
     int? DefaultRuleSetVersion { get; } // fantasy => 1; manager => null (stub)
     PlayerValue Compute(PlayerValueInputs inputs);
 }

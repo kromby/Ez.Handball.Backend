@@ -1,6 +1,6 @@
 namespace Ez.Handball.Domain;
 
-public enum ValueFlavor
+public enum GameFlavor
 {
     Fantasy,
     Manager

@@ -48,7 +48,7 @@ public class PlayerValueEndpointTests : IClassFixture<PlayerValueEndpointTests.F
     public async Task Get_DefaultFlavor_Returns200AndExpectedShape()
     {
         _factory.Uc
-            .Setup(s => s.ExecuteAsync("p1", ValueFlavor.Fantasy, It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.ExecuteAsync("p1", GameFlavor.Fantasy, It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetPlayerValueResult.Found(SampleValue()));
 
         var response = await _client.GetAsync("/api/players/p1/value");
@@ -67,8 +67,8 @@ public class PlayerValueEndpointTests : IClassFixture<PlayerValueEndpointTests.F
     {
         PlayerValueContext? captured = null;
         _factory.Uc
-            .Setup(s => s.ExecuteAsync("p1", ValueFlavor.Manager, It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
-            .Callback((string _, ValueFlavor _, PlayerValueContext c, CancellationToken _) => captured = c)
+            .Setup(s => s.ExecuteAsync("p1", GameFlavor.Manager, It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
+            .Callback((string _, GameFlavor _, PlayerValueContext c, CancellationToken _) => captured = c)
             .ReturnsAsync(new GetPlayerValueResult.Found(SampleValue()));
 
         var response = await _client.GetAsync(
@@ -95,7 +95,7 @@ public class PlayerValueEndpointTests : IClassFixture<PlayerValueEndpointTests.F
     public async Task Get_PlayerNotFound_Returns404()
     {
         _factory.Uc
-            .Setup(s => s.ExecuteAsync(It.IsAny<string>(), It.IsAny<ValueFlavor>(), It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.ExecuteAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetPlayerValueResult.NotFound());
 
         var response = await _client.GetAsync("/api/players/ghost/value");
@@ -109,7 +109,7 @@ public class PlayerValueEndpointTests : IClassFixture<PlayerValueEndpointTests.F
     public async Task Get_RuleSetNotFound_Returns400()
     {
         _factory.Uc
-            .Setup(s => s.ExecuteAsync(It.IsAny<string>(), It.IsAny<ValueFlavor>(), It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.ExecuteAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<PlayerValueContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetPlayerValueResult.RuleSetNotFound());
 
         var response = await _client.GetAsync("/api/players/p1/value?ruleSetVersion=99");

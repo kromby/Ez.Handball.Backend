@@ -4,7 +4,7 @@ namespace Ez.Handball.Application.ValueFunctions;
 
 public sealed class FantasyPlayerValueFunction : IPlayerValueFunction
 {
-    public ValueFlavor Flavor => ValueFlavor.Fantasy;
+    public GameFlavor Flavor => GameFlavor.Fantasy;
     public int? DefaultRuleSetVersion => 1;
 
     public PlayerValue Compute(PlayerValueInputs inputs)

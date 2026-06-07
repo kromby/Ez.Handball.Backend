@@ -6,7 +6,7 @@ namespace Ez.Handball.Tests.Application.ValueFunctions;
 public class FantasyPlayerValueFunctionTests
 {
     private static readonly ScoringRuleSet RuleSet =
-        new(ValueFlavor.Fantasy, 1,
+        new(GameFlavor.Fantasy, 1,
             GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
             RedCardPoints: -5, AppearancePoints: 1);
 
@@ -20,7 +20,7 @@ public class FantasyPlayerValueFunctionTests
     {
         var fn = new FantasyPlayerValueFunction();
 
-        Assert.Equal(ValueFlavor.Fantasy, fn.Flavor);
+        Assert.Equal(GameFlavor.Fantasy, fn.Flavor);
         Assert.Equal(1, fn.DefaultRuleSetVersion);
     }
 

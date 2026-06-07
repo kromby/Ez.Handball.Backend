@@ -13,7 +13,7 @@ public class ManagerPlayerValueFunctionTests
     {
         var fn = new ManagerPlayerValueFunction();
 
-        Assert.Equal(ValueFlavor.Manager, fn.Flavor);
+        Assert.Equal(GameFlavor.Manager, fn.Flavor);
         Assert.Null(fn.DefaultRuleSetVersion);
     }
 

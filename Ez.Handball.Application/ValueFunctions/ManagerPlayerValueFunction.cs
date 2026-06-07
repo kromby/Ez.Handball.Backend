@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.ValueFunctions;
 // Deliberate stub. Real rating/market-value modelling is future work (see issue #20).
 public sealed class ManagerPlayerValueFunction : IPlayerValueFunction
 {
-    public ValueFlavor Flavor => ValueFlavor.Manager;
+    public GameFlavor Flavor => GameFlavor.Manager;
     public int? DefaultRuleSetVersion => null;
 
     public PlayerValue Compute(PlayerValueInputs inputs)
