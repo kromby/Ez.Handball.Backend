@@ -198,6 +198,10 @@ public class SquadConstraintsEndpointTests : IClassFixture<SquadConstraintsEndpo
         static Factory()
         {
             Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
+            // AddAuthInfrastructure reads Jwt:SigningKey eagerly at host build, before the
+            // in-memory ConfigureAppConfiguration below is layered — so the key must come
+            // from an env var or the host throws and the test can't run in isolation.
+            Environment.SetEnvironmentVariable("Jwt__SigningKey", "integration-test-signing-key-32-bytes-min!!");
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
