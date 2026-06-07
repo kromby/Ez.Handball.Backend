@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.UseCases;
 
 public abstract record GetPlayerProfileResult
 {
-    public sealed record NotFound : GetPlayerProfileResult;
+    public sealed record NotFound : GetPlayerProfileResult { public static readonly NotFound Instance = new(); }
     public sealed record Found(Player Player, PlayerCost? Price) : GetPlayerProfileResult;
 }
 
@@ -31,7 +31,7 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
     public async Task<GetPlayerProfileResult> ExecuteAsync(string playerId, CancellationToken ct)
     {
         var player = await _players.GetByIdAsync(playerId, ct);
-        if (player is null) return new GetPlayerProfileResult.NotFound();
+        if (player is null) return GetPlayerProfileResult.NotFound.Instance;
 
         // Season/tournament null => current-season salary. Null when the rule-set
         // is absent; the rest of the profile still returns.

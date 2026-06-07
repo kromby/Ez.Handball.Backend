@@ -25,7 +25,7 @@ public sealed record PlayerPoolRequest(
 
 public abstract record PlayerPoolResult
 {
-    public sealed record RuleSetNotFound : PlayerPoolResult;
+    public sealed record RuleSetNotFound : PlayerPoolResult { public static readonly RuleSetNotFound Instance = new(); }
     public sealed record Found(PlayerPool Pool) : PlayerPoolResult;
 }
 
@@ -62,10 +62,10 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
     {
         // Load both rule-sets ONCE up front; bail before any per-player work if missing.
         var scoring = await _scoring.GetAsync(GameFlavor.Fantasy, _pricing.ScoringVersion, ct);
-        if (scoring is null) return new PlayerPoolResult.RuleSetNotFound();
+        if (scoring is null) return PlayerPoolResult.RuleSetNotFound.Instance;
 
         var prices = await _prices.GetAsync(request.PriceVersion, ct);
-        if (prices is null) return new PlayerPoolResult.RuleSetNotFound();
+        if (prices is null) return PlayerPoolResult.RuleSetNotFound.Instance;
 
         var tournamentIds = await _scope.ResolveTournamentIdsAsync(
             request.Season, request.TournamentId, request.CompetitionId, request.Type, ct);
