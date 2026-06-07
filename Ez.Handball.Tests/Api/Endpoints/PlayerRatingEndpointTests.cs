@@ -120,7 +120,7 @@ public class PlayerRatingEndpointTests : IClassFixture<PlayerRatingEndpointTests
     [Fact]
     public async Task Get_InvalidType_Returns400()
     {
-        var response = await _client.GetAsync("/api/players/p1/value?type=bogus");
+        var response = await _client.GetAsync("/api/players/p1/rating?type=bogus");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -128,7 +128,7 @@ public class PlayerRatingEndpointTests : IClassFixture<PlayerRatingEndpointTests
     public async Task Get_TournamentIdAndCompetitionId_Returns400()
     {
         var response = await _client.GetAsync(
-            "/api/players/p1/value?tournamentId=8427&competitionId=olis-karla");
+            "/api/players/p1/rating?tournamentId=8427&competitionId=olis-karla");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }
