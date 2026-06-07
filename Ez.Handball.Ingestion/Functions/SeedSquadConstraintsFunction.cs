@@ -24,7 +24,7 @@ public class SeedSquadConstraintsFunction
         ("fantasy-squad-v1", "posLimit:LB",   "3"),
         ("fantasy-squad-v1", "posLimit:CB",   "3"),
         ("fantasy-squad-v1", "posLimit:RB",   "3"),
-        ("fantasy-squad-v1", "posLimit:P",    "2"),
+        ("fantasy-squad-v1", "posLimit:LP",   "2"),
     ];
 
     private readonly ITableWriter _tableWriter;
