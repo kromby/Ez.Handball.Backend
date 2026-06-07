@@ -25,7 +25,7 @@ public class TableSquadRepositoryTests : IAsyncLifetime
     {
         _constraints.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int>(), 100_000_000, "ISK"));
-        _sut = new TableSquadRepository(_client, new TableQuery(_client), _constraints.Object);
+        _sut = new TableSquadRepository(new TableQuery(_client), _constraints.Object);
         await _client.GetTableClient(Tables.Squads).CreateIfNotExistsAsync();
     }
 

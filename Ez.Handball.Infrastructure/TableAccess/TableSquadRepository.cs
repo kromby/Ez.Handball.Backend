@@ -11,16 +11,11 @@ internal sealed class TableSquadRepository : ISquadRepository
 {
     private const int ConstraintsVersion = 1;
 
-    private readonly Azure.Data.Tables.TableServiceClient _client;
     private readonly ITableQuery _query;
     private readonly ISquadConstraintsRepository _constraints;
 
-    public TableSquadRepository(
-        Azure.Data.Tables.TableServiceClient client,
-        ITableQuery query,
-        ISquadConstraintsRepository constraints)
+    public TableSquadRepository(ITableQuery query, ISquadConstraintsRepository constraints)
     {
-        _client = client;
         _query = query;
         _constraints = constraints;
     }
