@@ -81,7 +81,7 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
 
     public async Task DisposeAsync()
     {
-        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs })
+        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeamNameIndex })
         {
             try { await _tables.GetTableClient(t).DeleteAsync(); } catch { /* not created */ }
         }
@@ -198,6 +198,22 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("email_taken", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task DuplicateTeamName_Returns409()
+    {
+        var teamName = $"Shared {Guid.NewGuid():N}";
+        var first = await _client.PostAsJsonAsync("/api/auth/register",
+            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName });
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        var resp = await _client.PostAsJsonAsync("/api/auth/register",
+            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName });
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("team_name_taken", body.GetProperty("error").GetString());
     }
 
     [Fact]

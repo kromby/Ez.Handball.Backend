@@ -83,7 +83,8 @@ public class ShortlistEndpointTests : IClassFixture<ShortlistEndpointTests.Facto
         foreach (var t in new[]
                  {
                      Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens,
-                     Tables.EmailTokens, Tables.Clubs, Tables.Players, Tables.Shortlists
+                     Tables.EmailTokens, Tables.Clubs, Tables.Players, Tables.Shortlists,
+                     Tables.GameTeamNameIndex
                  })
         {
             try { await _tables.GetTableClient(t).DeleteAsync(); } catch { /* not created */ }

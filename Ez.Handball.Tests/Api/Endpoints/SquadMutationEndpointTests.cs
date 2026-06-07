@@ -66,7 +66,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
     public async Task DisposeAsync()
     {
-        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeams, Tables.GameBudgets, Tables.GameRosters })
+        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeams, Tables.GameBudgets, Tables.GameRosters, Tables.GameTeamNameIndex })
             try { await _tables.GetTableClient(t).DeleteAsync(); } catch { }
     }
 

@@ -71,7 +71,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
 
     public async Task DisposeAsync()
     {
-        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs })
+        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeamNameIndex })
         {
             try { await _tables.GetTableClient(t).DeleteAsync(); } catch { /* not created */ }
         }
