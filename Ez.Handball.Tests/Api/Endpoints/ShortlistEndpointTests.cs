@@ -95,7 +95,7 @@ public class ShortlistEndpointTests : IClassFixture<ShortlistEndpointTests.Facto
     private async Task<string> RegisterAndGetTokenAsync()
     {
         var resp = await _client.PostAsJsonAsync("/api/auth/register",
-            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385" });
+            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName = "Test Team" });
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("accessToken").GetString()!;

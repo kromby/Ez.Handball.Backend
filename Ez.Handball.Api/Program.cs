@@ -141,6 +141,7 @@ builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
 builder.Services.AddScoped<IRemoveFromShortlistUseCase, RemoveFromShortlistUseCase>();
 builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
 builder.Services.AddScoped<IGetSquadUseCase, GetSquadUseCase>();
+builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();

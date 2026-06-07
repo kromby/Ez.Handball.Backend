@@ -25,4 +25,10 @@ public static class AuthValidation
 
     public static bool IsValidLanguage(string language)
         => language is "is" or "en";
+
+    public static bool IsValidTeamName(string teamName)
+    {
+        if (string.IsNullOrWhiteSpace(teamName)) return false;
+        return teamName.Trim().Length is >= 1 and <= 60;
+    }
 }
