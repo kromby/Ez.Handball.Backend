@@ -117,6 +117,14 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task GetStats_InvalidType_Returns400()
+    {
+        var response = await _client.GetAsync("/api/players/p1/stats?type=bogus");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetStats_PlayerExistsNoStats_Returns200WithEmptyArray()
     {
         _factory.Stats

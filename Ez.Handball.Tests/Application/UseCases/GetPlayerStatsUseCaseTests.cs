@@ -90,4 +90,32 @@ public class GetPlayerStatsUseCaseTests
         Assert.Equal(2, found.Stats.Count);
         Assert.DoesNotContain(found.Stats, s => s.TournamentId == "9999");
     }
+
+    [Fact]
+    public async Task EmptyResolvedScope_ReturnsNoRows()
+    {
+        _scope.Setup(s => s.ResolveTournamentIdsAsync(
+                  It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
+                  It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(Array.Empty<string>());
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat> { Stat("2025-26", "8444", 5) });
+
+        var result = await CreateSut().ExecuteAsync(
+            "p1", Query(season: "2025-26", competitionId: "no-such-comp"), default);
+
+        var found = Assert.IsType<GetPlayerStatsResult.Found>(result);
+        Assert.Empty(found.Stats);
+    }
+
+    [Fact]
+    public async Task PlayerNotFound_DoesNotQueryStats()
+    {
+        _players.Setup(r => r.GetByIdAsync("ghost", It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Player?)null);
+
+        await CreateSut().ExecuteAsync("ghost", Query(), default);
+
+        _stats.Verify(r => r.GetByPlayerAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
