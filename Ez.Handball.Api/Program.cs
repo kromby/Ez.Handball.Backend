@@ -7,6 +7,7 @@ using Ez.Handball.Application.ValueFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
+using Ez.Handball.Api.Serialization;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -37,6 +38,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHttpLogging(_ => { });
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new TournamentTypeJsonConverter()));
 
 var storageConnection = builder.Configuration["Storage:ConnectionString"]
     ?? "UseDevelopmentStorage=true";
