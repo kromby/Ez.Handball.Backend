@@ -30,6 +30,7 @@ public static class InfrastructureRegistration
         services.AddScoped<IGameTeamRepository, TableGameTeamRepository>();
         services.AddScoped<IGameBudgetRepository, TableGameBudgetRepository>();
         services.AddScoped<IGameRosterRepository, TableGameRosterRepository>();
+        services.AddScoped<IMiniLeagueRepository, TableMiniLeagueRepository>();
         return services;
     }
 }
