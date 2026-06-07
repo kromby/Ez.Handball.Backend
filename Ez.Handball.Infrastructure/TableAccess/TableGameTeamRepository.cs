@@ -16,21 +16,10 @@ internal sealed class TableGameTeamRepository : IGameTeamRepository
     }
 
     public async Task<bool> ExistsAsync(string userId, GameFlavor flavor, CancellationToken ct)
-    {
-        var table = _client.GetTableClient(Tables.GameTeams);
-        try
-        {
-            await table.GetEntityAsync<GameTeamEntity>(userId, Flavor(flavor), cancellationToken: ct);
-            return true;
-        }
-        catch (RequestFailedException ex) when (ex.Status == 404)
-        {
-            return false;
-        }
-    }
+        => await ReadAsync(userId, flavor, ct) is not null;
 
     public async Task CreateAsync(
-        string userId, GameFlavor flavor, string name, DateTimeOffset createdAt, CancellationToken ct)
+        string userId, GameFlavor flavor, string name, string color, DateTimeOffset createdAt, CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.GameTeams);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
@@ -40,8 +29,38 @@ internal sealed class TableGameTeamRepository : IGameTeamRepository
             RowKey = Flavor(flavor),
             TeamId = GameTeamId.For(userId, flavor),
             Name = name,
+            Color = color,
             CreatedAt = createdAt
         }, TableUpdateMode.Replace, ct);
+    }
+
+    public async Task<GameTeam?> GetAsync(string userId, GameFlavor flavor, CancellationToken ct)
+    {
+        var row = await ReadAsync(userId, flavor, ct);
+        return row is null ? null : new GameTeam(row.TeamId, row.Name, row.Color, row.CreatedAt);
+    }
+
+    public async Task RenameAsync(string userId, GameFlavor flavor, string newName, CancellationToken ct)
+    {
+        var row = await ReadAsync(userId, flavor, ct)
+            ?? throw new InvalidOperationException($"No team for {userId}:{Flavor(flavor)}");
+        row.Name = newName;
+        var table = _client.GetTableClient(Tables.GameTeams);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+        await table.UpsertEntityAsync(row, TableUpdateMode.Replace, ct);
+    }
+
+    private async Task<GameTeamEntity?> ReadAsync(string userId, GameFlavor flavor, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameTeams);
+        try
+        {
+            return (await table.GetEntityAsync<GameTeamEntity>(userId, Flavor(flavor), cancellationToken: ct)).Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
     }
 
     private static string Flavor(GameFlavor flavor) => flavor.ToString().ToLowerInvariant();

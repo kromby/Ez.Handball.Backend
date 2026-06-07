@@ -24,7 +24,7 @@ public class TeamProvisioningServiceTests
 
         await Sut().ProvisionAsync("u-1", GameFlavor.Fantasy, "Dream Team", default);
 
-        _teams.Verify(t => t.CreateAsync("u-1", GameFlavor.Fantasy, "Dream Team", Now, It.IsAny<CancellationToken>()), Times.Once);
+        _teams.Verify(t => t.CreateAsync("u-1", GameFlavor.Fantasy, "Dream Team", It.IsAny<string>(), Now, It.IsAny<CancellationToken>()), Times.Once);
         _budget.Verify(b => b.CreateAsync("u-1:fantasy", 100_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -35,7 +35,7 @@ public class TeamProvisioningServiceTests
 
         await Sut().ProvisionAsync("u-1", GameFlavor.Fantasy, "Dream Team", default);
 
-        _teams.Verify(t => t.CreateAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        _teams.Verify(t => t.CreateAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
         _budget.Verify(b => b.CreateAsync(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
