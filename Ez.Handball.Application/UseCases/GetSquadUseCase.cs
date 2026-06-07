@@ -43,7 +43,9 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
         foreach (var slot in squad.Players)
         {
             var salary = await _salary.GetSalaryAsync(slot.PlayerId, version, season, tournamentId, ct);
-            if (salary is null) return GetSquadResult.RuleSetNotFound.Instance; // rule set version missing
+            // The price rule set is shared across all players, so a null means the version
+            // doesn't exist at all — this fires on the first slot if the rule set is missing.
+            if (salary is null) return GetSquadResult.RuleSetNotFound.Instance;
 
             var player = await _players.GetByIdAsync(slot.PlayerId, ct);
             items.Add(new SquadPlayer(
