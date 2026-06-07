@@ -6,6 +6,7 @@ using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Application.RatingFunctions;
+using Ez.Handball.Application.BuyFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
@@ -129,6 +130,9 @@ builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
 builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
+builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
+builder.Services.AddScoped<IBuyPlayerFunction, ManagerBuyPlayerFunction>();
+builder.Services.AddScoped<IGetBuyDecisionUseCase, GetBuyDecisionUseCase>();
 builder.Services.AddScoped<IPlayerRatingFunction, FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<IPlayerRatingFunction, ManagerPlayerRatingFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
