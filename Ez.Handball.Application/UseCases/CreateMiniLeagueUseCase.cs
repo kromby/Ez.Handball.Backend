@@ -43,12 +43,22 @@ public sealed class CreateMiniLeagueUseCase : ICreateMiniLeagueUseCase
         var league = new MiniLeague(
             Guid.NewGuid().ToString("N"), name.Trim(), current.Label, userId, now);
 
-        // Header first, then the creator membership. Two tables, so not transactional;
-        // a failure between them leaves an empty league that a retry completes (harmless).
+        // Header first, then the creator membership — two tables, so not transactional.
+        // The id is freshly generated per call, so a client retry would mint a new league
+        // rather than complete this one; compensate by deleting the header if the member
+        // write fails, leaving no orphaned (member-less) league behind.
         await _leagues.CreateAsync(league, ct);
 
         var creator = new MiniLeagueMember(userId, MiniLeagueRoles.Creator, now);
-        await _leagues.AddMemberAsync(league.Id, creator, ct);
+        try
+        {
+            await _leagues.AddMemberAsync(league.Id, creator, ct);
+        }
+        catch
+        {
+            await _leagues.DeleteAsync(league.Id, CancellationToken.None);
+            throw;
+        }
 
         return new CreateMiniLeagueResult.Created(new MiniLeagueView(league, new[] { creator }));
     }

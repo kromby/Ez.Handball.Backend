@@ -34,6 +34,8 @@ public class CreateMiniLeagueUseCaseTests
         var result = await CreateSut().ExecuteAsync("u-1", new string('x', 61), CancellationToken.None);
 
         Assert.IsType<CreateMiniLeagueResult.ValidationError>(result);
+        _leagues.Verify(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()), Times.Never);
+        _leagues.Verify(r => r.AddMemberAsync(It.IsAny<string>(), It.IsAny<MiniLeagueMember>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -76,5 +78,24 @@ public class CreateMiniLeagueUseCaseTests
         var member = Assert.Single(created.View.Members);
         Assert.Equal("u-1", member.UserId);
         Assert.Equal(MiniLeagueRoles.Creator, member.Role);
+    }
+
+    [Fact]
+    public async Task MemberWriteFails_DeletesHeader_AndRethrows()
+    {
+        SeasonsReturn(new Season("2025-26", true));
+        MiniLeague? captured = null;
+        _leagues.Setup(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()))
+                .Callback<MiniLeague, CancellationToken>((l, _) => captured = l)
+                .Returns(Task.CompletedTask);
+        _leagues.Setup(r => r.AddMemberAsync(It.IsAny<string>(), It.IsAny<MiniLeagueMember>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("boom"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut().ExecuteAsync("u-1", "Office League", CancellationToken.None));
+
+        Assert.NotNull(captured);
+        // The header write is compensated so no member-less league is left behind.
+        _leagues.Verify(r => r.DeleteAsync(captured!.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

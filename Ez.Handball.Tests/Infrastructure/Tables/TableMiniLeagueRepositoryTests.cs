@@ -50,6 +50,18 @@ public class TableMiniLeagueRepositoryTests : IAsyncLifetime
         => Assert.Null(await Sut().GetAsync("does-not-exist", default));
 
     [Fact]
+    public async Task Delete_RemovesHeader_AndIsIdempotent()
+    {
+        await Sut().CreateAsync(new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0), default);
+
+        await Sut().DeleteAsync("lg-1", default);
+        Assert.Null(await Sut().GetAsync("lg-1", default));
+
+        // Second delete (missing row) is a no-op, not an error.
+        await Sut().DeleteAsync("lg-1", default);
+    }
+
+    [Fact]
     public async Task AddMember_ThenGetMembers_ReturnsAllRows()
     {
         await Sut().AddMemberAsync("lg-1", new MiniLeagueMember("u-1", "creator", T0), default);

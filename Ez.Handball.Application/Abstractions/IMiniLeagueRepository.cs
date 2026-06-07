@@ -7,6 +7,10 @@ public interface IMiniLeagueRepository
     // Write the league header row.
     Task CreateAsync(MiniLeague league, CancellationToken ct);
 
+    // Delete the league header row. Idempotent — a missing row is not an error.
+    // Used to compensate a header write when the follow-up member write fails.
+    Task DeleteAsync(string leagueId, CancellationToken ct);
+
     // Write a single membership row (PartitionKey = leagueId, RowKey = member.UserId).
     Task AddMemberAsync(string leagueId, MiniLeagueMember member, CancellationToken ct);
 

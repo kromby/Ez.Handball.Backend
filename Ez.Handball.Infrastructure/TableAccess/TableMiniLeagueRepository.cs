@@ -34,6 +34,19 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
         }, TableUpdateMode.Replace, ct);
     }
 
+    public async Task DeleteAsync(string leagueId, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.MiniLeagues);
+        try
+        {
+            await table.DeleteEntityAsync(HeaderPartition, leagueId, ETag.All, ct);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            // Idempotent: row or table already gone.
+        }
+    }
+
     public async Task AddMemberAsync(string leagueId, MiniLeagueMember member, CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.MiniLeagueMembers);
