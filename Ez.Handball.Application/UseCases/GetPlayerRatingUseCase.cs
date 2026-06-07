@@ -22,21 +22,18 @@ public class GetPlayerRatingUseCase : IGetPlayerRatingUseCase
 {
     private readonly IReadOnlyDictionary<GameFlavor, IPlayerRatingFunction> _functions;
     private readonly IPlayerRepository _players;
-    private readonly IPlayerStatsRepository _stats;
-    private readonly ISeasonRepository _seasons;
+    private readonly IPlayerStatsAggregator _aggregator;
     private readonly IScoringRuleSetRepository _ruleSets;
 
     public GetPlayerRatingUseCase(
         IEnumerable<IPlayerRatingFunction> functions,
         IPlayerRepository players,
-        IPlayerStatsRepository stats,
-        ISeasonRepository seasons,
+        IPlayerStatsAggregator aggregator,
         IScoringRuleSetRepository ruleSets)
     {
         _functions = functions.ToDictionary(f => f.Flavor);
         _players = players;
-        _stats = stats;
-        _seasons = seasons;
+        _aggregator = aggregator;
         _ruleSets = ruleSets;
     }
 
@@ -49,8 +46,7 @@ public class GetPlayerRatingUseCase : IGetPlayerRatingUseCase
         if (!_functions.TryGetValue(flavor, out var function))
             return new GetPlayerRatingResult.InvalidFlavor();
 
-        var season = await ResolveSeasonAsync(context.Season, ct);
-        var stats = await AggregateAsync(playerId, season, context.TournamentId, ct);
+        var stats = await _aggregator.AggregateAsync(playerId, context.Season, context.TournamentId, ct);
 
         ScoringRuleSet? ruleSet = null;
         if (function.DefaultRuleSetVersion is int defaultVersion)
@@ -62,31 +58,5 @@ public class GetPlayerRatingUseCase : IGetPlayerRatingUseCase
 
         var value = function.Compute(new PlayerRatingInputs(playerId, stats, ruleSet, context));
         return new GetPlayerRatingResult.Found(value);
-    }
-
-    private async Task<string?> ResolveSeasonAsync(string? season, CancellationToken ct)
-    {
-        if (!string.IsNullOrWhiteSpace(season)) return season;
-        var all = await _seasons.ListAsync(ct);
-        return all.FirstOrDefault(s => s.IsCurrent)?.Label;
-    }
-
-    private async Task<AggregatedStats> AggregateAsync(
-        string playerId, string? season, string? tournamentId, CancellationToken ct)
-    {
-        if (season is null) return new AggregatedStats(0, 0, 0, 0, 0);
-
-        var rows = await _stats.GetByPlayerAsync(playerId, ct);
-        var scoped = rows.Where(r => r.Season == season);
-        if (!string.IsNullOrWhiteSpace(tournamentId))
-            scoped = scoped.Where(r => r.TournamentId == tournamentId);
-
-        var list = scoped.ToList();
-        return new AggregatedStats(
-            Games: list.Count,
-            Goals: list.Sum(r => r.Goals),
-            YellowCards: list.Sum(r => r.YellowCards),
-            TwoMinuteSuspensions: list.Sum(r => r.TwoMinuteSuspensions),
-            RedCards: list.Sum(r => r.RedCards));
     }
 }
