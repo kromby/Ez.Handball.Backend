@@ -38,8 +38,8 @@ public class TableLeaderboardRepositoryTests
 
     private static LeaderboardQuery Q(
         LeaderboardMetric metric = LeaderboardMetric.Goals,
-        string? season = null, string? tournamentId = null, string? gender = null) =>
-        new(metric, season, tournamentId, gender);
+        string? season = null, IReadOnlyList<string>? tournamentIds = null, string? gender = null) =>
+        new(metric, season, tournamentIds, gender);
 
     private static async IAsyncEnumerable<T> ToAsync<T>(IEnumerable<T> items)
     {
@@ -73,24 +73,51 @@ public class TableLeaderboardRepositoryTests
     }
 
     [Fact]
-    public async Task GetRankedAsync_TournamentOnly_BuildsTournamentFilter()
+    public async Task GetRankedAsync_SingleTournamentId_BuildsTournamentFilter()
     {
         SetupStats("TournamentId eq '8444'", Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
         SetupPlayers(Plr("p1", "385-karlar", "Jón"));
 
-        var result = await CreateSut().GetRankedAsync(Q(tournamentId: "8444"), default);
+        var result = await CreateSut().GetRankedAsync(Q(tournamentIds: new[] { "8444" }), default);
 
         Assert.Single(result);
     }
 
     [Fact]
-    public async Task GetRankedAsync_SeasonAndTournament_BuildsAndFilter()
+    public async Task GetRankedAsync_MultipleTournamentIds_BuildsOrSetFilter()
     {
-        SetupStats("Season eq '2025-26' and TournamentId eq '8444'",
+        SetupStats("(TournamentId eq '8444' or TournamentId eq '8427')",
+            Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5),
+            Stat("m2", "p1", "2025-26", "8427", "385-karlar", "Stjarnan", 3));
+        SetupPlayers(Plr("p1", "385-karlar", "Jón"));
+
+        var e = Assert.Single(await CreateSut().GetRankedAsync(
+            Q(tournamentIds: new[] { "8444", "8427" }), default));
+
+        Assert.Equal(8, e.Goals);
+    }
+
+    [Fact]
+    public async Task GetRankedAsync_SeasonAndTournamentIds_BuildsAndFilter()
+    {
+        SetupStats("Season eq '2025-26' and (TournamentId eq '8444')",
             Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
         SetupPlayers(Plr("p1", "385-karlar", "Jón"));
 
-        var result = await CreateSut().GetRankedAsync(Q(season: "2025-26", tournamentId: "8444"), default);
+        var result = await CreateSut().GetRankedAsync(
+            Q(season: "2025-26", tournamentIds: new[] { "8444" }), default);
+
+        Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task GetRankedAsync_EmptyTournamentIds_ScansSeasonOnly()
+    {
+        SetupStats("Season eq '2025-26'", Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
+        SetupPlayers(Plr("p1", "385-karlar", "Jón"));
+
+        var result = await CreateSut().GetRankedAsync(
+            Q(season: "2025-26", tournamentIds: Array.Empty<string>()), default);
 
         Assert.Single(result);
     }

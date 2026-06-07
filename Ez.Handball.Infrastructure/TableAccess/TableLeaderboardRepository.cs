@@ -74,8 +74,16 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
         var clauses = new List<string>();
         if (!string.IsNullOrEmpty(q.Season))
             clauses.Add($"Season eq '{ODataFilter.Escape(q.Season)}'");
-        if (!string.IsNullOrEmpty(q.TournamentId))
-            clauses.Add($"TournamentId eq '{ODataFilter.Escape(q.TournamentId)}'");
+
+        if (q.TournamentIds is { Count: > 0 })
+        {
+            var ors = string.Join(" or ",
+                q.TournamentIds.Select(id => $"TournamentId eq '{ODataFilter.Escape(id)}'"));
+            // Parenthesize when ORing multiple ids, or when this clause must AND with another.
+            var needsParens = q.TournamentIds.Count > 1 || clauses.Count > 0;
+            clauses.Add(needsParens ? $"({ors})" : ors);
+        }
+
         return clauses.Count == 0 ? null : string.Join(" and ", clauses);
     }
 

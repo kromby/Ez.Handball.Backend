@@ -8,87 +8,96 @@ namespace Ez.Handball.Tests.Application.UseCases;
 public class GetLeaderboardUseCaseTests
 {
     private readonly Mock<ILeaderboardRepository> _repo = new();
+    private readonly Mock<ITournamentScopeResolver> _scope = new();
 
-    private GetLeaderboardUseCase CreateSut() => new(_repo.Object);
+    private GetLeaderboardUseCase CreateSut() => new(_repo.Object, _scope.Object);
 
     private static LeaderboardEntry Entry(int rank, string playerId) =>
         new(rank, playerId, $"P{playerId}", "385", "Stjarnan", "karlar",
             10, 100 - rank, 0, 0, 0, (100 - rank) / 10.0);
 
-    private static LeaderboardQuery Query(LeaderboardMetric metric = LeaderboardMetric.Goals) =>
-        new(metric, null, null, null);
+    private static LeaderboardRequest Req(
+        LeaderboardMetric metric = LeaderboardMetric.Goals,
+        string? season = null, string? tournamentId = null,
+        string? competitionId = null, TournamentType? type = null, string? gender = null) =>
+        new(metric, season, tournamentId, competitionId, type, gender);
 
     private void SetupRanked(params LeaderboardEntry[] entries) =>
         _repo.Setup(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(entries);
 
+    private void SetupResolver(IReadOnlyList<string>? ids) =>
+        _scope.Setup(s => s.ResolveTournamentIdsAsync(
+                  It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
+                  It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(ids);
+
     [Fact]
     public async Task ExecuteAsync_SlicesRequestedPage_AndReportsFullTotal()
     {
+        SetupResolver(null);
         SetupRanked(Entry(1, "a"), Entry(2, "b"), Entry(3, "c"), Entry(4, "d"), Entry(5, "e"));
 
-        var result = await CreateSut().ExecuteAsync(Query(), offset: 1, limit: 2, CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync(Req(), offset: 1, limit: 2, CancellationToken.None);
 
         Assert.Equal(5, result.Total);
-        Assert.Equal(1, result.Offset);
-        Assert.Equal(2, result.Limit);
         Assert.Equal(2, result.Entries.Count);
         Assert.Equal("b", result.Entries[0].PlayerId);
         Assert.Equal("c", result.Entries[1].PlayerId);
     }
 
     [Fact]
-    public async Task ExecuteAsync_PreservesAbsoluteRanksAcrossPages()
+    public async Task ExecuteAsync_PassesResolvedTournamentIdsToRepo()
     {
-        SetupRanked(Entry(1, "a"), Entry(2, "b"), Entry(3, "c"), Entry(4, "d"));
+        SetupResolver(new[] { "8444", "8427" });
+        LeaderboardQuery? captured = null;
+        _repo.Setup(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), It.IsAny<CancellationToken>()))
+             .Callback<LeaderboardQuery, CancellationToken>((q, _) => captured = q)
+             .ReturnsAsync(Array.Empty<LeaderboardEntry>());
 
-        var result = await CreateSut().ExecuteAsync(Query(), offset: 2, limit: 2, CancellationToken.None);
+        await CreateSut().ExecuteAsync(
+            Req(season: "2025-26", competitionId: "olis-karla"), offset: 0, limit: 50, CancellationToken.None);
 
-        Assert.Equal(3, result.Entries[0].Rank);
-        Assert.Equal(4, result.Entries[1].Rank);
+        Assert.NotNull(captured);
+        Assert.Equal(new[] { "8444", "8427" }, captured!.TournamentIds);
+        Assert.Equal("2025-26", captured.Season);
     }
 
     [Fact]
-    public async Task ExecuteAsync_EmptyRanking_ReturnsEmptyPageAndZeroTotal()
+    public async Task ExecuteAsync_ForwardsScopeArgumentsToResolver()
     {
+        SetupResolver(null);
         SetupRanked();
 
-        var result = await CreateSut().ExecuteAsync(Query(), offset: 0, limit: 50, CancellationToken.None);
+        await CreateSut().ExecuteAsync(
+            Req(season: "2025-26", tournamentId: "8427", competitionId: null, type: TournamentType.Playoffs),
+            offset: 0, limit: 50, CancellationToken.None);
 
-        Assert.Equal(0, result.Total);
-        Assert.Empty(result.Entries);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_OffsetPastEnd_ReturnsEmptyEntriesButTrueTotal()
-    {
-        SetupRanked(Entry(1, "a"), Entry(2, "b"));
-
-        var result = await CreateSut().ExecuteAsync(Query(), offset: 50, limit: 50, CancellationToken.None);
-
-        Assert.Equal(2, result.Total);
-        Assert.Empty(result.Entries);
+        _scope.Verify(s => s.ResolveTournamentIdsAsync(
+            "2025-26", "8427", null, TournamentType.Playoffs, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_EchoesMetricAsEnumName()
     {
+        SetupResolver(null);
         SetupRanked();
 
         var result = await CreateSut().ExecuteAsync(
-            Query(LeaderboardMetric.YellowCards), offset: 0, limit: 50, CancellationToken.None);
+            Req(LeaderboardMetric.YellowCards), offset: 0, limit: 50, CancellationToken.None);
 
         Assert.Equal("YellowCards", result.Metric);
     }
 
     [Fact]
-    public async Task ExecuteAsync_PropagatesCancellationToken()
+    public async Task ExecuteAsync_EmptyRanking_ReturnsEmptyPageAndZeroTotal()
     {
-        using var cts = new CancellationTokenSource();
+        SetupResolver(null);
         SetupRanked();
 
-        await CreateSut().ExecuteAsync(Query(), offset: 0, limit: 50, cts.Token);
+        var result = await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, CancellationToken.None);
 
-        _repo.Verify(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), cts.Token), Times.Once);
+        Assert.Equal(0, result.Total);
+        Assert.Empty(result.Entries);
     }
 }

@@ -240,6 +240,8 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     string? metric,
     string? season,
     string? tournamentId,
+    string? competitionId,
+    string? type,
     string? gender,
     int? offset,
     int? limit,
@@ -252,13 +254,20 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     if (!TryNormalizeGender(gender, out var parsedGender))
         return Results.BadRequest(new { error = "invalid_gender" });
 
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
     var off = offset ?? 0;
     var lim = limit ?? 50;
     if (off < 0 || lim < 1 || lim > 200)
         return Results.BadRequest(new { error = "invalid_pagination" });
 
-    var query = new LeaderboardQuery(parsedMetric, season, tournamentId, parsedGender);
-    var result = await uc.ExecuteAsync(query, off, lim, ct);
+    var request = new LeaderboardRequest(
+        parsedMetric, season, tournamentId, competitionId, parsedType, parsedGender);
+    var result = await uc.ExecuteAsync(request, off, lim, ct);
     return Results.Ok(result);
 });
 
@@ -330,6 +339,22 @@ static bool TryParseFlavor(string? value, out ValueFlavor flavor)
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out flavor) && Enum.IsDefined(flavor);
+}
+
+static bool TryParseTournamentType(string? value, out TournamentType? type)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        type = null;
+        return true;
+    }
+    if (TournamentTypes.TryParse(value, out var parsed))
+    {
+        type = parsed;
+        return true;
+    }
+    type = null;
+    return false;
 }
 
 static bool TryNormalizeGender(string? value, out string? gender)

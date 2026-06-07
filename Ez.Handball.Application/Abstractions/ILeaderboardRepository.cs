@@ -11,10 +11,20 @@ public enum LeaderboardMetric
     Games
 }
 
-public sealed record LeaderboardQuery(
+// Edge → use case. Carries the raw, unresolved scope.
+public sealed record LeaderboardRequest(
     LeaderboardMetric Metric,
     string? Season,
     string? TournamentId,
+    string? CompetitionId,
+    TournamentType? Type,
+    string? Gender);
+
+// Use case → repository. TournamentIds is the resolved set (null/empty = whole season).
+public sealed record LeaderboardQuery(
+    LeaderboardMetric Metric,
+    string? Season,
+    IReadOnlyList<string>? TournamentIds,
     string? Gender);
 
 public interface ILeaderboardRepository
