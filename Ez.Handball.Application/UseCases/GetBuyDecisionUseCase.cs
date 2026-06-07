@@ -6,9 +6,9 @@ namespace Ez.Handball.Application.UseCases;
 
 public abstract record BuyDecisionResult
 {
-    public sealed record PlayerNotFound  : BuyDecisionResult;
-    public sealed record InvalidFlavor   : BuyDecisionResult;
-    public sealed record RuleSetNotFound : BuyDecisionResult;
+    public sealed record PlayerNotFound  : BuyDecisionResult { public static readonly PlayerNotFound  Instance = new(); }
+    public sealed record InvalidFlavor   : BuyDecisionResult { public static readonly InvalidFlavor   Instance = new(); }
+    public sealed record RuleSetNotFound : BuyDecisionResult { public static readonly RuleSetNotFound Instance = new(); }
     public sealed record Decided(BuyDecision Decision) : BuyDecisionResult;
 }
 
@@ -46,10 +46,10 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         string userId, string playerId, GameFlavor flavor, BuyPlayerContext context, CancellationToken ct)
     {
         var player = await _players.GetByIdAsync(playerId, ct);
-        if (player is null) return new BuyDecisionResult.PlayerNotFound();
+        if (player is null) return BuyDecisionResult.PlayerNotFound.Instance;
 
         if (!_functions.TryGetValue(flavor, out var function))
-            return new BuyDecisionResult.InvalidFlavor();
+            return BuyDecisionResult.InvalidFlavor.Instance;
 
         // Manager is a stub: no salary/constraints/squad I/O — it ignores all but PlayerId.
         if (flavor == GameFlavor.Manager)
@@ -63,10 +63,10 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
 
         var version = context.RuleSetVersion ?? DefaultVersion;
         var salary = await _salary.GetSalaryAsync(playerId, version, context.Season, context.TournamentId, ct);
-        if (salary is null) return new BuyDecisionResult.RuleSetNotFound();
+        if (salary is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var constraints = await _constraints.GetAsync(DefaultVersion, ct);
-        if (constraints is null) return new BuyDecisionResult.RuleSetNotFound();
+        if (constraints is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var squad = await _squad.GetAsync(userId, flavor, ct);
 

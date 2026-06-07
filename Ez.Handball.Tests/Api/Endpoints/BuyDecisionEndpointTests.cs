@@ -31,7 +31,6 @@ public class BuyDecisionEndpointTests : IClassFixture<BuyDecisionEndpointTests.F
         {
             builder.UseEnvironment("Development");
             builder.ConfigureAppConfiguration((_, cfg) =>
-            {
                 cfg.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Storage:ConnectionString"] = "UseDevelopmentStorage=true",
@@ -41,8 +40,7 @@ public class BuyDecisionEndpointTests : IClassFixture<BuyDecisionEndpointTests.F
                     ["Jwt:AccessTokenMinutes"] = "15",
                     ["Auth:RateLimit:PermitLimit"] = "1000",
                     ["Auth:RateLimit:SensitivePermitLimit"] = "1000"
-                });
-            });
+                }));
             builder.ConfigureServices(services =>
             {
                 var descriptor = services.Single(d => d.ServiceType == typeof(IGetBuyDecisionUseCase));
