@@ -22,6 +22,7 @@ public static class AuthEndpoints
                     expiresIn = s.ExpiresIn, user = s.User.ToProfile()
                 }, statusCode: StatusCodes.Status201Created),
                 RegisterResult.EmailTaken       => Results.Conflict(new { error = "email_taken" }),
+                RegisterResult.TeamNameTaken    => Results.Conflict(new { error = "team_name_taken" }),
                 RegisterResult.InvalidClub      => Results.BadRequest(new { error = "invalid_club" }),
                 RegisterResult.WeakPassword     => Results.BadRequest(new { error = "weak_password" }),
                 RegisterResult.ValidationError v => Results.BadRequest(new { error = "validation_error", details = new { field = v.Field } }),
