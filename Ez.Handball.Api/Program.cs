@@ -121,6 +121,9 @@ builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
 builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
+builder.Services.AddScoped<FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
+builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
 builder.Services.AddScoped<IPlayerRatingFunction, FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<IPlayerRatingFunction, ManagerPlayerRatingFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
@@ -228,6 +231,27 @@ app.MapGet("/api/players/{playerId}/rating", async Task<IResult> (
         GetPlayerRatingResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
         GetPlayerRatingResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
         GetPlayerRatingResult.Found f          => Results.Ok(f.Rating),
+        _                                     => Results.Problem()
+    };
+});
+
+app.MapGet("/api/players/{playerId}/salary", async Task<IResult> (
+    string playerId,
+    string? season,
+    string? tournamentId,
+    int? ruleSetVersion,
+    IGetPlayerSalaryUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    var result = await uc.ExecuteAsync(playerId, ruleSetVersion, season, tournamentId, ct);
+    return result switch
+    {
+        GetPlayerSalaryResult.NotFound        => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerSalaryResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetPlayerSalaryResult.Found f         => Results.Ok(f.Salary),
         _                                     => Results.Problem()
     };
 });
