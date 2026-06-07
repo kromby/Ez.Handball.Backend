@@ -12,13 +12,19 @@ public class GetPlayerValueUseCaseTests
     private readonly Mock<IPlayerStatsRepository> _stats = new();
     private readonly Mock<ISeasonRepository> _seasons = new();
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
+    private readonly Mock<ITournamentRepository> _tournaments = new();
 
     private static readonly ScoringRuleSet FantasyV1 =
         new(ValueFlavor.Fantasy, 1, 2, -1, -2, -5, 1);
 
-    private GetPlayerValueUseCase CreateSut() => new(
-        new IPlayerValueFunction[] { new FantasyPlayerValueFunction(), new ManagerPlayerValueFunction() },
-        _players.Object, _stats.Object, _seasons.Object, _ruleSets.Object);
+    private GetPlayerValueUseCase CreateSut()
+    {
+        var scope = new Ez.Handball.Application.Services.TournamentScopeResolver(
+            _tournaments.Object, _seasons.Object);
+        return new(
+            new IPlayerValueFunction[] { new FantasyPlayerValueFunction(), new ManagerPlayerValueFunction() },
+            _players.Object, _stats.Object, _seasons.Object, _ruleSets.Object, scope);
+    }
 
     private static Player Player(string id) =>
         new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back");
@@ -26,9 +32,17 @@ public class GetPlayerValueUseCaseTests
     private static PlayerStat Stat(string season, string tournamentId, int goals) =>
         new("match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
 
+    private void SetupTournamentsBySeason(string season, params Tournament[] rows) =>
+        _tournaments.Setup(r => r.ListBySeasonAsync(season, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(rows);
+
+    private static Tournament Trn(string id, TournamentType type, string competitionId) =>
+        new(id, $"name-{id}", "karlar", type, competitionId, $"comp-{competitionId}");
+
     private static PlayerValueContext Ctx(
-        string? season = null, string? tournamentId = null, int? ruleSetVersion = null) =>
-        new(season, tournamentId, ruleSetVersion, null, null);
+        string? season = null, string? tournamentId = null, string? competitionId = null,
+        int? ruleSetVersion = null, TournamentType? type = null) =>
+        new(season, tournamentId, competitionId, ruleSetVersion, type, null);
 
     public GetPlayerValueUseCaseTests()
     {
@@ -167,5 +181,49 @@ public class GetPlayerValueUseCaseTests
         Assert.Equal(5, found.Value.Value);
         _ruleSets.Verify(
             r => r.GetAsync(It.IsAny<ValueFlavor>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Fantasy_CompetitionScope_AggregatesAcrossPhases()
+    {
+        SetupTournamentsBySeason("2025-26",
+            Trn("8444", TournamentType.League, "olis-karla"),
+            Trn("8427", TournamentType.Playoffs, "olis-karla"),
+            Trn("9999", TournamentType.Cup, "bikar-karla"));
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>
+              {
+                  Stat("2025-26", "8444", 5),
+                  Stat("2025-26", "8427", 3),
+                  Stat("2025-26", "9999", 7), // different competition — excluded
+              });
+
+        var result = await CreateSut().ExecuteAsync(
+            "p1", ValueFlavor.Fantasy, Ctx(season: "2025-26", competitionId: "olis-karla"), default);
+
+        var found = Assert.IsType<GetPlayerValueResult.Found>(result);
+        // 2 games, 8 goals: 8*2 + 2*1 = 18
+        Assert.Equal(18, found.Value.Value);
+    }
+
+    [Fact]
+    public async Task Fantasy_TypeScope_NarrowsToPhase()
+    {
+        SetupTournamentsBySeason("2025-26",
+            Trn("8444", TournamentType.League, "olis-karla"),
+            Trn("8427", TournamentType.Playoffs, "olis-karla"));
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>
+              {
+                  Stat("2025-26", "8444", 5),
+                  Stat("2025-26", "8427", 3),
+              });
+
+        var result = await CreateSut().ExecuteAsync(
+            "p1", ValueFlavor.Fantasy, Ctx(season: "2025-26", type: TournamentType.Playoffs), default);
+
+        var found = Assert.IsType<GetPlayerValueResult.Found>(result);
+        // playoffs only: 1 game, 3 goals: 3*2 + 1 = 7
+        Assert.Equal(7, found.Value.Value);
     }
 }

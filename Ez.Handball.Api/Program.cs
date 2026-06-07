@@ -223,8 +223,9 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     string? flavor,
     string? season,
     string? tournamentId,
+    string? competitionId,
     int? ruleSetVersion,
-    string? phase,
+    string? type,
     DateOnly? asOf,
     IGetPlayerValueUseCase uc,
     CancellationToken ct) =>
@@ -235,7 +236,13 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     if (!TryParseFlavor(flavor, out var parsedFlavor))
         return Results.BadRequest(new { error = "invalid_flavor" });
 
-    var context = new PlayerValueContext(season, tournamentId, ruleSetVersion, phase, asOf);
+    if (!TryParseTournamentType(type, out var parsedType))
+        return Results.BadRequest(new { error = "invalid_type" });
+
+    if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
+        return Results.BadRequest(new { error = "invalid_scope" });
+
+    var context = new PlayerValueContext(season, tournamentId, competitionId, ruleSetVersion, parsedType, asOf);
     var result = await uc.ExecuteAsync(playerId, parsedFlavor, context, ct);
     return result switch
     {
