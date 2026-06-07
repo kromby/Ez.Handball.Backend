@@ -20,7 +20,9 @@ public sealed record LeaderboardRequest(
     TournamentType? Type,
     string? Gender);
 
-// Use case → repository. TournamentIds is the resolved set (null/empty = whole season).
+// Use case → repository. TournamentIds is the resolved set:
+// null = no tournament narrowing (whole-season scan); empty = scope matched no
+// tournaments (the repository returns no entries).
 public sealed record LeaderboardQuery(
     LeaderboardMetric Metric,
     string? Season,
