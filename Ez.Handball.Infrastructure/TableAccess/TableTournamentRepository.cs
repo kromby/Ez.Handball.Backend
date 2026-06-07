@@ -11,10 +11,14 @@ internal sealed class TableTournamentRepository : ITournamentRepository
 
     public TableTournamentRepository(ITableQuery query) => _query = query;
 
-    public async Task<IReadOnlyList<Tournament>> ListEnabledBySeasonAsync(string season, CancellationToken ct)
-    {
-        var filter = $"PartitionKey eq '{ODataFilter.Escape(season)}' and Enabled eq true";
+    public Task<IReadOnlyList<Tournament>> ListActiveBySeasonAsync(string season, CancellationToken ct) =>
+        QueryAsync($"PartitionKey eq '{ODataFilter.Escape(season)}' and Active eq true", ct);
 
+    public Task<IReadOnlyList<Tournament>> ListBySeasonAsync(string season, CancellationToken ct) =>
+        QueryAsync($"PartitionKey eq '{ODataFilter.Escape(season)}'", ct);
+
+    private async Task<IReadOnlyList<Tournament>> QueryAsync(string filter, CancellationToken ct)
+    {
         var rows = new List<TournamentEntity>();
         await foreach (var t in _query.QueryAsync<TournamentEntity>(Tables.Tournaments, filter, ct))
             rows.Add(t);
@@ -25,7 +29,14 @@ internal sealed class TableTournamentRepository : ITournamentRepository
         return rows
             .OrderBy(t => t.Priority)
             .ThenBy(t => t.Name, nameComparer)
-            .Select(t => new Tournament(t.RowKey, t.Name, t.Gender))
+            .Select(Map)
             .ToList();
+    }
+
+    private static Tournament Map(TournamentEntity t)
+    {
+        // Defensive: rows seeded before this field existed default to League.
+        var type = TournamentTypes.TryParse(t.Type, out var parsed) ? parsed : TournamentType.League;
+        return new Tournament(t.RowKey, t.Name, t.Gender, type, t.CompetitionId, t.CompetitionName);
     }
 }

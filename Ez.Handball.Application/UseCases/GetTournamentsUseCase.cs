@@ -30,6 +30,6 @@ public class GetTournamentsUseCase : IGetTournamentsUseCase
             season = current.Label;
         }
 
-        return await _tournaments.ListEnabledBySeasonAsync(season, ct);
+        return await _tournaments.ListActiveBySeasonAsync(season, ct);
     }
 }
