@@ -1,0 +1,127 @@
+using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
+using Ez.Handball.Domain;
+
+namespace Ez.Handball.Application.UseCases;
+
+public enum PlayerPoolSort
+{
+    Rating,
+    Price,
+    PickPercentage
+}
+
+// Edge → use case. Carries the raw, unresolved scope + the chosen sort + the
+// price rule-set version (default 1 at the edge).
+public sealed record PlayerPoolRequest(
+    string? Season,
+    string? TournamentId,
+    string? CompetitionId,
+    TournamentType? Type,
+    string? Gender,
+    string? Position,
+    PlayerPoolSort Sort,
+    int PriceVersion);
+
+public abstract record PlayerPoolResult
+{
+    public sealed record RuleSetNotFound : PlayerPoolResult;
+    public sealed record Found(PlayerPool Pool) : PlayerPoolResult;
+}
+
+public interface IGetPlayerPoolUseCase
+{
+    Task<PlayerPoolResult> ExecuteAsync(
+        PlayerPoolRequest request, int offset, int limit, CancellationToken ct);
+}
+
+public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
+{
+    private readonly IPlayerPoolRepository _repo;
+    private readonly ITournamentScopeResolver _scope;
+    private readonly IScoringRuleSetRepository _scoring;
+    private readonly ISalaryRuleSetRepository _prices;
+    private readonly FantasyPricing _pricing;
+
+    public GetPlayerPoolUseCase(
+        IPlayerPoolRepository repo,
+        ITournamentScopeResolver scope,
+        IScoringRuleSetRepository scoring,
+        ISalaryRuleSetRepository prices,
+        FantasyPricing pricing)
+    {
+        _repo = repo;
+        _scope = scope;
+        _scoring = scoring;
+        _prices = prices;
+        _pricing = pricing;
+    }
+
+    public async Task<PlayerPoolResult> ExecuteAsync(
+        PlayerPoolRequest request, int offset, int limit, CancellationToken ct)
+    {
+        // Load both rule-sets ONCE up front; bail before any per-player work if missing.
+        var scoring = await _scoring.GetAsync(GameFlavor.Fantasy, _pricing.ScoringVersion, ct);
+        if (scoring is null) return new PlayerPoolResult.RuleSetNotFound();
+
+        var prices = await _prices.GetAsync(request.PriceVersion, ct);
+        if (prices is null) return new PlayerPoolResult.RuleSetNotFound();
+
+        var tournamentIds = await _scope.ResolveTournamentIdsAsync(
+            request.Season, request.TournamentId, request.CompetitionId, request.Type, ct);
+
+        var query = new PlayerPoolQuery(request.Season, tournamentIds, request.Gender);
+        var players = await _repo.GetAggregatedAsync(query, ct);
+
+        // Context is accepted by the rating function but unused by the fantasy
+        // formula; pass the season for completeness.
+        var ctx = new PlayerRatingContext(request.Season, null, null, null, null, null);
+
+        var computed = players
+            .Where(p => string.IsNullOrWhiteSpace(request.Position)
+                || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
+            .Select(p =>
+            {
+                var priced = _pricing.Compute(p.PlayerId, p.Stats, scoring, prices, ctx);
+                return new PlayerPoolEntry(
+                    Rank: 0,
+                    PlayerId: p.PlayerId,
+                    Name: p.Name,
+                    ClubId: p.ClubId,
+                    ClubName: p.ClubName,
+                    Gender: p.Gender,
+                    Position: p.Position,
+                    Price: priced.Cost,
+                    Rating: priced.Rating,
+                    PickPercentage: null); // deferred — ownership aggregation follow-up
+            });
+
+        var sorted = Sort(computed, request.Sort).ToList();
+
+        var ranked = new List<PlayerPoolEntry>(sorted.Count);
+        for (var i = 0; i < sorted.Count; i++)
+            ranked.Add(sorted[i] with { Rank = i + 1 });
+
+        var page = ranked.Skip(offset).Take(limit).ToList();
+        var pool = new PlayerPool(request.Sort.ToString(), ranked.Count, offset, limit, page);
+        return new PlayerPoolResult.Found(pool);
+    }
+
+    // Stable tie-break: rating desc, then playerId ordinal. sort=PickPercentage
+    // is accepted but every value is null, so it falls through to the tie-break.
+    private static IEnumerable<PlayerPoolEntry> Sort(IEnumerable<PlayerPoolEntry> entries, PlayerPoolSort sort) =>
+        sort switch
+        {
+            PlayerPoolSort.Price => entries
+                .OrderByDescending(e => e.Price.Amount)
+                .ThenByDescending(e => e.Rating)
+                .ThenBy(e => e.PlayerId, StringComparer.Ordinal),
+            PlayerPoolSort.PickPercentage => entries
+                .OrderByDescending(e => e.PickPercentage ?? double.NegativeInfinity)
+                .ThenByDescending(e => e.Rating)
+                .ThenBy(e => e.PlayerId, StringComparer.Ordinal),
+            _ => entries
+                .OrderByDescending(e => e.Rating)
+                .ThenBy(e => e.PlayerId, StringComparer.Ordinal),
+        };
+}
