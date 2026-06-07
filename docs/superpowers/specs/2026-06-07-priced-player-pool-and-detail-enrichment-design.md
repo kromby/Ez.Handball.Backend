@@ -43,7 +43,7 @@ enrichment cost for every caller.
 | Param | Notes |
 |-------|-------|
 | `season`, `tournamentId`, `competitionId`, `type`, `gender` | Scope filters — reuse the existing `ITournamentScopeResolver` machinery, identical semantics to `/api/leaderboard` (incl. `tournamentId` + `competitionId` together → `400 invalid_scope`). |
-| `position` | Optional. Filters to the stored position code (placeholder vocabulary, owner review pending). Exact match. |
+| `position` | Optional. Filters to the stored position code (placeholder vocabulary, owner review pending). Exact match, case-insensitive (`OrdinalIgnoreCase`). |
 | `sort` | `rating` (default) \| `price` \| `pickPercentage`. All **descending**. Sort applies to the full scoped set, then pages. |
 | `offset` / `limit` | Same rules as leaderboard: `offset` default 0, `limit` default 50, max 200; out-of-range → `400 invalid_pagination`. |
 | `version` | Optional price-rule-set version. Defaults to `1` (parity with `/api/players/{id}/salary`). |

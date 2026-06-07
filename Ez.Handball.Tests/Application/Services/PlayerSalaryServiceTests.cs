@@ -25,7 +25,7 @@ public class PlayerSalaryServiceTests
     });
 
     private PlayerSalaryService CreateSut() =>
-        new(_aggregator.Object, _scoring.Object, _prices.Object, new FantasyPlayerRatingFunction());
+        new(_aggregator.Object, _scoring.Object, _prices.Object, new FantasyPricing(new FantasyPlayerRatingFunction()));
 
     private void Aggregate(int games, int goals) =>
         _aggregator.Setup(a => a.AggregateAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>())).ReturnsAsync(new AggregatedStats(games, goals, 0, 0, 0));

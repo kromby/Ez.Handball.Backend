@@ -17,6 +17,7 @@ public static class InfrastructureRegistration
         services.AddScoped<IPlayerStatsRepository, TablePlayerStatsRepository>();
         services.AddScoped<IPlayerHistoryRepository, TablePlayerHistoryRepository>();
         services.AddScoped<ILeaderboardRepository, TableLeaderboardRepository>();
+        services.AddScoped<IPlayerPoolRepository, TablePlayerPoolRepository>();
         services.AddScoped<IMatchRepository, TableMatchRepository>();
         services.AddScoped<IMatchPlayerLinesRepository, TableMatchPlayerLinesRepository>();
         services.AddScoped<IShortlistRepository, TableShortlistRepository>();
@@ -26,6 +27,9 @@ public static class InfrastructureRegistration
         services.AddScoped<ISalaryRuleSetRepository, TableSalaryRuleSetRepository>();
         services.AddScoped<ISquadConstraintsRepository, TableSquadConstraintsRepository>();
         services.AddScoped<ISquadRepository, TableSquadRepository>();
+        services.AddScoped<IGameTeamRepository, TableGameTeamRepository>();
+        services.AddScoped<IGameBudgetRepository, TableGameBudgetRepository>();
+        services.AddScoped<IGameRosterRepository, TableGameRosterRepository>();
         return services;
     }
 }

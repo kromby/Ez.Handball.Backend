@@ -15,5 +15,8 @@ public static class Tables
     public const string EmailTokens = "EmailTokens";
     public const string Shortlists = "Shortlists";
     public const string Squads = "Squads";
+    public const string GameTeams = "GameTeams";
+    public const string GameRosters = "GameRosters";
+    public const string GameBudgets = "GameBudgets";
     public const string Config = "Config";
 }

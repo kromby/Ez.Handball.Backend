@@ -15,6 +15,6 @@ public sealed record SquadPlayer(
 
 public sealed record SquadView(
     IReadOnlyList<SquadPlayer> Players,
-    PlayerCost BudgetUsed,        // sum of PricePaid
-    PlayerCost RemainingBudget,   // StartingCap - BudgetUsed (== Squad.Budget)
-    PlayerCost SquadValue);       // sum of current prices
+    PlayerCost BudgetUsed,        // sum of each owned player's PricePaid (what the manager paid for the current squad)
+    PlayerCost RemainingBudget,   // stored cash balance (Squad.Budget); once sell-on fees apply this no longer equals StartingCap − BudgetUsed — the stored value is authoritative
+    PlayerCost SquadValue);       // sum of current market prices

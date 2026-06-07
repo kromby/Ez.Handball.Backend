@@ -23,6 +23,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
             // (ConfigureAppConfiguration on the factory is applied too late).
             // "5500" is the Live Server port the static Web UI runs on.
             Environment.SetEnvironmentVariable("Cors__AllowedOrigins__0", "http://localhost:5500");
+            Environment.SetEnvironmentVariable("Jwt__SigningKey", "integration-test-signing-key-32-bytes-min!!");
         }
 
         public Mock<IGetPlayerProfileUseCase> Profile { get; } = new();
@@ -82,7 +83,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerCost(11_000_000, "ISK")));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -93,6 +94,10 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         Assert.Equal("Stjarnan", body.GetProperty("clubName").GetString());
         Assert.Equal("karlar", body.GetProperty("gender").GetString());
         Assert.Equal(35, body.GetProperty("age").GetInt32());
+        Assert.Equal("VS", body.GetProperty("position").GetString());
+        var price = body.GetProperty("price");
+        Assert.Equal(11_000_000, price.GetProperty("amount").GetDouble());
+        Assert.Equal("ISK", price.GetProperty("currency").GetString());
     }
 
     [Fact]
