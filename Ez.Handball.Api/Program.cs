@@ -178,7 +178,20 @@ app.MapGet("/api/players/{playerId}", async (
     return result switch
     {
         GetPlayerProfileResult.NotFound       => Results.NotFound(new { error = "player_not_found" }),
-        GetPlayerProfileResult.Found f        => Results.Ok(f.Player),
+        GetPlayerProfileResult.Found f        => Results.Ok(new
+        {
+            f.Player.PlayerId,
+            f.Player.Name,
+            f.Player.JerseyNumber,
+            f.Player.DateOfBirth,
+            f.Player.Age,
+            f.Player.TeamId,
+            f.Player.ClubId,
+            f.Player.ClubName,
+            f.Player.Gender,
+            f.Player.Position,
+            price = f.Price
+        }),
         _                                     => Results.Problem()
     };
 });
