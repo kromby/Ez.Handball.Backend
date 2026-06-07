@@ -37,10 +37,10 @@ public class TableScoringRuleSetRepositoryTests
     {
         SetupGroup("fantasy-v1", FullFantasyV1);
 
-        var rs = await CreateSut().GetAsync(ValueFlavor.Fantasy, 1, default);
+        var rs = await CreateSut().GetAsync(GameFlavor.Fantasy, 1, default);
 
         Assert.NotNull(rs);
-        Assert.Equal(ValueFlavor.Fantasy, rs!.Flavor);
+        Assert.Equal(GameFlavor.Fantasy, rs!.Flavor);
         Assert.Equal(1, rs.Version);
         Assert.Equal(2, rs.GoalPoints);
         Assert.Equal(-1, rs.YellowCardPoints);
@@ -59,7 +59,7 @@ public class TableScoringRuleSetRepositoryTests
     {
         SetupGroup("fantasy-v9"); // no rows
 
-        Assert.Null(await CreateSut().GetAsync(ValueFlavor.Fantasy, 9, default));
+        Assert.Null(await CreateSut().GetAsync(GameFlavor.Fantasy, 9, default));
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class TableScoringRuleSetRepositoryTests
     {
         SetupGroup("fantasy-v1", ("goals", "2"), ("yellowCards", "-1")); // incomplete
 
-        Assert.Null(await CreateSut().GetAsync(ValueFlavor.Fantasy, 1, default));
+        Assert.Null(await CreateSut().GetAsync(GameFlavor.Fantasy, 1, default));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class TableScoringRuleSetRepositoryTests
         SetupGroup("fantasy-v1",
             ("goals", "abc"), ("yellowCards", "-1"), ("twoMinute", "-2"), ("redCards", "-5"), ("appearances", "1"));
 
-        Assert.Null(await CreateSut().GetAsync(ValueFlavor.Fantasy, 1, default));
+        Assert.Null(await CreateSut().GetAsync(GameFlavor.Fantasy, 1, default));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class TableScoringRuleSetRepositoryTests
         SetupGroup("manager-v2",
             ("goals", "0"), ("yellowCards", "0"), ("twoMinute", "0"), ("redCards", "0"), ("appearances", "0"));
 
-        var rs = await CreateSut().GetAsync(ValueFlavor.Manager, 2, default);
+        var rs = await CreateSut().GetAsync(GameFlavor.Manager, 2, default);
 
         Assert.NotNull(rs);
         _query.Verify(q => q.QueryAsync<ConfigEntity>(

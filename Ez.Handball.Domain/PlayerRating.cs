@@ -1,14 +1,14 @@
 namespace Ez.Handball.Domain;
 
-public sealed record PlayerValueComponent(
+public sealed record PlayerRatingComponent(
     string Key,
     double Value,
     double Weight,
     double Contribution);
 
-public sealed record PlayerValue(
+public sealed record PlayerRating(
     string PlayerId,
     string Flavor,   // lowercased flavor name, e.g. "fantasy"
-    double Value,
-    IReadOnlyList<PlayerValueComponent> Components,
+    double Rating,
+    IReadOnlyList<PlayerRatingComponent> Components,
     string Version);

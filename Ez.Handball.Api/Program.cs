@@ -5,7 +5,7 @@ using Ez.Handball.Api.Serialization;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
-using Ez.Handball.Application.ValueFunctions;
+using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.Security;
@@ -124,9 +124,13 @@ builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
 builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
-builder.Services.AddScoped<IGetPlayerValueUseCase, GetPlayerValueUseCase>();
-builder.Services.AddScoped<IPlayerValueFunction, FantasyPlayerValueFunction>();
-builder.Services.AddScoped<IPlayerValueFunction, ManagerPlayerValueFunction>();
+builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
+builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
+builder.Services.AddScoped<FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
+builder.Services.AddScoped<IGetPlayerSalaryUseCase, GetPlayerSalaryUseCase>();
+builder.Services.AddScoped<IPlayerRatingFunction, FantasyPlayerRatingFunction>();
+builder.Services.AddScoped<IPlayerRatingFunction, ManagerPlayerRatingFunction>();
 builder.Services.AddSingleton(new ShortlistSettings(
     builder.Configuration.GetValue("Shortlist:MaxSize", 20)));
 builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
@@ -218,7 +222,7 @@ app.MapGet("/api/players/{playerId}/history", async (
     };
 });
 
-app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
+app.MapGet("/api/players/{playerId}/rating", async Task<IResult> (
     string playerId,
     string? flavor,
     string? season,
@@ -227,7 +231,7 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     int? ruleSetVersion,
     string? type,
     DateOnly? asOf,
-    IGetPlayerValueUseCase uc,
+    IGetPlayerRatingUseCase uc,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(playerId))
@@ -242,14 +246,35 @@ app.MapGet("/api/players/{playerId}/value", async Task<IResult> (
     if (!string.IsNullOrWhiteSpace(tournamentId) && !string.IsNullOrWhiteSpace(competitionId))
         return Results.BadRequest(new { error = "invalid_scope" });
 
-    var context = new PlayerValueContext(season, tournamentId, competitionId, ruleSetVersion, parsedType, asOf);
+    var context = new PlayerRatingContext(season, tournamentId, competitionId, ruleSetVersion, parsedType, asOf);
     var result = await uc.ExecuteAsync(playerId, parsedFlavor, context, ct);
     return result switch
     {
-        GetPlayerValueResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
-        GetPlayerValueResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
-        GetPlayerValueResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
-        GetPlayerValueResult.Found f          => Results.Ok(f.Value),
+        GetPlayerRatingResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerRatingResult.InvalidFlavor    => Results.BadRequest(new { error = "invalid_flavor" }),
+        GetPlayerRatingResult.RuleSetNotFound  => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetPlayerRatingResult.Found f          => Results.Ok(f.Rating),
+        _                                     => Results.Problem()
+    };
+});
+
+app.MapGet("/api/players/{playerId}/salary", async Task<IResult> (
+    string playerId,
+    string? season,
+    string? tournamentId,
+    int? ruleSetVersion,
+    IGetPlayerSalaryUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(playerId))
+        return Results.BadRequest(new { error = "invalid_player_id" });
+
+    var result = await uc.ExecuteAsync(playerId, ruleSetVersion, season, tournamentId, ct);
+    return result switch
+    {
+        GetPlayerSalaryResult.NotFound        => Results.NotFound(new { error = "player_not_found" }),
+        GetPlayerSalaryResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetPlayerSalaryResult.Found f         => Results.Ok(f.Salary),
         _                                     => Results.Problem()
     };
 });
@@ -349,11 +374,11 @@ static bool TryParseMetric(string? value, out LeaderboardMetric metric)
     return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
 }
 
-static bool TryParseFlavor(string? value, out ValueFlavor flavor)
+static bool TryParseFlavor(string? value, out GameFlavor flavor)
 {
     if (string.IsNullOrWhiteSpace(value))
     {
-        flavor = ValueFlavor.Fantasy;
+        flavor = GameFlavor.Fantasy;
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out flavor) && Enum.IsDefined(flavor);

@@ -1,26 +1,26 @@
-using Ez.Handball.Application.ValueFunctions;
+using Ez.Handball.Application.RatingFunctions;
 using Ez.Handball.Domain;
 
-namespace Ez.Handball.Tests.Application.ValueFunctions;
+namespace Ez.Handball.Tests.Application.RatingFunctions;
 
-public class FantasyPlayerValueFunctionTests
+public class FantasyPlayerRatingFunctionTests
 {
     private static readonly ScoringRuleSet RuleSet =
-        new(ValueFlavor.Fantasy, 1,
+        new(GameFlavor.Fantasy, 1,
             GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
             RedCardPoints: -5, AppearancePoints: 1);
 
-    private static PlayerValueContext Ctx() => new(null, null, null, null, null, null);
+    private static PlayerRatingContext Ctx() => new(null, null, null, null, null, null);
 
-    private static PlayerValueInputs Inputs(AggregatedStats stats) =>
+    private static PlayerRatingInputs Inputs(AggregatedStats stats) =>
         new("p1", stats, RuleSet, Ctx());
 
     [Fact]
     public void Flavor_And_DefaultRuleSetVersion()
     {
-        var fn = new FantasyPlayerValueFunction();
+        var fn = new FantasyPlayerRatingFunction();
 
-        Assert.Equal(ValueFlavor.Fantasy, fn.Flavor);
+        Assert.Equal(GameFlavor.Fantasy, fn.Flavor);
         Assert.Equal(1, fn.DefaultRuleSetVersion);
     }
 
@@ -31,12 +31,12 @@ public class FantasyPlayerValueFunctionTests
         // 18*2 + 9*1 + 4*-1 + 2*-2 + 0*-5 = 36 + 9 - 4 - 4 + 0 = 37
         var stats = new AggregatedStats(Games: 9, Goals: 18, YellowCards: 4, TwoMinuteSuspensions: 2, RedCards: 0);
 
-        var result = new FantasyPlayerValueFunction().Compute(Inputs(stats));
+        var result = new FantasyPlayerRatingFunction().Compute(Inputs(stats));
 
         Assert.Equal("p1", result.PlayerId);
         Assert.Equal("fantasy", result.Flavor);
         Assert.Equal("fantasy-v1", result.Version);
-        Assert.Equal(37, result.Value);
+        Assert.Equal(37, result.Rating);
 
         Assert.Collection(result.Components,
             c => { Assert.Equal("goals", c.Key);       Assert.Equal(18, c.Value); Assert.Equal(2, c.Weight);  Assert.Equal(36, c.Contribution); },
@@ -51,9 +51,9 @@ public class FantasyPlayerValueFunctionTests
     {
         var stats = new AggregatedStats(0, 0, 0, 0, 0);
 
-        var result = new FantasyPlayerValueFunction().Compute(Inputs(stats));
+        var result = new FantasyPlayerRatingFunction().Compute(Inputs(stats));
 
-        Assert.Equal(0, result.Value);
+        Assert.Equal(0, result.Rating);
         Assert.All(result.Components, c => Assert.Equal(0, c.Contribution));
     }
 }

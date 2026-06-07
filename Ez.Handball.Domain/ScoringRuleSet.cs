@@ -1,7 +1,7 @@
 namespace Ez.Handball.Domain;
 
 public sealed record ScoringRuleSet(
-    ValueFlavor Flavor,
+    GameFlavor Flavor,
     int Version,
     double GoalPoints,
     double YellowCardPoints,

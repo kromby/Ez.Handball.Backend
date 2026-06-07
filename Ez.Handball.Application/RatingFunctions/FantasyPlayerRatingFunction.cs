@@ -1,19 +1,19 @@
 using Ez.Handball.Domain;
 
-namespace Ez.Handball.Application.ValueFunctions;
+namespace Ez.Handball.Application.RatingFunctions;
 
-public sealed class FantasyPlayerValueFunction : IPlayerValueFunction
+public sealed class FantasyPlayerRatingFunction : IPlayerRatingFunction
 {
-    public ValueFlavor Flavor => ValueFlavor.Fantasy;
+    public GameFlavor Flavor => GameFlavor.Fantasy;
     public int? DefaultRuleSetVersion => 1;
 
-    public PlayerValue Compute(PlayerValueInputs inputs)
+    public PlayerRating Compute(PlayerRatingInputs inputs)
     {
         var rs = inputs.RuleSet
             ?? throw new InvalidOperationException("Fantasy value requires a scoring rule set.");
         var s = inputs.Stats;
 
-        var components = new List<PlayerValueComponent>
+        var components = new List<PlayerRatingComponent>
         {
             Component("goals",       s.Goals,                rs.GoalPoints),
             Component("appearances", s.Games,                rs.AppearancePoints),
@@ -24,9 +24,9 @@ public sealed class FantasyPlayerValueFunction : IPlayerValueFunction
 
         var value = components.Sum(c => c.Contribution);
 
-        return new PlayerValue(inputs.PlayerId, "fantasy", value, components, rs.Name);
+        return new PlayerRating(inputs.PlayerId, "fantasy", value, components, rs.Name);
     }
 
-    private static PlayerValueComponent Component(string key, int count, double weight) =>
+    private static PlayerRatingComponent Component(string key, int count, double weight) =>
         new(key, count, weight, count * weight);
 }

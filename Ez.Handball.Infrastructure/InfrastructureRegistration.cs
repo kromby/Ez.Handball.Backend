@@ -23,6 +23,7 @@ public static class InfrastructureRegistration
         services.AddScoped<ISeasonRepository, TableSeasonRepository>();
         services.AddScoped<ITournamentRepository, TableTournamentRepository>();
         services.AddScoped<IScoringRuleSetRepository, TableScoringRuleSetRepository>();
+        services.AddScoped<ISalaryRuleSetRepository, TableSalaryRuleSetRepository>();
         return services;
     }
 }

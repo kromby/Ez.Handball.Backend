@@ -1,6 +1,6 @@
 namespace Ez.Handball.Domain;
 
-public sealed record PlayerValueContext(
+public sealed record PlayerRatingContext(
     string? Season,          // null/blank => resolve current season
     string? TournamentId,    // optional narrower scope (single tournament)
     string? CompetitionId,   // optional: aggregate across a competition's phases
