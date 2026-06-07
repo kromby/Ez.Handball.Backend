@@ -12,6 +12,7 @@ public abstract record RegisterResult
 {
     public sealed record Success(string AccessToken, string RefreshToken, int ExpiresIn, UserEntity User) : RegisterResult;
     public sealed record EmailTaken : RegisterResult;
+    public sealed record TeamNameTaken : RegisterResult;
     public sealed record InvalidClub : RegisterResult;
     public sealed record WeakPassword : RegisterResult;
     public sealed record ValidationError(string Field) : RegisterResult;
@@ -34,15 +35,17 @@ public sealed class RegisterUseCase : IRegisterUseCase
     private readonly AuthSettings _settings;
     private readonly Func<DateTimeOffset> _now;
     private readonly ITeamProvisioningService _provisioning;
+    private readonly IGameTeamNameIndexRepository _nameIndex;
 
     public RegisterUseCase(
         IUserRepository users, IRefreshTokenRepository refresh, IEmailTokenRepository emailTokens,
         IClubRepository clubs, IPasswordHasher hasher, ITokenService tokens, IEmailSender email,
-        AuthSettings settings, Func<DateTimeOffset> now, ITeamProvisioningService provisioning)
+        AuthSettings settings, Func<DateTimeOffset> now, ITeamProvisioningService provisioning,
+        IGameTeamNameIndexRepository nameIndex)
     {
         _users = users; _refresh = refresh; _emailTokens = emailTokens; _clubs = clubs;
         _hasher = hasher; _tokens = tokens; _email = email; _settings = settings; _now = now;
-        _provisioning = provisioning;
+        _provisioning = provisioning; _nameIndex = nameIndex;
     }
 
     public async Task<RegisterResult> ExecuteAsync(RegisterCommand cmd, CancellationToken ct)
@@ -52,11 +55,24 @@ public sealed class RegisterUseCase : IRegisterUseCase
         if (!AuthValidation.IsValidDisplayName(cmd.DisplayName)) return new RegisterResult.ValidationError("displayName");
         if (!AuthValidation.IsValidLanguage(cmd.Language)) return new RegisterResult.ValidationError("language");
         if (!AuthValidation.IsValidTeamName(cmd.TeamName)) return new RegisterResult.ValidationError("teamName");
+        if (!ManagerValidation.IsAllowedTeamName(cmd.TeamName)) return new RegisterResult.ValidationError("teamName");
         if (!AuthValidation.IsValidPassword(cmd.Password)) return new RegisterResult.WeakPassword();
         if (!await _clubs.ExistsAsync(cmd.FavoriteClubId, ct)) return new RegisterResult.InvalidClub();
 
         var userId = Guid.NewGuid().ToString("N");
-        if (!await _users.TryReserveEmailAsync(email, userId, ct)) return new RegisterResult.EmailTaken();
+        var normalizedName = ManagerValidation.NormalizeTeamName(cmd.TeamName);
+        var teamId = GameTeamId.For(userId, GameFlavor.Fantasy);
+
+        // Reserve the team name first so a taken name fails before any other writes.
+        if (!await _nameIndex.TryReserveAsync(normalizedName, teamId, ct))
+            return new RegisterResult.TeamNameTaken();
+
+        // Reserve the email; on conflict, release the name to avoid an orphaned reservation.
+        if (!await _users.TryReserveEmailAsync(email, userId, ct))
+        {
+            await _nameIndex.ReleaseAsync(normalizedName, ct);
+            return new RegisterResult.EmailTaken();
+        }
 
         var now = _now();
         var user = new UserEntity
@@ -71,8 +87,20 @@ public sealed class RegisterUseCase : IRegisterUseCase
             CreatedAt = now,
             ChangedAt = now
         };
-        await _users.AddAsync(user, ct);
-        await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), ct);
+        // The name index row is insert-only, so a failure while creating the user or provisioning
+        // the team would leave an orphaned reservation that blocks the user's own retry. Release it
+        // on failure. (The email-index orphan is the pre-existing concern tracked separately as #41.)
+        try
+        {
+            await _users.AddAsync(user, ct);
+            var color = ManagerColor.ForClub(cmd.FavoriteClubId);
+            await _provisioning.ProvisionAsync(userId, GameFlavor.Fantasy, cmd.TeamName.Trim(), color, ct);
+        }
+        catch
+        {
+            await _nameIndex.ReleaseAsync(normalizedName, ct);
+            throw;
+        }
 
         var emailToken = _tokens.CreateEmailToken();
         await _emailTokens.AddAsync(new EmailTokenEntity

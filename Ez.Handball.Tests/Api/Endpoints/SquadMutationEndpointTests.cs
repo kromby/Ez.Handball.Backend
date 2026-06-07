@@ -66,7 +66,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
     public async Task DisposeAsync()
     {
-        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeams, Tables.GameBudgets, Tables.GameRosters })
+        foreach (var t in new[] { Tables.Users, Tables.UserEmailIndex, Tables.RefreshTokens, Tables.EmailTokens, Tables.Clubs, Tables.GameTeams, Tables.GameBudgets, Tables.GameRosters, Tables.GameTeamNameIndex })
             try { await _tables.GetTableClient(t).DeleteAsync(); } catch { }
     }
 
@@ -75,7 +75,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     private async Task<string> TokenAsync()
     {
         var resp = await _client.PostAsJsonAsync("/api/auth/register",
-            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName = "Test Team" });
+            new { email = NewEmail(), password = "hunter2hunter2", displayName = "Jón", language = "is", favoriteClubId = "385", teamName = $"Test {Guid.NewGuid():N}" });
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("accessToken").GetString()!;
