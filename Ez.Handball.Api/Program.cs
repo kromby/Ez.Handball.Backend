@@ -141,6 +141,7 @@ builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
 builder.Services.AddScoped<IRemoveFromShortlistUseCase, RemoveFromShortlistUseCase>();
 builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
 builder.Services.AddScoped<IGetSquadUseCase, GetSquadUseCase>();
+builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -391,6 +392,33 @@ app.MapGet("/api/tournaments", async (
 {
     var tournaments = await uc.ExecuteAsync(season, ct);
     return Results.Ok(tournaments);
+});
+
+app.MapGet("/api/squad/constraints", async Task<IResult> (
+    string? flavor,
+    int? ruleSetVersion,
+    IGetSquadConstraintsUseCase uc,
+    CancellationToken ct) =>
+{
+    // Fantasy-only: blank or "fantasy" is accepted; anything else is rejected.
+    // Mirrors the edge check in SquadEndpoints — flavor never reaches the use case.
+    if (!string.IsNullOrWhiteSpace(flavor)
+        && !flavor.Equals("fantasy", StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest(new { error = "invalid_flavor" });
+
+    var result = await uc.ExecuteAsync(ruleSetVersion, ct);
+    return result switch
+    {
+        GetSquadConstraintsResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+        GetSquadConstraintsResult.Found f => Results.Ok(new
+        {
+            ruleSetVersion = f.Constraints.Version,
+            maxSquadSize   = f.Constraints.MaxSquadSize,
+            startingCap    = new PlayerCost(f.Constraints.StartingCap, f.Constraints.Currency),
+            posLimits      = f.Constraints.PositionLimits
+        }),
+        _ => Results.Problem()
+    };
 });
 
 app.MapGet("/api/genders", () => Results.Ok(Genders.All));
