@@ -136,6 +136,22 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
     }
 
     [Fact]
+    public async Task ForwardsScopeQueryParamsToUseCase()
+    {
+        _factory.Uc.Setup(s => s.ExecuteAsync(
+                It.IsAny<string>(), "2024", "t-9", 2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSquadResult.Found(SampleView()));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(
+            Authed("/api/users/me/squad?flavor=fantasy&season=2024&tournamentId=t-9&ruleSetVersion=2", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        _factory.Uc.Verify(s => s.ExecuteAsync(
+            It.IsAny<string>(), "2024", "t-9", 2, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task InvalidFlavor_Returns400()
     {
         var token = await RegisterAndGetTokenAsync();
