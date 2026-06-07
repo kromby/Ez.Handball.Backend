@@ -1,5 +1,6 @@
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
+using Ez.Handball.Domain;
 using Ez.Handball.Shared.Entities;
 using Moq;
 
@@ -16,14 +17,15 @@ public class RegisterUseCaseTests
     private readonly Mock<IPasswordHasher> _hasher = new();
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<IEmailSender> _email = new();
+    private readonly Mock<ITeamProvisioningService> _provisioning = new();
     private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
 
     private RegisterUseCase CreateSut() => new(
         _users.Object, _refresh.Object, _emailTokens.Object, _clubs.Object,
-        _hasher.Object, _tokens.Object, _email.Object, _settings, () => Now);
+        _hasher.Object, _tokens.Object, _email.Object, _settings, () => Now, _provisioning.Object);
 
     private static RegisterCommand ValidCmd() =>
-        new("A@B.is", "hunter2hunter2", "Jón", "is", "385");
+        new("A@B.is", "hunter2hunter2", "Jón", "is", "385", "Dream Team");
 
     private void HappyPathStubs()
     {
@@ -102,5 +104,30 @@ public class RegisterUseCaseTests
         var result = await CreateSut().ExecuteAsync(ValidCmd() with { Email = "no-at" }, CancellationToken.None);
         var err = Assert.IsType<RegisterResult.ValidationError>(result);
         Assert.Equal("email", err.Field);
+    }
+
+    [Fact]
+    public async Task Register_Success_ProvisionsFantasyTeam()
+    {
+        HappyPathStubs();
+        _users.Setup(u => u.AddAsync(It.IsAny<UserEntity>(), It.IsAny<CancellationToken>()))
+              .Returns(Task.CompletedTask);
+
+        var result = await CreateSut().ExecuteAsync(
+            new RegisterCommand("a@b.is", "hunter2hunter2", "Jón", "is", "385", "Dream Team"), default);
+
+        Assert.IsType<RegisterResult.Success>(result);
+        _provisioning.Verify(p => p.ProvisionAsync(
+            It.IsAny<string>(), GameFlavor.Fantasy, "Dream Team", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Register_BlankTeamName_ValidationError()
+    {
+        var result = await CreateSut().ExecuteAsync(
+            new RegisterCommand("a@b.is", "hunter2hunter2", "Jón", "is", "385", "   "), default);
+
+        var v = Assert.IsType<RegisterResult.ValidationError>(result);
+        Assert.Equal("teamName", v.Field);
     }
 }
