@@ -140,6 +140,7 @@ builder.Services.AddSingleton(new ShortlistSettings(
 builder.Services.AddScoped<IAddToShortlistUseCase, AddToShortlistUseCase>();
 builder.Services.AddScoped<IRemoveFromShortlistUseCase, RemoveFromShortlistUseCase>();
 builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
+builder.Services.AddScoped<IGetSquadUseCase, GetSquadUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -397,6 +398,7 @@ app.MapGet("/api/genders", () => Results.Ok(Genders.All));
 app.MapAuthEndpoints();
 
 app.MapShortlistEndpoints();
+app.MapSquadEndpoints();
 
 app.Run();
 
