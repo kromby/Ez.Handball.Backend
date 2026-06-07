@@ -14,16 +14,17 @@ public class SeedSquadConstraintsFunction
     // must be reconciled with real Player.Position values (owner review). Tunable config.
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> ConstraintDefinitions =
     [
-        ("fantasy-squad-v1", "startingCap",  "100000000"),
-        ("fantasy-squad-v1", "currency",     "ISK"),
-        ("fantasy-squad-v1", "maxSquadSize", "15"),
-        ("fantasy-squad-v1", "posLimit:GK",  "2"),
-        ("fantasy-squad-v1", "posLimit:LW",  "2"),
-        ("fantasy-squad-v1", "posLimit:RW",  "2"),
-        ("fantasy-squad-v1", "posLimit:LB",  "3"),
-        ("fantasy-squad-v1", "posLimit:CB",  "3"),
-        ("fantasy-squad-v1", "posLimit:RB",  "3"),
-        ("fantasy-squad-v1", "posLimit:P",   "2"),
+        ("fantasy-squad-v1", "startingCap",   "100000000"),
+        ("fantasy-squad-v1", "currency",      "ISK"),
+        ("fantasy-squad-v1", "maxSquadSize",  "15"),
+        ("fantasy-squad-v1", "sellOnFeeRate", "0.5"),
+        ("fantasy-squad-v1", "posLimit:GK",   "2"),
+        ("fantasy-squad-v1", "posLimit:LW",   "2"),
+        ("fantasy-squad-v1", "posLimit:RW",   "2"),
+        ("fantasy-squad-v1", "posLimit:LB",   "3"),
+        ("fantasy-squad-v1", "posLimit:CB",   "3"),
+        ("fantasy-squad-v1", "posLimit:RB",   "3"),
+        ("fantasy-squad-v1", "posLimit:P",    "2"),
     ];
 
     private readonly ITableWriter _tableWriter;

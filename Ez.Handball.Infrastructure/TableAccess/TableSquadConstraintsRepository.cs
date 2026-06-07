@@ -38,7 +38,9 @@ internal sealed class TableSquadConstraintsRepository : ISquadConstraintsReposit
                 limits[position] = limit;
         }
 
-        return new SquadConstraints(version, maxSquadSize, limits, startingCap, currency);
+        var sellOnFeeRate = TryGetDouble(values, "sellOnFeeRate", out var fee) ? fee : 0.5;
+
+        return new SquadConstraints(version, maxSquadSize, limits, startingCap, currency, sellOnFeeRate);
     }
 
     private static bool TryGetInt(IReadOnlyDictionary<string, string> values, string key, out int result)

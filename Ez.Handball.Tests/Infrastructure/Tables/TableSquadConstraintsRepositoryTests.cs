@@ -84,4 +84,27 @@ public class TableSquadConstraintsRepositoryTests
         Rows(("startingCap", "100000000"), ("maxSquadSize", "15"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
+
+    [Fact]
+    public async Task Get_ParsesSellOnFeeRate_AndDefaultsToHalfWhenAbsent()
+    {
+        // Arrange: seed a fantasy-squad-v1 group WITHOUT sellOnFeeRate, then read.
+        Rows(
+            ("startingCap", "100000000"),
+            ("currency", "ISK"),
+            ("maxSquadSize", "15"));
+
+        var withoutFee = await CreateSut().GetAsync(1, default);
+        Assert.Equal(0.5, withoutFee!.SellOnFeeRate);
+
+        // Arrange: add sellOnFeeRate = 0.25 to the same group, then read.
+        Rows(
+            ("startingCap", "100000000"),
+            ("currency", "ISK"),
+            ("maxSquadSize", "15"),
+            ("sellOnFeeRate", "0.25"));
+
+        var withFee = await CreateSut().GetAsync(1, default);
+        Assert.Equal(0.25, withFee!.SellOnFeeRate);
+    }
 }
