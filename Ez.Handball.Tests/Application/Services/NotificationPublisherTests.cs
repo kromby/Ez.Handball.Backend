@@ -1,0 +1,83 @@
+using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
+using Ez.Handball.Domain;
+using Ez.Handball.Tests.Fakes;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+
+namespace Ez.Handball.Tests.Application.Services;
+
+public class NotificationPublisherTests
+{
+    private static Notification Sample(NotificationType type = NotificationType.RoundResult)
+        => new("u-1", type, "Title", "Body");
+
+    private static NotificationPublisher Sut(
+        NotificationPreferences? stored,
+        params INotificationChannel[] channels)
+    {
+        var repo = new Mock<INotificationPreferenceRepository>();
+        repo.Setup(r => r.GetAsync("u-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stored);
+        return new NotificationPublisher(repo.Object, channels, NullLogger<NotificationPublisher>.Instance);
+    }
+
+    private static NotificationPreferences Prefs(params (NotificationType, NotificationChannel)[] cells)
+        => new("u-1", new HashSet<(NotificationType, NotificationChannel)>(cells));
+
+    [Fact]
+    public async Task DeliversToChannel_WhenCellEnabled()
+    {
+        var inApp = new InMemoryNotificationChannel(NotificationChannel.InApp);
+
+        await Sut(Prefs((NotificationType.RoundResult, NotificationChannel.InApp)), inApp)
+            .PublishAsync(Sample(), default);
+
+        Assert.Single(inApp.Received);
+    }
+
+    [Fact]
+    public async Task SkipsChannel_WhenCellDisabled()
+    {
+        var email = new InMemoryNotificationChannel(NotificationChannel.Email);
+
+        // RoundResult enabled on InApp only — email cell absent.
+        await Sut(Prefs((NotificationType.RoundResult, NotificationChannel.InApp)), email)
+            .PublishAsync(Sample(), default);
+
+        Assert.Empty(email.Received);
+    }
+
+    [Fact]
+    public async Task FallsBackToDefaults_WhenNoStoredPreferences()
+    {
+        var inApp = new InMemoryNotificationChannel(NotificationChannel.InApp);
+
+        await Sut(stored: null, inApp).PublishAsync(Sample(), default);
+
+        Assert.Single(inApp.Received); // Default() enables InApp for all types
+    }
+
+    [Fact]
+    public async Task OneThrowingChannel_DoesNotBlockOthers()
+    {
+        var good = new InMemoryNotificationChannel(NotificationChannel.InApp);
+        var bad = new ThrowingChannel(NotificationChannel.Email);
+
+        await Sut(Prefs(
+                    (NotificationType.RoundResult, NotificationChannel.InApp),
+                    (NotificationType.RoundResult, NotificationChannel.Email)),
+                 bad, good)
+            .PublishAsync(Sample(), default);
+
+        Assert.Single(good.Received); // good delivered despite bad throwing
+    }
+
+    private sealed class ThrowingChannel : INotificationChannel
+    {
+        public ThrowingChannel(NotificationChannel channel) => Channel = channel;
+        public NotificationChannel Channel { get; }
+        public Task SendAsync(Notification notification, CancellationToken ct)
+            => throw new InvalidOperationException("boom");
+    }
+}
