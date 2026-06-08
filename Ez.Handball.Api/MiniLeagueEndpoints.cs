@@ -47,6 +47,4 @@ public static class MiniLeagueEndpoints
             };
         });
     }
-
-
 }
