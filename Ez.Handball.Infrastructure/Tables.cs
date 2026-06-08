@@ -21,5 +21,6 @@ public static class Tables
     public const string GameTeamNameIndex = "GameTeamNameIndex";
     public const string MiniLeagues = "MiniLeagues";
     public const string MiniLeagueMembers = "MiniLeagueMembers";
+    public const string MiniLeagueInvites = "MiniLeagueInvites";
     public const string Config = "Config";
 }
