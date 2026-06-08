@@ -5,9 +5,9 @@ namespace Ez.Handball.Application.UseCases;
 public abstract record GetInviteResult
 {
     public sealed record Found(string Token, DateTimeOffset? ExpiresAt) : GetInviteResult;
-    public sealed record NoInvite : GetInviteResult;
-    public sealed record LeagueNotFound : GetInviteResult;
-    public sealed record NotMember : GetInviteResult;
+    public sealed record NoInvite : GetInviteResult { public static readonly NoInvite Instance = new(); }
+    public sealed record LeagueNotFound : GetInviteResult { public static readonly LeagueNotFound Instance = new(); }
+    public sealed record NotMember : GetInviteResult { public static readonly NotMember Instance = new(); }
 }
 
 public interface IGetInviteUseCase
@@ -29,14 +29,14 @@ public sealed class GetInviteUseCase : IGetInviteUseCase
     public async Task<GetInviteResult> ExecuteAsync(string userId, string leagueId, CancellationToken ct)
     {
         var league = await _leagues.GetAsync(leagueId, ct);
-        if (league is null) return new GetInviteResult.LeagueNotFound();
+        if (league is null) return GetInviteResult.LeagueNotFound.Instance;
 
         var members = await _leagues.GetMembersAsync(leagueId, ct);
-        if (!members.Any(m => m.UserId == userId)) return new GetInviteResult.NotMember();
+        if (members.All(m => m.UserId != userId)) return GetInviteResult.NotMember.Instance;
 
         var invite = await _invites.GetByLeagueAsync(leagueId, ct);
         return invite is null
-            ? new GetInviteResult.NoInvite()
+            ? GetInviteResult.NoInvite.Instance
             : new GetInviteResult.Found(invite.Token, invite.ExpiresAt);
     }
 }

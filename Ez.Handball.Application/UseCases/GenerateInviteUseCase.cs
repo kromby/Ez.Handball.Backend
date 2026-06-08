@@ -6,9 +6,9 @@ namespace Ez.Handball.Application.UseCases;
 public abstract record GenerateInviteResult
 {
     public sealed record Generated(string Token, DateTimeOffset? ExpiresAt) : GenerateInviteResult;
-    public sealed record LeagueNotFound : GenerateInviteResult;
-    public sealed record NotMember : GenerateInviteResult;
-    public sealed record InvalidExpiry : GenerateInviteResult;
+    public sealed record LeagueNotFound : GenerateInviteResult { public static readonly LeagueNotFound Instance = new(); }
+    public sealed record NotMember : GenerateInviteResult { public static readonly NotMember Instance = new(); }
+    public sealed record InvalidExpiry : GenerateInviteResult { public static readonly InvalidExpiry Instance = new(); }
 }
 
 public interface IGenerateInviteUseCase
@@ -39,13 +39,13 @@ public sealed class GenerateInviteUseCase : IGenerateInviteUseCase
         string userId, string leagueId, int? expiresInDays, CancellationToken ct)
     {
         if (expiresInDays is { } days && (days < 1 || days > MaxExpiryDays))
-            return new GenerateInviteResult.InvalidExpiry();
+            return GenerateInviteResult.InvalidExpiry.Instance;
 
         var league = await _leagues.GetAsync(leagueId, ct);
-        if (league is null) return new GenerateInviteResult.LeagueNotFound();
+        if (league is null) return GenerateInviteResult.LeagueNotFound.Instance;
 
         var members = await _leagues.GetMembersAsync(leagueId, ct);
-        if (!members.Any(m => m.UserId == userId)) return new GenerateInviteResult.NotMember();
+        if (members.All(m => m.UserId != userId)) return GenerateInviteResult.NotMember.Instance;
 
         var now = _now();
         var token = _tokens.CreateInviteCode();
