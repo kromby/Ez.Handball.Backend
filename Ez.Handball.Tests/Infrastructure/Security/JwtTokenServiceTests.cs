@@ -98,4 +98,19 @@ public class JwtTokenServiceTests
         var issued = CreateSut().CreateRefreshToken("u-123");
         Assert.Matches("^[0-9a-f]{64}$", issued.Hash);
     }
+
+    [Fact]
+    public void CreateInviteCode_IsUrlSafeNonEmpty_AndUnique()
+    {
+        var sut = CreateSut();
+
+        var a = sut.CreateInviteCode();
+        var b = sut.CreateInviteCode();
+
+        Assert.False(string.IsNullOrEmpty(a));
+        Assert.DoesNotContain('+', a);
+        Assert.DoesNotContain('/', a);
+        Assert.DoesNotContain('=', a);
+        Assert.NotEqual(a, b);
+    }
 }

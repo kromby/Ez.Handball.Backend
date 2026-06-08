@@ -106,6 +106,9 @@ internal sealed class JwtTokenService : ITokenService
         catch (Exception ex) when (ex is FormatException or ArgumentException) { return false; }
     }
 
+    public string CreateInviteCode() =>
+        Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(SecretBytes));
+
     private static string HashBytes(byte[] secret) =>
         Convert.ToHexString(SHA256.HashData(secret)).ToLowerInvariant();
 }
