@@ -24,7 +24,7 @@ public static class MiniLeagueEndpoints
             var result = await uc.ExecuteAsync(userId, req.Name ?? string.Empty, ct);
             return result switch
             {
-                CreateMiniLeagueResult.Created c          => Results.Json(LeagueBody(c.View, userId), statusCode: StatusCodes.Status201Created),
+                CreateMiniLeagueResult.Created c          => Results.Json(MiniLeagueResponse.Body(c.View, userId), statusCode: StatusCodes.Status201Created),
                 CreateMiniLeagueResult.ValidationError    => Results.BadRequest(new { error = "invalid_name" }),
                 CreateMiniLeagueResult.NoCurrentSeason    => Results.Json(new { error = "no_current_season" }, statusCode: StatusCodes.Status409Conflict),
                 _                                         => Results.Problem()
@@ -41,28 +41,12 @@ public static class MiniLeagueEndpoints
             var result = await uc.ExecuteAsync(id, ct);
             return result switch
             {
-                GetMiniLeagueResult.Found f    => Results.Ok(LeagueBody(f.View, userId)),
+                GetMiniLeagueResult.Found f    => Results.Ok(MiniLeagueResponse.Body(f.View, userId)),
                 GetMiniLeagueResult.NotFound   => Results.NotFound(new { error = "league_not_found" }),
                 _                              => Results.Problem()
             };
         });
     }
 
-    // role is the caller's role in the league, resolved from the members; null if the caller is not a member.
-    private static object LeagueBody(MiniLeagueView view, string callerUserId) => new
-    {
-        id            = view.League.Id,
-        name          = view.League.Name,
-        season        = view.League.Season,
-        creatorUserId = view.League.CreatorUserId,
-        memberCount   = view.Members.Count,
-        role          = view.Members.FirstOrDefault(m => m.UserId == callerUserId)?.Role,
-        createdAt     = view.League.CreatedAt,
-        members       = view.Members.Select(m => new
-        {
-            userId   = m.UserId,
-            role     = m.Role,
-            joinedAt = m.JoinedAt
-        })
-    };
+
 }
