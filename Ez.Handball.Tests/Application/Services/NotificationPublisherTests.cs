@@ -73,11 +73,29 @@ public class NotificationPublisherTests
         Assert.Single(good.Received); // good delivered despite bad throwing
     }
 
+    [Fact]
+    public async Task Propagates_WhenChannelIsCanceled()
+    {
+        var canceling = new CancelingChannel(NotificationChannel.InApp);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            Sut(Prefs((NotificationType.RoundResult, NotificationChannel.InApp)), canceling)
+                .PublishAsync(Sample(), default));
+    }
+
     private sealed class ThrowingChannel : INotificationChannel
     {
         public ThrowingChannel(NotificationChannel channel) => Channel = channel;
         public NotificationChannel Channel { get; }
         public Task SendAsync(Notification notification, CancellationToken ct)
             => throw new InvalidOperationException("boom");
+    }
+
+    private sealed class CancelingChannel : INotificationChannel
+    {
+        public CancelingChannel(NotificationChannel channel) => Channel = channel;
+        public NotificationChannel Channel { get; }
+        public Task SendAsync(Notification notification, CancellationToken ct)
+            => throw new OperationCanceledException();
     }
 }

@@ -37,7 +37,7 @@ public sealed class NotificationPublisher : INotificationPublisher
             {
                 await channel.SendAsync(notification, ct);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex,
                     "Notification channel {Channel} failed for user {UserId}, type {Type}",
