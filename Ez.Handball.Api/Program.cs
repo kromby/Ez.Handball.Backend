@@ -149,6 +149,10 @@ builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();
 builder.Services.AddScoped<ICreateMiniLeagueUseCase, CreateMiniLeagueUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueUseCase, GetMiniLeagueUseCase>();
+builder.Services.AddScoped<IGenerateInviteUseCase, GenerateInviteUseCase>();
+builder.Services.AddScoped<IGetInviteUseCase, GetInviteUseCase>();
+builder.Services.AddScoped<IPreviewInviteUseCase, PreviewInviteUseCase>();
+builder.Services.AddScoped<IJoinMiniLeagueUseCase, JoinMiniLeagueUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -495,6 +499,7 @@ app.MapShortlistEndpoints();
 app.MapSquadEndpoints();
 app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
+app.MapMiniLeagueInviteEndpoints();
 
 app.Run();
 

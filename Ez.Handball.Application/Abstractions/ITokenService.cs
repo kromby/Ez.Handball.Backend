@@ -17,4 +17,7 @@ public interface ITokenService
     IssuedToken CreateEmailToken();
     /// <summary>Hashes a presented email/reset token secret for lookup. False if malformed.</summary>
     bool TryHashEmailToken(string presented, out string tokenHash);
+
+    /// <summary>An opaque, URL-safe invite code. Stored plaintext (not hashed) — it is the lookup key and is re-displayed.</summary>
+    string CreateInviteCode();
 }
