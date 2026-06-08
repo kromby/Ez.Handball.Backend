@@ -147,6 +147,8 @@ builder.Services.AddScoped<IBuyPlayerUseCase, BuyPlayerUseCase>();
 builder.Services.AddScoped<ISellPlayerUseCase, SellPlayerUseCase>();
 builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();
+builder.Services.AddScoped<ICreateMiniLeagueUseCase, CreateMiniLeagueUseCase>();
+builder.Services.AddScoped<IGetMiniLeagueUseCase, GetMiniLeagueUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();
@@ -492,6 +494,7 @@ app.MapAuthEndpoints();
 app.MapShortlistEndpoints();
 app.MapSquadEndpoints();
 app.MapManagerEndpoints();
+app.MapMiniLeagueEndpoints();
 
 app.Run();
 
