@@ -25,8 +25,12 @@ internal sealed class TableNotificationPreferenceRepository : INotificationPrefe
                            Tables.NotificationPreferences,
                            $"PartitionKey eq '{ODataFilter.Escape(userId)}'", ct))
         {
-            any = true;
-            cells.Add((Enum.Parse<NotificationType>(e.Type), Enum.Parse<NotificationChannel>(e.Channel)));
+            any = true; // a row exists, so the user has configured preferences
+            if (Enum.TryParse<NotificationType>(e.Type, out var type)
+                && Enum.TryParse<NotificationChannel>(e.Channel, out var channel))
+            {
+                cells.Add((type, channel)); // silently drop rows with unknown enum names
+            }
         }
 
         return any ? new NotificationPreferences(userId, cells) : null;
