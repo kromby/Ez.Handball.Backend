@@ -22,13 +22,13 @@ public class GetLeaderboardUseCase : IGetLeaderboardUseCase
     public async Task<Leaderboard> ExecuteAsync(
         LeaderboardRequest request, int offset, int limit, CancellationToken ct)
     {
+        // Default to the current season when none is requested (consistent with the
+        // price/rating path); the resolved label scopes both tournament resolution and the query.
+        var season = await _scope.ResolveSeasonLabelAsync(request.Season, ct);
         var tournamentIds = await _scope.ResolveTournamentIdsAsync(
-            request.Season, request.TournamentId, request.CompetitionId, request.Type, ct);
+            season, request.TournamentId, request.CompetitionId, request.Type, ct);
 
-        // The resolved tournament ids already pin the scope to a single season
-        // (hsi.is tournament ids are unique per season), so the raw request.Season
-        // is passed through as-is rather than re-resolved here.
-        var query = new LeaderboardQuery(request.Metric, request.Season, tournamentIds, request.Gender);
+        var query = new LeaderboardQuery(request.Metric, season, tournamentIds, request.Gender);
 
         var ranked = await _repo.GetRankedAsync(query, ct);
         var page = ranked.Skip(offset).Take(limit).ToList();

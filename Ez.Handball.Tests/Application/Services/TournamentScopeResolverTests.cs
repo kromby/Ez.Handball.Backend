@@ -116,4 +116,37 @@ public class TournamentScopeResolverTests
         Assert.NotNull(ids);
         Assert.Empty(ids!);
     }
+
+    // ── ResolveSeasonLabelAsync ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task ResolveSeasonLabelAsync_ExplicitSeason_ReturnedAsIs_NoRepoCall()
+    {
+        var label = await CreateSut().ResolveSeasonLabelAsync("2025-26", default);
+
+        Assert.Equal("2025-26", label);
+        _seasons.Verify(r => r.ListAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResolveSeasonLabelAsync_NullSeason_ReturnsCurrentSeasonLabel()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2024-25", false), new("2025-26", true) });
+
+        var label = await CreateSut().ResolveSeasonLabelAsync(null, default);
+
+        Assert.Equal("2025-26", label);
+    }
+
+    [Fact]
+    public async Task ResolveSeasonLabelAsync_NullSeason_NoCurrentSeason_ReturnsNull()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2024-25", false) });
+
+        var label = await CreateSut().ResolveSeasonLabelAsync(null, default);
+
+        Assert.Null(label);
+    }
 }

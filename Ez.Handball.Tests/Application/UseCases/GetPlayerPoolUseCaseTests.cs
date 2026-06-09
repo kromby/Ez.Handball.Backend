@@ -26,6 +26,12 @@ public class GetPlayerPoolUseCaseTests
             new PriceBand(10, 11_000_000),
         });
 
+    public GetPlayerPoolUseCaseTests()
+    {
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((string? s, CancellationToken _) => s);
+    }
+
     private GetPlayerPoolUseCase CreateSut() =>
         new(_repo.Object, _scope.Object, _scoring.Object, _prices.Object,
             new FantasyPricing(new FantasyPlayerRatingFunction()));
@@ -208,5 +214,22 @@ public class GetPlayerPoolUseCaseTests
         Assert.Equal("2025-26", captured!.Season);
         Assert.Equal(new[] { "8444" }, captured.TournamentIds);
         Assert.Equal("karlar", captured.Gender);
+    }
+
+    [Fact]
+    public async Task Execute_NullSeason_DefaultsToCurrentSeasonInQuery()
+    {
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(null, It.IsAny<CancellationToken>()))
+              .ReturnsAsync("2025-26");
+        SetupResolver();
+        SetupRuleSets();
+        PlayerPoolQuery? captured = null;
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .Callback<PlayerPoolQuery, CancellationToken>((q, _) => captured = q)
+             .ReturnsAsync(Array.Empty<PooledPlayer>());
+
+        await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, CancellationToken.None);
+
+        Assert.Equal("2025-26", captured!.Season);
     }
 }

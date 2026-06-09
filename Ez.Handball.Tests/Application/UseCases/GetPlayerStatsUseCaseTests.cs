@@ -32,6 +32,8 @@ public class GetPlayerStatsUseCaseTests
                   It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
                   It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync((IReadOnlyList<string>?)null);
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((string? s, CancellationToken _) => s);
     }
 
     [Fact]
@@ -46,15 +48,18 @@ public class GetPlayerStatsUseCaseTests
     }
 
     [Fact]
-    public async Task NoFilters_ReturnsAllRows()
+    public async Task NullSeason_DefaultsToCurrentSeason()
     {
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(null, It.IsAny<CancellationToken>()))
+              .ReturnsAsync("2025-26");
         _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
               .ReturnsAsync(new List<PlayerStat> { Stat("2025-26", "8444", 5), Stat("2024-25", "8444", 3) });
 
         var result = await CreateSut().ExecuteAsync("p1", Query(), default);
 
         var found = Assert.IsType<GetPlayerStatsResult.Found>(result);
-        Assert.Equal(2, found.Stats.Count);
+        Assert.Single(found.Stats);
+        Assert.Equal("2025-26", found.Stats[0].Season);
     }
 
     [Fact]

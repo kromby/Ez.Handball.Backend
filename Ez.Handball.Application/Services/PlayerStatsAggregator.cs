@@ -6,14 +6,11 @@ namespace Ez.Handball.Application.Services;
 public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
 {
     private readonly IPlayerStatsRepository _stats;
-    private readonly ISeasonRepository _seasons;
     private readonly ITournamentScopeResolver _scope;
 
-    public PlayerStatsAggregator(
-        IPlayerStatsRepository stats, ISeasonRepository seasons, ITournamentScopeResolver scope)
+    public PlayerStatsAggregator(IPlayerStatsRepository stats, ITournamentScopeResolver scope)
     {
         _stats = stats;
-        _seasons = seasons;
         _scope = scope;
     }
 
@@ -21,7 +18,7 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
         string playerId, string? season, string? tournamentId, string? competitionId,
         TournamentType? type, CancellationToken ct)
     {
-        var resolved = await ResolveSeasonAsync(season, ct);
+        var resolved = await _scope.ResolveSeasonLabelAsync(season, ct);
         if (resolved is null) return new AggregatedStats(0, 0, 0, 0, 0);
 
         var ids = await _scope.ResolveTournamentIdsAsync(resolved, tournamentId, competitionId, type, ct);
@@ -38,12 +35,5 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
             YellowCards: list.Sum(r => r.YellowCards),
             TwoMinuteSuspensions: list.Sum(r => r.TwoMinuteSuspensions),
             RedCards: list.Sum(r => r.RedCards));
-    }
-
-    private async Task<string?> ResolveSeasonAsync(string? season, CancellationToken ct)
-    {
-        if (!string.IsNullOrWhiteSpace(season)) return season;
-        var all = await _seasons.ListAsync(ct);
-        return all.FirstOrDefault(s => s.IsCurrent)?.Label;
     }
 }
