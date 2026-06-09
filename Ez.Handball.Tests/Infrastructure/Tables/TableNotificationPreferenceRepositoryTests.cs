@@ -69,4 +69,22 @@ public class TableNotificationPreferenceRepositoryTests : IAsyncLifetime
         Assert.True(got!.IsEnabled(NotificationType.RoundResult, NotificationChannel.Email));
         Assert.False(got.IsEnabled(NotificationType.RoundResult, NotificationChannel.Push));
     }
+
+    [Fact]
+    public async Task Upsert_EmptySet_RemovesAllRows_AndGetReturnsNull()
+    {
+        await Sut().UpsertAsync(new NotificationPreferences("u-3", new HashSet<(NotificationType, NotificationChannel)>
+        {
+            (NotificationType.RoundResult, NotificationChannel.Email),
+        }), default);
+
+        // User disables everything.
+        await Sut().UpsertAsync(
+            new NotificationPreferences("u-3", new HashSet<(NotificationType, NotificationChannel)>()),
+            default);
+
+        var got = await Sut().GetAsync("u-3", default);
+
+        Assert.Null(got); // no rows left → "never configured" contract
+    }
 }

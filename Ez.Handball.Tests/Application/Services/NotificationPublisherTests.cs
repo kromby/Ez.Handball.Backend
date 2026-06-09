@@ -74,6 +74,22 @@ public class NotificationPublisherTests
     }
 
     [Fact]
+    public async Task DeliversToAllEnabledChannels_ForSameType()
+    {
+        var inApp = new InMemoryNotificationChannel(NotificationChannel.InApp);
+        var email = new InMemoryNotificationChannel(NotificationChannel.Email);
+
+        await Sut(Prefs(
+                    (NotificationType.RoundResult, NotificationChannel.InApp),
+                    (NotificationType.RoundResult, NotificationChannel.Email)),
+                 inApp, email)
+            .PublishAsync(Sample(), default);
+
+        Assert.Single(inApp.Received);
+        Assert.Single(email.Received);
+    }
+
+    [Fact]
     public async Task Propagates_WhenChannelIsCanceled()
     {
         var canceling = new CancelingChannel(NotificationChannel.InApp);
