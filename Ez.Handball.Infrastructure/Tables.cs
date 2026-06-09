@@ -22,5 +22,6 @@ public static class Tables
     public const string MiniLeagues = "MiniLeagues";
     public const string MiniLeagueMembers = "MiniLeagueMembers";
     public const string MiniLeagueInvites = "MiniLeagueInvites";
+    public const string NotificationPreferences = "NotificationPreferences";
     public const string Config = "Config";
 }
