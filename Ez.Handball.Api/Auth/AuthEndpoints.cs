@@ -1,6 +1,7 @@
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Mapping;
 using Ez.Handball.Application.UseCases;
+using Ez.Handball.Domain;
 
 namespace Ez.Handball.Api.Auth;
 
@@ -128,16 +129,18 @@ public static class AuthEndpoints
         var users = app.MapGroup("/api/users");
 
         users.MapGet("/me", async (
-            HttpContext http, IUserRepository repo, CancellationToken ct) =>
+            HttpContext http, IUserRepository repo, IGameTeamRepository teams, CancellationToken ct) =>
         {
             var userId = http.User.UserId();
             if (string.IsNullOrEmpty(userId))
                 return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
 
             var user = await repo.GetByIdAsync(userId, ct);
-            return user is null
-                ? Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized)
-                : Results.Ok(user.ToProfile());
+            if (user is null)
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var team = await teams.GetAsync(userId, GameFlavor.Fantasy, ct);
+            return Results.Ok(user.ToProfile() with { TeamName = team?.Name });
         }).RequireAuthorization();
 
         users.MapPatch("/me", async (

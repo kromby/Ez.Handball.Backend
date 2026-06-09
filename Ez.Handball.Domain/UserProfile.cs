@@ -8,4 +8,5 @@ public sealed record UserProfile(
     string FavoriteClubId,
     bool EmailVerified,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? LastLoginAt);
+    DateTimeOffset? LastLoginAt,
+    string? TeamName = null);
