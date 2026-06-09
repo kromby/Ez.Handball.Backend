@@ -104,7 +104,8 @@ public static class SquadEndpoints
             position = p.Position,
             gender = p.Gender,
             price = p.Price,
-            pricePaid = p.PricePaid
+            pricePaid = p.PricePaid,
+            rating = p.Rating
         }),
         budgetUsed = view.BudgetUsed,
         remainingBudget = view.RemainingBudget,
