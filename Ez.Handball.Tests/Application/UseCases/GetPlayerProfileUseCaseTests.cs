@@ -40,7 +40,7 @@ public class GetPlayerProfileUseCaseTests
         _salary
             .Setup(s => s.GetSalaryAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PlayerSalary(
-                "12345", new PlayerCost(11_000_000, "ISK"), Score: 11, Games: 10, Version: "fantasy-price-v1"));
+                "12345", new PlayerPrice(11_000_000, "ISK"), Score: 11, Games: 10, Version: "fantasy-price-v1"));
 
         var result = await CreateSut().ExecuteAsync("12345", CancellationToken.None);
 

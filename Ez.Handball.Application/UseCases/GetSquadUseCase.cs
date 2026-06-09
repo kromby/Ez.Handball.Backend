@@ -64,9 +64,9 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
 
         var view = new SquadView(
             items,
-            BudgetUsed: new PlayerCost(budgetUsed, squad.Currency),
-            RemainingBudget: new PlayerCost(squad.Budget, squad.Currency),
-            SquadValue: new PlayerCost(squadValue, squad.Currency));
+            BudgetUsed: new PlayerPrice(budgetUsed, squad.Currency),
+            RemainingBudget: new PlayerPrice(squad.Budget, squad.Currency),
+            SquadValue: new PlayerPrice(squadValue, squad.Currency));
         return new GetSquadResult.Found(view);
     }
 }

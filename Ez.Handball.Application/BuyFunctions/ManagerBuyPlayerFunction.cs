@@ -11,6 +11,6 @@ public sealed class ManagerBuyPlayerFunction : IBuyPlayerFunction
     public GameFlavor Flavor => GameFlavor.Manager;
 
     public BuyDecision Evaluate(BuyPlayerInputs inputs) =>
-        new(inputs.PlayerId, "manager", true, new PlayerCost(0, "ISK"),
+        new(inputs.PlayerId, "manager", true, new PlayerPrice(0, "ISK"),
             System.Array.Empty<BuyRuleViolation>(), Version);
 }

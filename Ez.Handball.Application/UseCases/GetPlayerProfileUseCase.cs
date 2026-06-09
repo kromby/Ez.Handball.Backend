@@ -6,7 +6,7 @@ namespace Ez.Handball.Application.UseCases;
 public abstract record GetPlayerProfileResult
 {
     public sealed record NotFound : GetPlayerProfileResult { public static readonly NotFound Instance = new(); }
-    public sealed record Found(Player Player, PlayerCost? Price) : GetPlayerProfileResult;
+    public sealed record Found(Player Player, PlayerPrice? Price) : GetPlayerProfileResult;
 }
 
 public interface IGetPlayerProfileUseCase

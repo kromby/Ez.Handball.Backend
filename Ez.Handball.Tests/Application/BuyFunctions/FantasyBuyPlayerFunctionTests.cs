@@ -5,7 +5,7 @@ namespace Ez.Handball.Tests.Application.BuyFunctions;
 
 public class FantasyBuyPlayerFunctionTests
 {
-    private static readonly PlayerCost Cost = new(20_000_000, "ISK");
+    private static readonly PlayerPrice Cost = new(20_000_000, "ISK");
 
     private static SquadConstraints Constraints(int maxSize = 15, IReadOnlyDictionary<string, int>? posLimits = null) =>
         new(1, maxSize, posLimits ?? new Dictionary<string, int>(), 100_000_000, "ISK");
@@ -14,7 +14,7 @@ public class FantasyBuyPlayerFunctionTests
         new(players, budget, "ISK");
 
     private static SquadSlot Slot(string id, string? pos = "Back") =>
-        new(id, pos, new PlayerCost(10_000_000, "ISK"));
+        new(id, pos, new PlayerPrice(10_000_000, "ISK"));
 
     private static BuyPlayerInputs Inputs(Squad squad, SquadConstraints constraints, string? position = "Back") =>
         new("p1", position, Cost, "fantasy-price-v1", constraints, squad, new BuyPlayerContext(null, null, null));

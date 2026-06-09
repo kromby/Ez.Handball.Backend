@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.BuyFunctions;
 public sealed record BuyPlayerInputs(
     string PlayerId,
     string? Position,
-    PlayerCost Cost,                // the player's salary cost (from the #52 primitive)
+    PlayerPrice Cost,                // the player's salary cost (from the #52 primitive)
     string Version,                 // the pricing rule-set name, e.g. "fantasy-price-v1"
     SquadConstraints Constraints,   // from the fantasy-squad-v{n} Config group
     Squad Squad,

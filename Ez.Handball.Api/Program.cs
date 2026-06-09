@@ -290,7 +290,6 @@ app.MapGet("/api/players/{playerId}/rating", async Task<IResult> (
     };
 });
 
-
 app.MapGet("/api/players/{playerId}/buy", async Task<IResult> (
     string playerId,
     string? flavor,
@@ -464,7 +463,7 @@ app.MapGet("/api/squad/constraints", async Task<IResult> (
         {
             ruleSetVersion = f.Constraints.Version,
             maxSquadSize   = f.Constraints.MaxSquadSize,
-            startingCap    = new PlayerCost(f.Constraints.StartingCap, f.Constraints.Currency),
+            startingCap    = new PlayerPrice(f.Constraints.StartingCap, f.Constraints.Currency),
             posLimits      = f.Constraints.PositionLimits
         }),
         _ => Results.Problem()

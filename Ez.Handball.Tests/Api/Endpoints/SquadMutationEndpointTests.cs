@@ -89,8 +89,8 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     }
 
     private static SquadView View() => new(
-        new[] { new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar", new PlayerCost(50_000_000, "ISK"), new PlayerCost(42_000_000, "ISK")) },
-        new PlayerCost(42_000_000, "ISK"), new PlayerCost(8_000_000, "ISK"), new PlayerCost(50_000_000, "ISK"));
+        new[] { new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar", new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK")) },
+        new PlayerPrice(42_000_000, "ISK"), new PlayerPrice(8_000_000, "ISK"), new PlayerPrice(50_000_000, "ISK"));
 
     [Fact]
     public async Task Buy_WithoutToken_Returns401()

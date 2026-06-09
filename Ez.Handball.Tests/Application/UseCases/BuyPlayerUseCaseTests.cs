@@ -23,13 +23,13 @@ public class BuyPlayerUseCaseTests
         new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
 
     private static BuyDecision Allowed(string id, double cost) =>
-        new(id, "fantasy", true, new PlayerCost(cost, "ISK"), System.Array.Empty<BuyRuleViolation>(), "fantasy-price-v1");
+        new(id, "fantasy", true, new PlayerPrice(cost, "ISK"), System.Array.Empty<BuyRuleViolation>(), "fantasy-price-v1");
 
     private static BuyDecision Rejected(string id, double cost, params BuyRuleViolation[] v) =>
-        new(id, "fantasy", false, new PlayerCost(cost, "ISK"), v, "fantasy-price-v1");
+        new(id, "fantasy", false, new PlayerPrice(cost, "ISK"), v, "fantasy-price-v1");
 
     private static SquadView EmptyView() =>
-        new(System.Array.Empty<SquadPlayer>(), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"));
+        new(System.Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"));
 
     private void TeamExists() => _teams.Setup(t => t.ExistsAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>())).ReturnsAsync(true);
     private void PlayerExists(string id, string pos) => _players.Setup(p => p.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer(id, pos));

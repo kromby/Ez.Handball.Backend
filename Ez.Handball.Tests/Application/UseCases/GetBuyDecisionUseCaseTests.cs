@@ -17,7 +17,7 @@ public class GetBuyDecisionUseCaseTests
         new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back");
 
     private static PlayerSalary Salary() =>
-        new("p1", new PlayerCost(20_000_000, "ISK"), 6, 8, "fantasy-price-v1");
+        new("p1", new PlayerPrice(20_000_000, "ISK"), 6, 8, "fantasy-price-v1");
 
     private static SquadConstraints Constraints() =>
         new(1, 15, new Dictionary<string, int>(), 100_000_000, "ISK");

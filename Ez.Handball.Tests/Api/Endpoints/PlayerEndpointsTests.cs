@@ -83,7 +83,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerCost(11_000_000, "ISK")));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(11_000_000, "ISK")));
 
         var response = await _client.GetAsync("/api/players/12345");
 

@@ -17,7 +17,7 @@ public class GetSquadUseCaseTests
         id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
 
     private static PlayerSalary SalaryOf(string id, double amount) =>
-        new(id, new PlayerCost(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
+        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
 
     private void SetupSquad(double budget, params SquadSlot[] slots) =>
         _squad.Setup(r => r.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
@@ -28,8 +28,8 @@ public class GetSquadUseCaseTests
     {
         // Paid 40M + 30M = 70M; cap 100M => budget 30M. Current prices 50M + 25M => value 75M.
         SetupSquad(30_000_000,
-            new SquadSlot("p-1", "VS", new PlayerCost(40_000_000, "ISK")),
-            new SquadSlot("p-2", "MM", new PlayerCost(30_000_000, "ISK")));
+            new SquadSlot("p-1", "VS", new PlayerPrice(40_000_000, "ISK")),
+            new SquadSlot("p-2", "MM", new PlayerPrice(30_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
         _players.Setup(r => r.GetByIdAsync("p-2", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-2", "MM"));
         _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 50_000_000));
@@ -54,7 +54,7 @@ public class GetSquadUseCaseTests
     [Fact]
     public async Task UnresolvedPlayer_IsKept_WithNullEnrichment()
     {
-        SetupSquad(60_000_000, new SquadSlot("ghost", "VS", new PlayerCost(40_000_000, "ISK")));
+        SetupSquad(60_000_000, new SquadSlot("ghost", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("ghost", It.IsAny<CancellationToken>())).ReturnsAsync((Player?)null);
         _salary.Setup(s => s.GetSalaryAsync("ghost", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("ghost", 0));
 
@@ -72,7 +72,7 @@ public class GetSquadUseCaseTests
     [Fact]
     public async Task InvalidRuleSet_ReturnsRuleSetNotFound()
     {
-        SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerCost(40_000_000, "ISK")));
+        SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
         _salary.Setup(s => s.GetSalaryAsync("p-1", 9, null, null, It.IsAny<CancellationToken>())).ReturnsAsync((PlayerSalary?)null);
 
@@ -99,7 +99,7 @@ public class GetSquadUseCaseTests
     [Fact]
     public async Task PassesScopeThroughToSalaryService()
     {
-        SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerCost(40_000_000, "ISK")));
+        SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
         _salary.Setup(s => s.GetSalaryAsync("p-1", 2, "2024", "t-9", It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 11_000_000));
 

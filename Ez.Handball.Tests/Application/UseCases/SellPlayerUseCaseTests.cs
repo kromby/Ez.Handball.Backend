@@ -20,9 +20,9 @@ public class SellPlayerUseCaseTests
         _teams.Object, _roster.Object, _budget.Object, () => Now);
 
     private static PlayerSalary SalaryOf(string id, double amount) =>
-        new(id, new PlayerCost(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
+        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
     private static SquadView EmptyView() =>
-        new(System.Array.Empty<SquadPlayer>(), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"));
+        new(System.Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"));
     private static BuyPlayerContext Ctx => new(null, null, null);
 
     private void TeamExists() => _teams.Setup(t => t.ExistsAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>())).ReturnsAsync(true);

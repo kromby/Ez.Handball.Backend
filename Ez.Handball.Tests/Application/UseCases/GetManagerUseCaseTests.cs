@@ -26,7 +26,7 @@ public class GetManagerUseCaseTests
     private void OwnedPlayers(int count)
     {
         var slots = Enumerable.Range(0, count)
-            .Select(i => new SquadSlot($"p-{i}", "VS", new PlayerCost(1, "ISK"))).ToList();
+            .Select(i => new SquadSlot($"p-{i}", "VS", new PlayerPrice(1, "ISK"))).ToList();
         _squad.Setup(s => s.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Squad(slots, 0, "ISK"));
     }
