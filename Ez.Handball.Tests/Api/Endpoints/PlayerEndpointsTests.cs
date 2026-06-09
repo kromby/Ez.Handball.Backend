@@ -83,7 +83,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(11_000_000, "ISK")));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(11_000_000, "ISK"), 128.0));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -98,6 +98,46 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var price = body.GetProperty("price");
         Assert.Equal(11_000_000, price.GetProperty("amount").GetDouble());
         Assert.Equal("ISK", price.GetProperty("currency").GetString());
+        Assert.Equal(128.0, body.GetProperty("rating").GetDouble());
+    }
+
+    [Fact]
+    public async Task GetPlayer_NoGamesInScope_Returns200WithRatingZero()
+    {
+        // The "0 for no games" rule lives upstream (PlayerPriceService); this only pins that a 0.0 rating round-trips in the JSON.
+        var player = new Player(
+            "12345", "Aron Pálmarsson", "23",
+            new DateOnly(1990, 7, 19),
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+
+        _factory.Profile
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(5_000_000, "ISK"), 0.0));
+
+        var response = await _client.GetAsync("/api/players/12345");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0.0, body.GetProperty("rating").GetDouble());
+    }
+
+    [Fact]
+    public async Task GetPlayer_RuleSetMissing_Returns200WithNullRating()
+    {
+        var player = new Player(
+            "12345", "Aron Pálmarsson", "23",
+            new DateOnly(1990, 7, 19),
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+
+        _factory.Profile
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, null, null));
+
+        var response = await _client.GetAsync("/api/players/12345");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("rating").ValueKind);
     }
 
     [Fact]

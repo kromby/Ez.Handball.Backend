@@ -198,7 +198,8 @@ app.MapGet("/api/players/{playerId}", async (
             f.Player.ClubName,
             f.Player.Gender,
             f.Player.Position,
-            price = f.Price
+            price = f.Price,
+            rating = f.Rating
         }),
         _                                     => Results.Problem()
     };

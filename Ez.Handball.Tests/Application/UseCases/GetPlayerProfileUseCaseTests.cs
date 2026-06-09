@@ -49,6 +49,7 @@ public class GetPlayerProfileUseCaseTests
         Assert.NotNull(found.Price);
         Assert.Equal(11_000_000, found.Price!.Amount);
         Assert.Equal("ISK", found.Price.Currency);
+        Assert.Equal(128, found.Rating);
     }
 
     [Fact]
@@ -67,6 +68,7 @@ public class GetPlayerProfileUseCaseTests
         var found = Assert.IsType<GetPlayerProfileResult.Found>(result);
         Assert.Same(player, found.Player);
         Assert.Null(found.Price);
+        Assert.Null(found.Rating);
     }
 
     [Fact]

@@ -6,7 +6,7 @@ namespace Ez.Handball.Application.UseCases;
 public abstract record GetPlayerProfileResult
 {
     public sealed record NotFound : GetPlayerProfileResult { public static readonly NotFound Instance = new(); }
-    public sealed record Found(Player Player, PlayerPrice? Price) : GetPlayerProfileResult;
+    public sealed record Found(Player Player, PlayerPrice? Price, double? Rating) : GetPlayerProfileResult;
 }
 
 public interface IGetPlayerProfileUseCase
@@ -36,6 +36,6 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
         // Season/tournament null => current-season price. Null when the rule-set
         // is absent; the rest of the profile still returns.
         var price = await _price.GetPriceAsync(playerId, DefaultPriceVersion, null, null, ct);
-        return new GetPlayerProfileResult.Found(player, price?.Price);
+        return new GetPlayerProfileResult.Found(player, price?.Price, price?.Rating);
     }
 }
