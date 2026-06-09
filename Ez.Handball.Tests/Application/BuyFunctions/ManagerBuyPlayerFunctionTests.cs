@@ -6,7 +6,7 @@ namespace Ez.Handball.Tests.Application.BuyFunctions;
 public class ManagerBuyPlayerFunctionTests
 {
     private static BuyPlayerInputs Inputs() =>
-        new("p7", "Back", new PlayerCost(999, "ISK"), "ignored",
+        new("p7", "Back", new PlayerPrice(999, "ISK"), "ignored",
             new SquadConstraints(0, 0, new Dictionary<string, int>(), 0, "ISK"),
             new Squad(System.Array.Empty<SquadSlot>(), 0, "ISK"),
             new BuyPlayerContext(null, null, null));

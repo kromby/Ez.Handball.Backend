@@ -267,3 +267,7 @@ __pycache__/
 *.pyc
 # Local git worktrees (superpowers)
 .worktrees/
+
+# OS / tooling artifacts
+.DS_Store
+.claude/

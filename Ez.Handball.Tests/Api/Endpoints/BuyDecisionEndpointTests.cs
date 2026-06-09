@@ -96,11 +96,11 @@ public class BuyDecisionEndpointTests : IClassFixture<BuyDecisionEndpointTests.F
     }
 
     private static BuyDecision Allowed() =>
-        new("p1", "fantasy", true, new PlayerCost(20_000_000, "ISK"),
+        new("p1", "fantasy", true, new PlayerPrice(20_000_000, "ISK"),
             System.Array.Empty<BuyRuleViolation>(), "fantasy-price-v1");
 
     private static BuyDecision Rejected() =>
-        new("p1", "fantasy", false, new PlayerCost(42_000_000, "ISK"),
+        new("p1", "fantasy", false, new PlayerPrice(42_000_000, "ISK"),
             new[] { new BuyRuleViolation("insufficient_budget", "Cost exceeds remaining budget") }, "fantasy-price-v1");
 
     [Fact]

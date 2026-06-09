@@ -7,7 +7,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 
 namespace Ez.Handball.Ingestion.Functions;
 
-public class SeedSalaryRuleSetsFunction
+public class SeedPriceRuleSetsFunction
 {
     // Fantasy ISK price rule set. minGames guards thin samples; bands map points-per-game
     // to a price. Thresholds/prices are tunable config (scoring calibration: #27).
@@ -24,14 +24,14 @@ public class SeedSalaryRuleSetsFunction
 
     private readonly ITableWriter _tableWriter;
 
-    public SeedSalaryRuleSetsFunction(ITableWriter tableWriter)
+    public SeedPriceRuleSetsFunction(ITableWriter tableWriter)
     {
         _tableWriter = tableWriter;
     }
 
-    [Function("SeedSalaryRuleSets")]
+    [Function("SeedPriceRuleSets")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "seed/salary-rule-sets")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "seed/price-rule-sets")] HttpRequestData req,
         FunctionContext context)
     {
         var seeded = await ProcessAsync();

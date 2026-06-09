@@ -5,16 +5,16 @@ using Moq;
 
 namespace Ez.Handball.Tests.Ingestion.Functions;
 
-public class SeedSalaryRuleSetsFunctionTests
+public class SeedPriceRuleSetsFunctionTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
 
-    private SeedSalaryRuleSetsFunction CreateSut() => new(_tableWriter.Object);
+    private SeedPriceRuleSetsFunction CreateSut() => new(_tableWriter.Object);
 
     [Fact]
     public void Definitions_AreTheFantasyPriceV1Group()
     {
-        var defs = SeedSalaryRuleSetsFunction.RuleSetDefinitions;
+        var defs = SeedPriceRuleSetsFunction.RuleSetDefinitions;
 
         Assert.All(defs, d => Assert.Equal("fantasy-price-v1", d.Group));
         Assert.Contains(defs, d => d.Key == "minGames" && d.Value == "3");
@@ -28,14 +28,14 @@ public class SeedSalaryRuleSetsFunctionTests
     {
         var seeded = await CreateSut().ProcessAsync();
 
-        Assert.Equal(SeedSalaryRuleSetsFunction.RuleSetDefinitions.Count, seeded);
+        Assert.Equal(SeedPriceRuleSetsFunction.RuleSetDefinitions.Count, seeded);
 
         _tableWriter.Verify(t => t.UpsertAsync(
             "Config",
             It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-price-v1"),
             default,
             Azure.Data.Tables.TableUpdateMode.Replace),
-            Times.Exactly(SeedSalaryRuleSetsFunction.RuleSetDefinitions.Count));
+            Times.Exactly(SeedPriceRuleSetsFunction.RuleSetDefinitions.Count));
 
         _tableWriter.Verify(t => t.UpsertAsync(
             "Config",

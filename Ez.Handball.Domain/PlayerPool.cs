@@ -10,7 +10,7 @@ public sealed record PlayerPoolEntry(
     string? ClubName,
     string Gender,
     string Position,
-    PlayerCost Price,
+    PlayerPrice Price,
     double Rating,
     double? PickPercentage);
 

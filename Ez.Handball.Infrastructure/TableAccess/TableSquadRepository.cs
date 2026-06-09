@@ -29,7 +29,7 @@ internal sealed class TableSquadRepository : ISquadRepository
 
         var entries = await _roster.ListActiveAsync(teamId, ct);
         var slots = entries
-            .Select(e => new SquadSlot(e.PlayerId, e.Position, new PlayerCost(e.PricePaidAmount, currency)))
+            .Select(e => new SquadSlot(e.PlayerId, e.Position, new PlayerPrice(e.PricePaidAmount, currency)))
             .ToList();
 
         var budget = await _budget.GetBalanceAsync(teamId, ct) ?? 0;

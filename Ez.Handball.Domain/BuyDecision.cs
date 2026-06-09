@@ -6,6 +6,6 @@ public sealed record BuyDecision(
     string PlayerId,
     string Flavor,                                  // lowercased flavor name, e.g. "fantasy"
     bool Allowed,
-    PlayerCost Cost,
+    PlayerPrice Cost,
     IReadOnlyList<BuyRuleViolation> Violations,
     string Version);

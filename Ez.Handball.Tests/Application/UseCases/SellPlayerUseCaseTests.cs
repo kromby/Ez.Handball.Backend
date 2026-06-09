@@ -8,7 +8,7 @@ namespace Ez.Handball.Tests.Application.UseCases;
 public class SellPlayerUseCaseTests
 {
     private readonly Mock<IGetSquadUseCase> _squadView = new();
-    private readonly Mock<IPlayerSalaryService> _salary = new();
+    private readonly Mock<IPlayerPriceService> _price = new();
     private readonly Mock<ISquadConstraintsRepository> _constraints = new();
     private readonly Mock<IGameTeamRepository> _teams = new();
     private readonly Mock<IGameRosterRepository> _roster = new();
@@ -16,13 +16,13 @@ public class SellPlayerUseCaseTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     private SellPlayerUseCase Sut() => new(
-        _squadView.Object, _salary.Object, _constraints.Object,
+        _squadView.Object, _price.Object, _constraints.Object,
         _teams.Object, _roster.Object, _budget.Object, () => Now);
 
-    private static PlayerSalary SalaryOf(string id, double amount) =>
-        new(id, new PlayerCost(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
+    private static PlayerPricing PriceOf(string id, double amount) =>
+        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
     private static SquadView EmptyView() =>
-        new(System.Array.Empty<SquadPlayer>(), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"), new PlayerCost(0, "ISK"));
+        new(System.Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"));
     private static BuyPlayerContext Ctx => new(null, null, null);
 
     private void TeamExists() => _teams.Setup(t => t.ExistsAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -37,7 +37,7 @@ public class SellPlayerUseCaseTests
     public async Task Sell_OnProfit_SoftDeletes_AndCreditsWithFee()
     {
         TeamExists(); Owns("p-1", 40_000_000); Constraints(0.5); ViewReturns();
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 50_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 50_000_000));
 
         var result = await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
 
@@ -51,7 +51,7 @@ public class SellPlayerUseCaseTests
     public async Task Sell_OnLoss_CreditsCurrentValue()
     {
         TeamExists(); Owns("p-1", 40_000_000); Constraints(0.5); ViewReturns();
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 30_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 30_000_000));
 
         await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
         _budget.Verify(b => b.TryCreditAsync("u-1:fantasy", 30_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
@@ -78,7 +78,7 @@ public class SellPlayerUseCaseTests
     public async Task RuleSetMissing_ReturnsRuleSetNotFound_NoWrite()
     {
         TeamExists(); Owns("p-1", 40_000_000);
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync((PlayerSalary?)null);
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync((PlayerPricing?)null);
 
         Assert.IsType<SellPlayerResult.RuleSetNotFound>(await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None));
         _roster.Verify(r => r.SoftDeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -88,7 +88,7 @@ public class SellPlayerUseCaseTests
     public async Task ConstraintsMissing_ReturnsRuleSetNotFound_NoWrite()
     {
         TeamExists(); Owns("p-1", 40_000_000);
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 50_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 50_000_000));
         // _constraints.GetAsync not set up -> returns null (Moq default)
 
         Assert.IsType<SellPlayerResult.RuleSetNotFound>(await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None));

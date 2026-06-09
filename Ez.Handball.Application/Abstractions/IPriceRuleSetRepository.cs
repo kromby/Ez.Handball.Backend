@@ -2,8 +2,8 @@ using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.Abstractions;
 
-public interface ISalaryRuleSetRepository
+public interface IPriceRuleSetRepository
 {
     // The typed price rule set, or null if the version does not exist / is incomplete.
-    Task<SalaryRuleSet?> GetAsync(int version, CancellationToken ct);
+    Task<PriceRuleSet?> GetAsync(int version, CancellationToken ct);
 }

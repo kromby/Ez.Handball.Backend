@@ -2,13 +2,13 @@ using Ez.Handball.Domain;
 
 namespace Ez.Handball.Tests.Domain;
 
-public class SalaryRuleSetTests
+public class PriceRuleSetTests
 {
-    private static SalaryRuleSet Rs() => new(1, 3, "ISK", new[]
+    private static PriceRuleSet Rs() => new(1, 3, "ISK", new[]
     {
-        new SalaryBand(0, 5000000),
-        new SalaryBand(3, 10000000),
-        new SalaryBand(6, 20000000),
+        new PriceBand(0, 5000000),
+        new PriceBand(3, 10000000),
+        new PriceBand(6, 20000000),
     });
 
     [Fact]

@@ -12,12 +12,12 @@ public class FantasyPricingTests
             RedCardPoints: -3, AppearancePoints: 1);
 
     // Bands: score < 5 => 1_000_000; 5..<10 => 5_000_000; >=10 => 11_000_000
-    private static readonly SalaryRuleSet Prices =
+    private static readonly PriceRuleSet Prices =
         new(Version: 1, MinGames: 3, Currency: "ISK", Bands: new[]
         {
-            new SalaryBand(0, 1_000_000),
-            new SalaryBand(5, 5_000_000),
-            new SalaryBand(10, 11_000_000),
+            new PriceBand(0, 1_000_000),
+            new PriceBand(5, 5_000_000),
+            new PriceBand(10, 11_000_000),
         });
 
     private static readonly PlayerRatingContext Ctx = new(null, null, null, null, null, null);
@@ -35,8 +35,8 @@ public class FantasyPricingTests
         Assert.Equal(110, result.Rating);
         // score = 110/10 = 11 => top band
         Assert.Equal(11, result.Score);
-        Assert.Equal(11_000_000, result.Cost.Amount);
-        Assert.Equal("ISK", result.Cost.Currency);
+        Assert.Equal(11_000_000, result.Price.Amount);
+        Assert.Equal("ISK", result.Price.Currency);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class FantasyPricingTests
 
         Assert.Equal(82, result.Rating);     // rating still computed: 40*2 goals + 2*1 appearances
         Assert.Equal(0, result.Score);
-        Assert.Equal(1_000_000, result.Cost.Amount);
+        Assert.Equal(1_000_000, result.Price.Amount);
     }
 
     [Fact]
@@ -61,6 +61,6 @@ public class FantasyPricingTests
 
         Assert.Equal(0, result.Rating);
         Assert.Equal(0, result.Score);
-        Assert.Equal(1_000_000, result.Cost.Amount);
+        Assert.Equal(1_000_000, result.Price.Amount);
     }
 }

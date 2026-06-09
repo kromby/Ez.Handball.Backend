@@ -21,13 +21,13 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
 
     private readonly ISquadRepository _squad;
     private readonly IPlayerRepository _players;
-    private readonly IPlayerSalaryService _salary;
+    private readonly IPlayerPriceService _price;
 
-    public GetSquadUseCase(ISquadRepository squad, IPlayerRepository players, IPlayerSalaryService salary)
+    public GetSquadUseCase(ISquadRepository squad, IPlayerRepository players, IPlayerPriceService price)
     {
         _squad = squad;
         _players = players;
-        _salary = salary;
+        _price = price;
     }
 
     public async Task<GetSquadResult> ExecuteAsync(
@@ -42,10 +42,10 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
 
         foreach (var slot in squad.Players)
         {
-            var salary = await _salary.GetSalaryAsync(slot.PlayerId, version, season, tournamentId, ct);
+            var price = await _price.GetPriceAsync(slot.PlayerId, version, season, tournamentId, ct);
             // The price rule set is shared across all players, so a null means the version
             // doesn't exist at all — this fires on the first slot if the rule set is missing.
-            if (salary is null) return GetSquadResult.RuleSetNotFound.Instance;
+            if (price is null) return GetSquadResult.RuleSetNotFound.Instance;
 
             var player = await _players.GetByIdAsync(slot.PlayerId, ct);
             items.Add(new SquadPlayer(
@@ -55,18 +55,18 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
                 ClubName: player?.ClubName,
                 Position: player?.Position,
                 Gender: player?.Gender,
-                Price: salary.Cost,
+                Price: price.Price,
                 PricePaid: slot.PricePaid));
 
-            squadValue += salary.Cost.Amount;
+            squadValue += price.Price.Amount;
             budgetUsed += slot.PricePaid.Amount;
         }
 
         var view = new SquadView(
             items,
-            BudgetUsed: new PlayerCost(budgetUsed, squad.Currency),
-            RemainingBudget: new PlayerCost(squad.Budget, squad.Currency),
-            SquadValue: new PlayerCost(squadValue, squad.Currency));
+            BudgetUsed: new PlayerPrice(budgetUsed, squad.Currency),
+            RemainingBudget: new PlayerPrice(squad.Budget, squad.Currency),
+            SquadValue: new PlayerPrice(squadValue, squad.Currency));
         return new GetSquadResult.Found(view);
     }
 }

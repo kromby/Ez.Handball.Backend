@@ -3,7 +3,7 @@ namespace Ez.Handball.Domain;
 public sealed record SquadSlot(
     string PlayerId,
     string? Position,
-    PlayerCost PricePaid);                          // price locked at buy time, NOT the current salary
+    PlayerPrice PricePaid);                          // price locked at buy time, NOT the player's current market price
 
 public sealed record Squad(
     IReadOnlyList<SquadSlot> Players,

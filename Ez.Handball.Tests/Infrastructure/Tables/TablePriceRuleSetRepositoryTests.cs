@@ -5,7 +5,7 @@ using Moq;
 
 namespace Ez.Handball.Tests.Infrastructure.Tables;
 
-public class TableSalaryRuleSetRepositoryTests
+public class TablePriceRuleSetRepositoryTests
 {
     private readonly Mock<ITableQuery> _query = new();
 
@@ -23,7 +23,7 @@ public class TableSalaryRuleSetRepositoryTests
         await Task.CompletedTask;
     }
 
-    private TableSalaryRuleSetRepository CreateSut() => new(_query.Object);
+    private TablePriceRuleSetRepository CreateSut() => new(_query.Object);
 
     [Fact]
     public async Task Get_AssemblesSortedRuleSet()

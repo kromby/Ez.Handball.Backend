@@ -1,8 +1,0 @@
-namespace Ez.Handball.Domain;
-
-public sealed record PlayerSalary(
-    string PlayerId,
-    PlayerCost Cost,
-    double Score,    // points per game (0 when below the min-games guard)
-    int Games,
-    string Version); // the price rule set name, e.g. "fantasy-price-v1"

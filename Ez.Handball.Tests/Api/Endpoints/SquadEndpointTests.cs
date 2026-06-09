@@ -99,11 +99,11 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         new[]
         {
             new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar",
-                new PlayerCost(50_000_000, "ISK"), new PlayerCost(42_000_000, "ISK"))
+                new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK"))
         },
-        BudgetUsed: new PlayerCost(42_000_000, "ISK"),
-        RemainingBudget: new PlayerCost(8_000_000, "ISK"),
-        SquadValue: new PlayerCost(50_000_000, "ISK"));
+        BudgetUsed: new PlayerPrice(42_000_000, "ISK"),
+        RemainingBudget: new PlayerPrice(8_000_000, "ISK"),
+        SquadValue: new PlayerPrice(50_000_000, "ISK"));
 
     [Fact]
     public async Task WithoutToken_Returns401()
