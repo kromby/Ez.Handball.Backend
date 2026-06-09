@@ -164,6 +164,7 @@ builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
 builder.Services.AddScoped<IResendVerificationUseCase, ResendVerificationUseCase>();
 builder.Services.AddScoped<IGetManagerUseCase, GetManagerUseCase>();
 builder.Services.AddScoped<IRenameTeamUseCase, RenameTeamUseCase>();
+builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 
 var app = builder.Build();
 
