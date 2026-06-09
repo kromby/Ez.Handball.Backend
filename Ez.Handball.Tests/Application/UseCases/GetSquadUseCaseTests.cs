@@ -17,7 +17,7 @@ public class GetSquadUseCaseTests
         id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
-        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
+        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
 
     private void SetupSquad(double budget, params SquadSlot[] slots) =>
         _squad.Setup(r => r.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))

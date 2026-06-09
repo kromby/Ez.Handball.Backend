@@ -36,6 +36,6 @@ public sealed class PlayerPriceService : IPlayerPriceService
 
         var result = _pricing.Compute(playerId, stats, scoring, priceRuleSet, ctx);
         return new PlayerPricing(
-            playerId, result.Price, result.Score, stats.Games, priceRuleSet.Name);
+            playerId, result.Price, result.Score, stats.Games, priceRuleSet.Name, result.Rating);
     }
 }

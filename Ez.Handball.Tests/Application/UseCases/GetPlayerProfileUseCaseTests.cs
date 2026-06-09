@@ -40,7 +40,7 @@ public class GetPlayerProfileUseCaseTests
         _price
             .Setup(s => s.GetPriceAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PlayerPricing(
-                "12345", new PlayerPrice(11_000_000, "ISK"), Score: 11, Games: 10, Version: "fantasy-price-v1"));
+                "12345", new PlayerPrice(11_000_000, "ISK"), Score: 11, Games: 10, Version: "fantasy-price-v1", Rating: 128));
 
         var result = await CreateSut().ExecuteAsync("12345", CancellationToken.None);
 

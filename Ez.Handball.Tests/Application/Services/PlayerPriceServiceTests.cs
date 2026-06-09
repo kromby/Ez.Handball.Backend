@@ -98,4 +98,26 @@ public class PlayerPriceServiceTests
 
         Assert.Null(price);
     }
+
+    [Fact]
+    public async Task Rating_IsWeightedSeasonTotal()
+    {
+        Aggregate(games: 8, goals: 20);   // rating = 20*2 + 8*1 = 48
+
+        var price = await CreateSut().GetPriceAsync("p1", 1, "2025-26", null, default);
+
+        Assert.NotNull(price);
+        Assert.Equal(48, price!.Rating);
+    }
+
+    [Fact]
+    public async Task Rating_ZeroGames_IsZero()
+    {
+        Aggregate(games: 0, goals: 0);
+
+        var price = await CreateSut().GetPriceAsync("p1", 1, "2025-26", null, default);
+
+        Assert.NotNull(price);
+        Assert.Equal(0, price!.Rating);
+    }
 }

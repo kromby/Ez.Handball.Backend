@@ -20,7 +20,7 @@ public class SellPlayerUseCaseTests
         _teams.Object, _roster.Object, _budget.Object, () => Now);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
-        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
+        new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
     private static SquadView EmptyView() =>
         new(System.Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"));
     private static BuyPlayerContext Ctx => new(null, null, null);
