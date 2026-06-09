@@ -16,7 +16,7 @@ public interface IGetPlayerProfileUseCase
 
 public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
 {
-    // The default fantasy price rule-set version (matches GetPlayerSalaryUseCase).
+    // The default fantasy price rule-set version.
     private const int DefaultPriceVersion = 1;
 
     private readonly IPlayerRepository _players;
