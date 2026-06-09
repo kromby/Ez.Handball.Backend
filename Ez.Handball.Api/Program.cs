@@ -163,6 +163,8 @@ builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
 builder.Services.AddScoped<IResendVerificationUseCase, ResendVerificationUseCase>();
 builder.Services.AddScoped<IGetManagerUseCase, GetManagerUseCase>();
 builder.Services.AddScoped<IRenameTeamUseCase, RenameTeamUseCase>();
+builder.Services.AddScoped<IGetLineupUseCase, GetLineupUseCase>();
+builder.Services.AddScoped<ISetLineupUseCase, SetLineupUseCase>();
 builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 
 var app = builder.Build();
@@ -477,6 +479,7 @@ app.MapAuthEndpoints();
 
 app.MapShortlistEndpoints();
 app.MapSquadEndpoints();
+app.MapLineupEndpoints();
 app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
 app.MapMiniLeagueInviteEndpoints();
