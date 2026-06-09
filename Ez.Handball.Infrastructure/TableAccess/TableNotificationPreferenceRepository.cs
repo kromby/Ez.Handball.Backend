@@ -8,6 +8,11 @@ namespace Ez.Handball.Infrastructure.TableAccess;
 
 internal sealed class TableNotificationPreferenceRepository : INotificationPreferenceRepository
 {
+    // Marker row written when a user is configured but has every cell disabled. It lets
+    // GetAsync distinguish "configured to receive nothing" (non-null, empty) from "never
+    // configured" (null) — the two states the interface contract requires.
+    private const string ConfiguredMarkerRowKey = "__configured__";
+
     private readonly TableServiceClient _client;
     private readonly ITableQuery _query;
 
@@ -26,6 +31,10 @@ internal sealed class TableNotificationPreferenceRepository : INotificationPrefe
                            $"PartitionKey eq '{ODataFilter.Escape(userId)}'", ct))
         {
             any = true; // a row exists, so the user has configured preferences
+            if (e.RowKey == ConfiguredMarkerRowKey)
+            {
+                continue; // marker only signals "configured"; carries no enabled cell
+            }
             if (Enum.TryParse<NotificationType>(e.Type, out var type)
                 && Enum.TryParse<NotificationChannel>(e.Channel, out var channel))
             {
@@ -44,15 +53,32 @@ internal sealed class TableNotificationPreferenceRepository : INotificationPrefe
         var desired = preferences.Enabled
             .ToDictionary(c => RowKeyFor(c.Type, c.Channel), c => c);
 
-        // Remove cells that are no longer enabled.
+        // An empty enabled set is still an explicit choice: keep a marker row so the next
+        // read returns non-null (configured) rather than null (never configured).
+        var keepMarker = desired.Count == 0;
+
+        // Remove cells that are no longer enabled (and the marker once cells exist again).
         await foreach (var e in _query.QueryAsync<NotificationPreferenceEntity>(
                            Tables.NotificationPreferences,
                            $"PartitionKey eq '{ODataFilter.Escape(preferences.UserId)}'", ct))
         {
-            if (!desired.ContainsKey(e.RowKey))
+            var keep = desired.ContainsKey(e.RowKey)
+                       || (keepMarker && e.RowKey == ConfiguredMarkerRowKey);
+            if (!keep)
             {
                 await table.DeleteEntityAsync(e.PartitionKey, e.RowKey, ETag.All, ct);
             }
+        }
+
+        if (keepMarker)
+        {
+            await table.UpsertEntityAsync(new NotificationPreferenceEntity
+            {
+                PartitionKey = preferences.UserId,
+                RowKey = ConfiguredMarkerRowKey,
+                Type = string.Empty,
+                Channel = string.Empty
+            }, TableUpdateMode.Replace, ct);
         }
 
         // Upsert every enabled cell.

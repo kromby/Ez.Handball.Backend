@@ -74,6 +74,17 @@ public class NotificationPublisherTests
     }
 
     [Fact]
+    public async Task SendsNothing_WhenStoredPreferencesAreEmpty_NoDefaultFallback()
+    {
+        var inApp = new InMemoryNotificationChannel(NotificationChannel.InApp);
+
+        // Non-null empty prefs = "configured to receive nothing" — must NOT fall back to Default.
+        await Sut(Prefs(), inApp).PublishAsync(Sample(), default);
+
+        Assert.Empty(inApp.Received);
+    }
+
+    [Fact]
     public async Task DeliversToAllEnabledChannels_ForSameType()
     {
         var inApp = new InMemoryNotificationChannel(NotificationChannel.InApp);

@@ -104,6 +104,12 @@ Preferences are durable user state — the one persisted piece in scope.
   absent row = disabled. This avoids schema churn when types/channels are added later.
   `UpsertAsync` reconciles the partition to the supplied set (writes enabled cells,
   removes cells no longer present).
+- **Configured-empty vs never-configured:** the interface distinguishes `null` (never
+  configured → caller uses `Default`) from a non-null empty set (configured to receive
+  nothing). To preserve this when every cell is disabled, `UpsertAsync` writes a single
+  `"__configured__"` marker row; `GetAsync` treats the marker as "configured" but carries
+  no enabled cell, so an explicit "disable all" round-trips as non-null/empty rather than
+  reverting to defaults.
 
 ### 5. In-memory consumer (`Ez.Handball.Tests/`)
 
@@ -122,7 +128,7 @@ end-to-end without any real provider.
 
 ## Data flow
 
-```
+```text
 caller → INotificationPublisher.PublishAsync(notification)
             → load NotificationPreferences (or Default)
             → for each registered INotificationChannel:

@@ -71,20 +71,22 @@ public class TableNotificationPreferenceRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Upsert_EmptySet_RemovesAllRows_AndGetReturnsNull()
+    public async Task Upsert_EmptySet_PreservesConfiguredState_AsNonNullEmpty()
     {
         await Sut().UpsertAsync(new NotificationPreferences("u-3", new HashSet<(NotificationType, NotificationChannel)>
         {
             (NotificationType.RoundResult, NotificationChannel.Email),
         }), default);
 
-        // User disables everything.
+        // User disables everything — an explicit choice, not "never configured".
         await Sut().UpsertAsync(
             new NotificationPreferences("u-3", new HashSet<(NotificationType, NotificationChannel)>()),
             default);
 
         var got = await Sut().GetAsync("u-3", default);
 
-        Assert.Null(got); // no rows left → "never configured" contract
+        Assert.NotNull(got);            // configured, distinct from the never-configured null case
+        Assert.Empty(got!.Enabled);     // ...but receiving nothing
+        Assert.False(got.IsEnabled(NotificationType.RoundResult, NotificationChannel.Email)); // old cell gone
     }
 }

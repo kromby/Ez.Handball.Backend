@@ -16,9 +16,9 @@ internal sealed class LoggingNotificationChannel : INotificationChannel
 
     public Task SendAsync(Notification notification, CancellationToken ct)
     {
-        _logger.LogInformation(
-            "[notification] user={UserId} type={Type} title={Title}",
-            notification.UserId, notification.Type, notification.Title);
+        ct.ThrowIfCancellationRequested();
+        // Log only the type — UserId and the free-text Title are kept out of info-level logs.
+        _logger.LogInformation("[notification] type={Type}", notification.Type);
         return Task.CompletedTask;
     }
 }
