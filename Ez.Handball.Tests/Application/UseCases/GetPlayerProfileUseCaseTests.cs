@@ -8,9 +8,9 @@ namespace Ez.Handball.Tests.Application.UseCases;
 public class GetPlayerProfileUseCaseTests
 {
     private readonly Mock<IPlayerRepository> _players = new();
-    private readonly Mock<IPlayerSalaryService> _salary = new();
+    private readonly Mock<IPlayerPriceService> _price = new();
 
-    private GetPlayerProfileUseCase CreateSut() => new(_players.Object, _salary.Object);
+    private GetPlayerProfileUseCase CreateSut() => new(_players.Object, _price.Object);
 
     private static Player SamplePlayer() => new(
         PlayerId: "12345", Name: "Aron Pálmarsson", JerseyNumber: "23",
@@ -37,9 +37,9 @@ public class GetPlayerProfileUseCaseTests
         _players
             .Setup(r => r.GetByIdAsync("12345", It.IsAny<CancellationToken>()))
             .ReturnsAsync(player);
-        _salary
-            .Setup(s => s.GetSalaryAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PlayerSalary(
+        _price
+            .Setup(s => s.GetPriceAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PlayerPricing(
                 "12345", new PlayerPrice(11_000_000, "ISK"), Score: 11, Games: 10, Version: "fantasy-price-v1"));
 
         var result = await CreateSut().ExecuteAsync("12345", CancellationToken.None);
@@ -58,9 +58,9 @@ public class GetPlayerProfileUseCaseTests
         _players
             .Setup(r => r.GetByIdAsync("12345", It.IsAny<CancellationToken>()))
             .ReturnsAsync(player);
-        _salary
-            .Setup(s => s.GetSalaryAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((PlayerSalary?)null);
+        _price
+            .Setup(s => s.GetPriceAsync("12345", 1, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PlayerPricing?)null);
 
         var result = await CreateSut().ExecuteAsync("12345", CancellationToken.None);
 
@@ -70,7 +70,7 @@ public class GetPlayerProfileUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_PlayerMissing_DoesNotCallSalary()
+    public async Task ExecuteAsync_PlayerMissing_DoesNotCallPrice()
     {
         _players
             .Setup(r => r.GetByIdAsync("nope", It.IsAny<CancellationToken>()))
@@ -78,7 +78,7 @@ public class GetPlayerProfileUseCaseTests
 
         await CreateSut().ExecuteAsync("nope", CancellationToken.None);
 
-        _salary.Verify(s => s.GetSalaryAsync(
+        _price.Verify(s => s.GetPriceAsync(
             It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }

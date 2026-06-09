@@ -40,14 +40,14 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
     private readonly IPlayerPoolRepository _repo;
     private readonly ITournamentScopeResolver _scope;
     private readonly IScoringRuleSetRepository _scoring;
-    private readonly ISalaryRuleSetRepository _prices;
+    private readonly IPriceRuleSetRepository _prices;
     private readonly FantasyPricing _pricing;
 
     public GetPlayerPoolUseCase(
         IPlayerPoolRepository repo,
         ITournamentScopeResolver scope,
         IScoringRuleSetRepository scoring,
-        ISalaryRuleSetRepository prices,
+        IPriceRuleSetRepository prices,
         FantasyPricing pricing)
     {
         _repo = repo;
@@ -91,7 +91,7 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                     ClubName: p.ClubName,
                     Gender: p.Gender,
                     Position: p.Position,
-                    Price: priced.Cost,
+                    Price: priced.Price,
                     Rating: priced.Rating,
                     PickPercentage: null); // deferred — ownership aggregation follow-up
             });

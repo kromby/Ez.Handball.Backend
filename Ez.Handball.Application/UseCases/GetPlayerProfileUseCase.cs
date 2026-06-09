@@ -20,12 +20,12 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
     private const int DefaultPriceVersion = 1;
 
     private readonly IPlayerRepository _players;
-    private readonly IPlayerSalaryService _salary;
+    private readonly IPlayerPriceService _price;
 
-    public GetPlayerProfileUseCase(IPlayerRepository players, IPlayerSalaryService salary)
+    public GetPlayerProfileUseCase(IPlayerRepository players, IPlayerPriceService price)
     {
         _players = players;
-        _salary = salary;
+        _price = price;
     }
 
     public async Task<GetPlayerProfileResult> ExecuteAsync(string playerId, CancellationToken ct)
@@ -33,9 +33,9 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
         var player = await _players.GetByIdAsync(playerId, ct);
         if (player is null) return GetPlayerProfileResult.NotFound.Instance;
 
-        // Season/tournament null => current-season salary. Null when the rule-set
+        // Season/tournament null => current-season price. Null when the rule-set
         // is absent; the rest of the profile still returns.
-        var salary = await _salary.GetSalaryAsync(playerId, DefaultPriceVersion, null, null, ct);
-        return new GetPlayerProfileResult.Found(player, salary?.Cost);
+        var price = await _price.GetPriceAsync(playerId, DefaultPriceVersion, null, null, ct);
+        return new GetPlayerProfileResult.Found(player, price?.Price);
     }
 }

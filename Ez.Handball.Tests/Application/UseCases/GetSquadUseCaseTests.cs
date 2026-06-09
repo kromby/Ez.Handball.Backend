@@ -9,14 +9,14 @@ public class GetSquadUseCaseTests
 {
     private readonly Mock<ISquadRepository> _squad = new();
     private readonly Mock<IPlayerRepository> _players = new();
-    private readonly Mock<IPlayerSalaryService> _salary = new();
+    private readonly Mock<IPlayerPriceService> _price = new();
 
-    private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _salary.Object);
+    private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _price.Object);
 
     private static Player AnyPlayer(string id, string position) => new(
         id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
 
-    private static PlayerSalary SalaryOf(string id, double amount) =>
+    private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1");
 
     private void SetupSquad(double budget, params SquadSlot[] slots) =>
@@ -32,8 +32,8 @@ public class GetSquadUseCaseTests
             new SquadSlot("p-2", "MM", new PlayerPrice(30_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
         _players.Setup(r => r.GetByIdAsync("p-2", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-2", "MM"));
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 50_000_000));
-        _salary.Setup(s => s.GetSalaryAsync("p-2", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-2", 25_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 50_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-2", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-2", 25_000_000));
 
         var result = await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None);
 
@@ -56,7 +56,7 @@ public class GetSquadUseCaseTests
     {
         SetupSquad(60_000_000, new SquadSlot("ghost", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("ghost", It.IsAny<CancellationToken>())).ReturnsAsync((Player?)null);
-        _salary.Setup(s => s.GetSalaryAsync("ghost", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("ghost", 0));
+        _price.Setup(s => s.GetPriceAsync("ghost", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("ghost", 0));
 
         var result = await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None);
 
@@ -74,7 +74,7 @@ public class GetSquadUseCaseTests
     {
         SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 9, null, null, It.IsAny<CancellationToken>())).ReturnsAsync((PlayerSalary?)null);
+        _price.Setup(s => s.GetPriceAsync("p-1", 9, null, null, It.IsAny<CancellationToken>())).ReturnsAsync((PlayerPricing?)null);
 
         var result = await CreateSut().ExecuteAsync("u-1", null, null, 9, CancellationToken.None);
 
@@ -97,16 +97,16 @@ public class GetSquadUseCaseTests
     }
 
     [Fact]
-    public async Task PassesScopeThroughToSalaryService()
+    public async Task PassesScopeThroughToPriceService()
     {
         SetupSquad(60_000_000, new SquadSlot("p-1", "VS", new PlayerPrice(40_000_000, "ISK")));
         _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "VS"));
-        _salary.Setup(s => s.GetSalaryAsync("p-1", 2, "2024", "t-9", It.IsAny<CancellationToken>())).ReturnsAsync(SalaryOf("p-1", 11_000_000));
+        _price.Setup(s => s.GetPriceAsync("p-1", 2, "2024", "t-9", It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 11_000_000));
 
         var result = await CreateSut().ExecuteAsync("u-1", "2024", "t-9", 2, CancellationToken.None);
 
         var view = Assert.IsType<GetSquadResult.Found>(result).View;
         Assert.Equal(11_000_000, Assert.Single(view.Players).Price.Amount);
-        _salary.Verify(s => s.GetSalaryAsync("p-1", 2, "2024", "t-9", It.IsAny<CancellationToken>()), Times.Once);
+        _price.Verify(s => s.GetPriceAsync("p-1", 2, "2024", "t-9", It.IsAny<CancellationToken>()), Times.Once);
     }
 }

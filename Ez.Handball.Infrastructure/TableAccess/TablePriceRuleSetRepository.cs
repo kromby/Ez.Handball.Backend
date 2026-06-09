@@ -5,15 +5,15 @@ using Ez.Handball.Shared.Entities;
 
 namespace Ez.Handball.Infrastructure.TableAccess;
 
-internal sealed class TableSalaryRuleSetRepository : ISalaryRuleSetRepository
+internal sealed class TablePriceRuleSetRepository : IPriceRuleSetRepository
 {
     private const string BandPrefix = "band:";
 
     private readonly ITableQuery _query;
 
-    public TableSalaryRuleSetRepository(ITableQuery query) => _query = query;
+    public TablePriceRuleSetRepository(ITableQuery query) => _query = query;
 
-    public async Task<SalaryRuleSet?> GetAsync(int version, CancellationToken ct)
+    public async Task<PriceRuleSet?> GetAsync(int version, CancellationToken ct)
     {
         var group = $"fantasy-price-v{version}";
         var filter = $"PartitionKey eq '{ODataFilter.Escape(group)}'";
@@ -28,19 +28,19 @@ internal sealed class TableSalaryRuleSetRepository : ISalaryRuleSetRepository
             !values.TryGetValue("currency", out var currency))
             return null;
 
-        var bands = new List<SalaryBand>();
+        var bands = new List<PriceBand>();
         foreach (var kv in values)
         {
             if (!kv.Key.StartsWith(BandPrefix, StringComparison.Ordinal)) continue;
             if (double.TryParse(kv.Key[BandPrefix.Length..], NumberStyles.Float, CultureInfo.InvariantCulture, out var threshold)
                 && double.TryParse(kv.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var price))
-                bands.Add(new SalaryBand(threshold, price));
+                bands.Add(new PriceBand(threshold, price));
         }
 
         if (bands.Count == 0) return null;
         bands.Sort((a, b) => a.Threshold.CompareTo(b.Threshold));
 
-        return new SalaryRuleSet(version, minGames, currency, bands);
+        return new PriceRuleSet(version, minGames, currency, bands);
     }
 
     private static bool TryGetInt(IReadOnlyDictionary<string, string> values, string key, out int result)

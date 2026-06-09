@@ -130,7 +130,7 @@ builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<FantasyPricing>();
-builder.Services.AddScoped<IPlayerSalaryService, PlayerSalaryService>();
+builder.Services.AddScoped<IPlayerPriceService, PlayerPriceService>();
 builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
 builder.Services.AddScoped<IBuyPlayerFunction, ManagerBuyPlayerFunction>();
 builder.Services.AddScoped<IGetBuyDecisionUseCase, GetBuyDecisionUseCase>();

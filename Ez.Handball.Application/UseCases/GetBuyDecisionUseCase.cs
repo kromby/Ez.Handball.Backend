@@ -24,20 +24,20 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
 
     private readonly IReadOnlyDictionary<GameFlavor, IBuyPlayerFunction> _functions;
     private readonly IPlayerRepository _players;
-    private readonly IPlayerSalaryService _salary;
+    private readonly IPlayerPriceService _price;
     private readonly ISquadConstraintsRepository _constraints;
     private readonly ISquadRepository _squad;
 
     public GetBuyDecisionUseCase(
         IEnumerable<IBuyPlayerFunction> functions,
         IPlayerRepository players,
-        IPlayerSalaryService salary,
+        IPlayerPriceService price,
         ISquadConstraintsRepository constraints,
         ISquadRepository squad)
     {
         _functions = functions.ToDictionary(f => f.Flavor);
         _players = players;
-        _salary = salary;
+        _price = price;
         _constraints = constraints;
         _squad = squad;
     }
@@ -51,7 +51,7 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         if (!_functions.TryGetValue(flavor, out var function))
             return BuyDecisionResult.InvalidFlavor.Instance;
 
-        // Manager is a stub: no salary/constraints/squad I/O — it ignores all but PlayerId.
+        // Manager is a stub: no price/constraints/squad I/O — it ignores all but PlayerId.
         if (flavor == GameFlavor.Manager)
         {
             var stubInputs = new BuyPlayerInputs(
@@ -62,8 +62,8 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         }
 
         var version = context.RuleSetVersion ?? DefaultVersion;
-        var salary = await _salary.GetSalaryAsync(playerId, version, context.Season, context.TournamentId, ct);
-        if (salary is null) return BuyDecisionResult.RuleSetNotFound.Instance;
+        var price = await _price.GetPriceAsync(playerId, version, context.Season, context.TournamentId, ct);
+        if (price is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var constraints = await _constraints.GetAsync(DefaultVersion, ct);
         if (constraints is null) return BuyDecisionResult.RuleSetNotFound.Instance;
@@ -71,7 +71,7 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         var squad = await _squad.GetAsync(userId, flavor, ct);
 
         var inputs = new BuyPlayerInputs(
-            playerId, player.Position, salary.Cost, salary.Version, constraints, squad, context);
+            playerId, player.Position, price.Price, price.Version, constraints, squad, context);
         return new BuyDecisionResult.Decided(function.Evaluate(inputs));
     }
 }

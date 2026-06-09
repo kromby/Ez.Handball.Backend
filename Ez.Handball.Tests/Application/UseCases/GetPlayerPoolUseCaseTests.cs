@@ -12,25 +12,25 @@ public class GetPlayerPoolUseCaseTests
     private readonly Mock<IPlayerPoolRepository> _repo = new();
     private readonly Mock<ITournamentScopeResolver> _scope = new();
     private readonly Mock<IScoringRuleSetRepository> _scoring = new();
-    private readonly Mock<ISalaryRuleSetRepository> _prices = new();
+    private readonly Mock<IPriceRuleSetRepository> _prices = new();
 
     private static readonly ScoringRuleSet Scoring =
         new(GameFlavor.Fantasy, 1, GoalPoints: 2, YellowCardPoints: -1,
             TwoMinutePoints: -1, RedCardPoints: -3, AppearancePoints: 1);
 
-    private static readonly SalaryRuleSet Prices =
+    private static readonly PriceRuleSet Prices =
         new(1, MinGames: 1, Currency: "ISK", Bands: new[]
         {
-            new SalaryBand(0, 1_000_000),
-            new SalaryBand(5, 5_000_000),
-            new SalaryBand(10, 11_000_000),
+            new PriceBand(0, 1_000_000),
+            new PriceBand(5, 5_000_000),
+            new PriceBand(10, 11_000_000),
         });
 
     private GetPlayerPoolUseCase CreateSut() =>
         new(_repo.Object, _scope.Object, _scoring.Object, _prices.Object,
             new FantasyPricing(new FantasyPlayerRatingFunction()));
 
-    private void SetupRuleSets(ScoringRuleSet? scoring = null, SalaryRuleSet? prices = null)
+    private void SetupRuleSets(ScoringRuleSet? scoring = null, PriceRuleSet? prices = null)
     {
         _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(scoring ?? Scoring);
@@ -184,7 +184,7 @@ public class GetPlayerPoolUseCaseTests
         _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Scoring);
         _prices.Setup(r => r.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync((SalaryRuleSet?)null);
+               .ReturnsAsync((PriceRuleSet?)null);
 
         var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
 

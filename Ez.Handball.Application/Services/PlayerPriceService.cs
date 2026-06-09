@@ -3,17 +3,17 @@ using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.Services;
 
-public sealed class PlayerSalaryService : IPlayerSalaryService
+public sealed class PlayerPriceService : IPlayerPriceService
 {
     private readonly IPlayerStatsAggregator _aggregator;
     private readonly IScoringRuleSetRepository _scoring;
-    private readonly ISalaryRuleSetRepository _prices;
+    private readonly IPriceRuleSetRepository _prices;
     private readonly FantasyPricing _pricing;
 
-    public PlayerSalaryService(
+    public PlayerPriceService(
         IPlayerStatsAggregator aggregator,
         IScoringRuleSetRepository scoring,
-        ISalaryRuleSetRepository prices,
+        IPriceRuleSetRepository prices,
         FantasyPricing pricing)
     {
         _aggregator = aggregator;
@@ -22,7 +22,7 @@ public sealed class PlayerSalaryService : IPlayerSalaryService
         _pricing = pricing;
     }
 
-    public async Task<PlayerSalary?> GetSalaryAsync(
+    public async Task<PlayerPricing?> GetPriceAsync(
         string playerId, int version, string? season, string? tournamentId, CancellationToken ct)
     {
         var scoring = await _scoring.GetAsync(GameFlavor.Fantasy, _pricing.ScoringVersion, ct);
@@ -35,7 +35,7 @@ public sealed class PlayerSalaryService : IPlayerSalaryService
         var ctx = new PlayerRatingContext(season, tournamentId, null, null, null, null);
 
         var result = _pricing.Compute(playerId, stats, scoring, priceRuleSet, ctx);
-        return new PlayerSalary(
-            playerId, result.Cost, result.Score, stats.Games, priceRuleSet.Name);
+        return new PlayerPricing(
+            playerId, result.Price, result.Score, stats.Games, priceRuleSet.Name);
     }
 }
