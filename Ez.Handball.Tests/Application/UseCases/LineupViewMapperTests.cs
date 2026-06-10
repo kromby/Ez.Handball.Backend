@@ -8,7 +8,8 @@ public class LineupViewMapperTests
     private static SquadPlayer Player(string id, string pos) => new(
         PlayerId: id, Name: $"N{id}", ClubId: "385", ClubName: "Stjarnan",
         Position: pos, Gender: "karlar",
-        Price: new PlayerPrice(10_000_000, "ISK"), PricePaid: new PlayerPrice(9_000_000, "ISK"));
+        Price: new PlayerPrice(10_000_000, "ISK"), PricePaid: new PlayerPrice(9_000_000, "ISK"),
+        Rating: 0);
 
     [Fact]
     public void Map_EnrichesSlotsFromOwnedSquad()
