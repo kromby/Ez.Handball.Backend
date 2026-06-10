@@ -199,4 +199,79 @@ public class LineupEndpointTests : IClassFixture<LineupEndpointTests.Factory>, I
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("p0", body.GetProperty("captainId").GetString());
     }
+
+    [Fact]
+    public async Task Get_NotSet_Returns200WithEmptyBody()
+    {
+        _factory.Get.Setup(s => s.ExecuteAsync(It.IsAny<string>(), null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetLineupResult.NotSet(2));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed(HttpMethod.Get, "/api/users/me/lineup", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, body.GetProperty("starters").GetArrayLength());
+        Assert.Equal(0, body.GetProperty("bench").GetArrayLength());
+        Assert.False(body.GetProperty("isValid").GetBoolean());
+        Assert.Equal(2, body.GetProperty("captainMultiplier").GetDouble());
+    }
+
+    [Fact]
+    public async Task Get_RuleSetNotFound_Returns400()
+    {
+        _factory.Get.Setup(s => s.ExecuteAsync(It.IsAny<string>(), null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetLineupResult.RuleSetNotFound.Instance);
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed(HttpMethod.Get, "/api/users/me/lineup", token));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_rule_set", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Put_NoTeam_Returns409()
+    {
+        _factory.Set.Setup(s => s.ExecuteAsync(
+                It.IsAny<string>(), It.IsAny<Lineup>(), null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(SetLineupResult.NoTeam.Instance);
+        var token = await RegisterAndGetTokenAsync();
+        var req = Authed(HttpMethod.Put, "/api/users/me/lineup", token);
+        req.Content = JsonContent.Create(new
+        {
+            flavor = "fantasy",
+            starters = new[] { new { playerId = "p0", role = "Captain" } },
+            bench = new[] { "p7" }
+        });
+
+        var resp = await _client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("no_team", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Put_RuleSetNotFound_Returns400()
+    {
+        _factory.Set.Setup(s => s.ExecuteAsync(
+                It.IsAny<string>(), It.IsAny<Lineup>(), null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(SetLineupResult.RuleSetNotFound.Instance);
+        var token = await RegisterAndGetTokenAsync();
+        var req = Authed(HttpMethod.Put, "/api/users/me/lineup", token);
+        req.Content = JsonContent.Create(new
+        {
+            flavor = "fantasy",
+            starters = new[] { new { playerId = "p0", role = "Captain" } },
+            bench = new[] { "p7" }
+        });
+
+        var resp = await _client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_rule_set", body.GetProperty("error").GetString());
+    }
 }

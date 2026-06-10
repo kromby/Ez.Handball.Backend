@@ -29,32 +29,50 @@ internal sealed class TableLineupConstraintsRepository : ILineupConstraintsRepos
             !TryGetDouble(values, "captainMultiplier", out var captainMultiplier))
             return null;
 
-        var captainRequired = !values.TryGetValue("captainRequired", out var cr) || !bool.TryParse(cr, out var crv) || crv;
-        var viceRequired = values.TryGetValue("viceRequired", out var vr) && bool.TryParse(vr, out var vrv) && vrv;
+        var captainRequired = GetBool(values, "captainRequired", defaultValue: true);
+        var viceRequired = GetBool(values, "viceRequired", defaultValue: false);
+        var positionStart = ParsePositionStart(values, starterCount);
 
+        return new LineupConstraints(version, starterCount, positionStart, captainMultiplier, captainRequired, viceRequired);
+    }
+
+    // Build the per-position starter min/max map from startMin:/startMax: rows. A position with
+    // only a min defaults its max to the full starter count (effectively no upper cap).
+    private static IReadOnlyDictionary<string, (int Min, int Max)> ParsePositionStart(
+        IReadOnlyDictionary<string, string> values, int starterCount)
+    {
         var mins = new Dictionary<string, int>(StringComparer.Ordinal);
         var maxs = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var kv in values)
         {
-            if (kv.Key.StartsWith(MinPrefix, StringComparison.Ordinal)
-                && int.TryParse(kv.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var min))
-                mins[kv.Key[MinPrefix.Length..]] = min;
-            else if (kv.Key.StartsWith(MaxPrefix, StringComparison.Ordinal)
-                && int.TryParse(kv.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var max))
-                maxs[kv.Key[MaxPrefix.Length..]] = max;
+            if (TryParsePrefixedInt(kv, MinPrefix, out var minPos, out var min)) mins[minPos] = min;
+            else if (TryParsePrefixedInt(kv, MaxPrefix, out var maxPos, out var max)) maxs[maxPos] = max;
         }
 
         var positionStart = new Dictionary<string, (int Min, int Max)>(StringComparer.Ordinal);
         foreach (var position in mins.Keys.Union(maxs.Keys))
         {
             mins.TryGetValue(position, out var min);
-            // A position with only a min defaults max to the full starter count (effectively no cap).
             var max = maxs.TryGetValue(position, out var m) ? m : starterCount;
             positionStart[position] = (min, max);
         }
-
-        return new LineupConstraints(version, starterCount, positionStart, captainMultiplier, captainRequired, viceRequired);
+        return positionStart;
     }
+
+    private static bool TryParsePrefixedInt(
+        KeyValuePair<string, string> row, string prefix, out string position, out int value)
+    {
+        position = string.Empty;
+        value = 0;
+        if (!row.Key.StartsWith(prefix, StringComparison.Ordinal)) return false;
+        if (!int.TryParse(row.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)) return false;
+        position = row.Key[prefix.Length..];
+        return true;
+    }
+
+    // Defaults when the key is absent or unparseable.
+    private static bool GetBool(IReadOnlyDictionary<string, string> values, string key, bool defaultValue)
+        => values.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed) ? parsed : defaultValue;
 
     private static bool TryGetInt(IReadOnlyDictionary<string, string> values, string key, out int result)
     {

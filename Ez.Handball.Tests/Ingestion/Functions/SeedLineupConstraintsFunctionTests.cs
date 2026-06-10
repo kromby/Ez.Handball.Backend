@@ -30,11 +30,16 @@ public class SeedLineupConstraintsFunctionTests
 
         Assert.Equal(SeedLineupConstraintsFunction.ConstraintDefinitions.Count, seeded);
 
-        _tableWriter.Verify(t => t.UpsertAsync(
-            "Config",
-            It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-lineup-v1"),
-            default,
-            Azure.Data.Tables.TableUpdateMode.Replace),
-            Times.Exactly(SeedLineupConstraintsFunction.ConstraintDefinitions.Count));
+        // Verify each definition maps to the right Config row (Group/Key/Value), not just the count.
+        foreach (var def in SeedLineupConstraintsFunction.ConstraintDefinitions)
+        {
+            _tableWriter.Verify(t => t.UpsertAsync(
+                "Config",
+                It.Is<ConfigEntity>(e =>
+                    e.PartitionKey == def.Group && e.RowKey == def.Key && e.Value == def.Value),
+                default,
+                Azure.Data.Tables.TableUpdateMode.Replace),
+                Times.Once);
+        }
     }
 }
