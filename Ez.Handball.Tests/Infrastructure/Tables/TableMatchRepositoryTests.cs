@@ -208,6 +208,21 @@ public class TableMatchRepositoryTests
     }
 
     [Fact]
+    public async Task ListByTournamentAsync_KnownTournamentNoMatches_ReturnsEmptyList()
+    {
+        SetupTournament("8444", new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar"
+        });
+        SetupMatchesByTournament("8444"); // zero rows
+
+        var result = await CreateSut().ListByTournamentAsync("8444", default);
+
+        Assert.NotNull(result);
+        Assert.Empty(result!.Matches);
+    }
+
+    [Fact]
     public async Task ListByTournamentAsync_JoinsClubNameAndLogo_AndCarriesRound()
     {
         SetupTournament("8444", new TournamentEntity

@@ -139,7 +139,7 @@ internal sealed class TableMatchRepository : IMatchRepository
         string teamId, int finalScore, int halftimeScore,
         IReadOnlyDictionary<string, string> teamNames)
     {
-        var clubId = teamId.Split('-', 2)[0];
+        var clubId = ClubIdOf(teamId);
         var clubName = teamNames.TryGetValue(teamId, out var name) ? name : null;
 
         // Floor at 0: corrupt source data where halftime > final must not leak a negative half.
