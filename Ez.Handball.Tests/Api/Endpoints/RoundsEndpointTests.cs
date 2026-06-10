@@ -63,8 +63,7 @@ public class RoundsEndpointTests : IClassFixture<RoundsEndpointTests.Factory>
         var response = await _client.GetAsync("/api/tournaments/8444/rounds");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var root = doc.RootElement;
+        var root = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("8444", root.GetProperty("tournamentId").GetString());
         var round = root.GetProperty("rounds")[0];
         Assert.Equal("1", round.GetProperty("round").GetString());
@@ -84,7 +83,17 @@ public class RoundsEndpointTests : IClassFixture<RoundsEndpointTests.Factory>
         var response = await _client.GetAsync("/api/tournaments/9999/rounds");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("tournament_not_found", doc.RootElement.GetProperty("error").GetString());
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("tournament_not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task GetRounds_WhitespaceTournamentId_Returns400WithErrorJson()
+    {
+        var response = await _client.GetAsync("/api/tournaments/%20/rounds");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_tournament_id", body.GetProperty("error").GetString());
     }
 }
