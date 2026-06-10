@@ -361,7 +361,7 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     return Results.Ok(result);
 });
 
-app.MapGet("/api/players/pool", async Task<IResult> (
+app.MapGet("/api/players", async Task<IResult> (
     string? season,
     string? tournamentId,
     string? competitionId,
@@ -518,7 +518,7 @@ static bool TryParsePoolSort(string? value, out PlayerPoolSort sort)
 {
     if (string.IsNullOrWhiteSpace(value))
     {
-        sort = PlayerPoolSort.Rating;
+        sort = PlayerPoolSort.Goals;
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out sort) && Enum.IsDefined(sort);

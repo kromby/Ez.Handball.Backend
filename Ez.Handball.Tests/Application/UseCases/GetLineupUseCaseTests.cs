@@ -18,7 +18,7 @@ public class GetLineupUseCaseTests
 
     private static SquadPlayer Player(string id, string pos) => new(
         id, $"N{id}", "385", "Stjarnan", pos, "karlar",
-        new PlayerPrice(10_000_000, "ISK"), new PlayerPrice(9_000_000, "ISK"), 0);
+        new PlayerPrice(10_000_000, "ISK"), new PlayerPrice(9_000_000, "ISK"), Rating: 0);
 
     private static SquadView SquadOf(params SquadPlayer[] players) => new(
         players, new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"));

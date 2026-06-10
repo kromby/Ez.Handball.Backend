@@ -8,7 +8,12 @@ public enum PlayerPoolSort
 {
     Rating,
     Price,
-    PickPercentage
+    PickPercentage,
+    Goals,
+    Games,
+    YellowCards,
+    TwoMinuteSuspensions,
+    RedCards
 }
 
 // Edge → use case. Carries the raw, unresolved scope + the chosen sort + the
@@ -91,6 +96,14 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                     ClubName: p.ClubName,
                     Gender: p.Gender,
                     Position: p.Position,
+                    Games: p.Stats.Games,
+                    Goals: p.Stats.Goals,
+                    YellowCards: p.Stats.YellowCards,
+                    TwoMinuteSuspensions: p.Stats.TwoMinuteSuspensions,
+                    RedCards: p.Stats.RedCards,
+                    AvgGoals: p.Stats.Games > 0
+                        ? Math.Round((double)p.Stats.Goals / p.Stats.Games, 2)
+                        : 0,
                     Price: priced.Price,
                     Rating: priced.Rating,
                     PickPercentage: null); // deferred — ownership aggregation follow-up
@@ -107,15 +120,18 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         return new PlayerPoolResult.Found(pool);
     }
 
-    // Stable tie-break: rating desc, then playerId ordinal. sort=PickPercentage
-    // is accepted but every value is null, so it falls through to the tie-break.
+    // Stable tie-break: chosen metric desc, then rating desc, then playerId
+    // ordinal. sort=PickPercentage is accepted but every value is null, so it
+    // falls through to the rating tie-break.
     private static IEnumerable<PlayerPoolEntry> Sort(IEnumerable<PlayerPoolEntry> entries, PlayerPoolSort sort) =>
         sort switch
         {
-            PlayerPoolSort.Price => entries
-                .OrderByDescending(e => e.Price.Amount)
-                .ThenByDescending(e => e.Rating)
-                .ThenBy(e => e.PlayerId, StringComparer.Ordinal),
+            PlayerPoolSort.Price => ByMetricThenRating(entries, e => e.Price.Amount),
+            PlayerPoolSort.Goals => ByMetricThenRating(entries, e => e.Goals),
+            PlayerPoolSort.Games => ByMetricThenRating(entries, e => e.Games),
+            PlayerPoolSort.YellowCards => ByMetricThenRating(entries, e => e.YellowCards),
+            PlayerPoolSort.TwoMinuteSuspensions => ByMetricThenRating(entries, e => e.TwoMinuteSuspensions),
+            PlayerPoolSort.RedCards => ByMetricThenRating(entries, e => e.RedCards),
             PlayerPoolSort.PickPercentage => entries
                 .OrderByDescending(e => e.PickPercentage ?? double.NegativeInfinity)
                 .ThenByDescending(e => e.Rating)
@@ -124,4 +140,11 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                 .OrderByDescending(e => e.Rating)
                 .ThenBy(e => e.PlayerId, StringComparer.Ordinal),
         };
+
+    private static IEnumerable<PlayerPoolEntry> ByMetricThenRating(
+        IEnumerable<PlayerPoolEntry> entries, Func<PlayerPoolEntry, double> metric) =>
+        entries
+            .OrderByDescending(metric)
+            .ThenByDescending(e => e.Rating)
+            .ThenBy(e => e.PlayerId, StringComparer.Ordinal);
 }

@@ -24,7 +24,8 @@ public class LineupValidatorTests
             PlayerId: $"p{i}", Name: $"Name{i}", ClubId: "385", ClubName: "Stjarnan",
             Position: pos, Gender: "karlar",
             Price: new PlayerPrice(10_000_000, "ISK"),
-            PricePaid: new PlayerPrice(10_000_000, "ISK"), Rating: 0)).ToList();
+            PricePaid: new PlayerPrice(10_000_000, "ISK"),
+            Rating: 0)).ToList();
 
     // A valid 8-player squad: 1 GK + 6 court starters + 1 bench court player.
     private static readonly string[] EightPositions =
