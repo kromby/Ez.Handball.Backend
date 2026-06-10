@@ -236,6 +236,60 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_SortByGoals_OrdersByGoalsDescending()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            Pooled("few", goals: 10, games: 10),
+            Pooled("many", goals: 60, games: 10),
+            Pooled("some", goals: 30, games: 10));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(sort: PlayerPoolSort.Goals), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "many", "some", "few" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal("Goals", pool.Sort);
+    }
+
+    [Fact]
+    public async Task Execute_SortByGames_OrdersByGamesDescending()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            Pooled("a", goals: 10, games: 5),
+            Pooled("b", goals: 10, games: 12),
+            Pooled("c", goals: 10, games: 9));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(sort: PlayerPoolSort.Games), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "b", "c", "a" }, pool.Entries.Select(e => e.PlayerId));
+    }
+
+    [Fact]
+    public async Task Execute_SortByRedCards_OrdersByRedCardsDescending()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("clean", "Pc", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 0)),
+                 new PooledPlayer("dirty", "Pd", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 3)),
+             });
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(sort: PlayerPoolSort.RedCards), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "dirty", "clean" }, pool.Entries.Select(e => e.PlayerId));
+    }
+
+    [Fact]
     public async Task Execute_ForwardsResolvedScopeAndGenderToRepository()
     {
         SetupResolver(new[] { "8444" });
