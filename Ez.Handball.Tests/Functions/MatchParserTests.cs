@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Models;
@@ -13,8 +15,21 @@ namespace Ez.Handball.Tests.Functions;
 public class MatchParserTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
+    private readonly Mock<IBlobArchiver> _blobArchiver = new();
 
-    private MatchParser CreateSut() => new(_tableWriter.Object, NullLogger<MatchParser>.Instance);
+    private MatchParser CreateSut() =>
+        new(_tableWriter.Object, _blobArchiver.Object, NullLogger<MatchParser>.Instance);
+
+    private void SetupRoundBlob(string tournamentId, string gameId, string round)
+    {
+        var path = $"tournaments/{tournamentId}/matches.json";
+        var json = JsonSerializer.Serialize(new MatchListResponse
+        {
+            Data = new List<MatchSummary> { new() { GameId = gameId, Round = round } }
+        });
+        _blobArchiver.Setup(b => b.ExistsAsync(path, default)).ReturnsAsync(true);
+        _blobArchiver.Setup(b => b.ReadAsync(path, default)).ReturnsAsync(json);
+    }
 
     private static string BuildMatchDetailsJson(
         string tournamentId = "8444",
@@ -278,6 +293,50 @@ public class MatchParserTests
         var azureMin = new DateTimeOffset(1601, 1, 1, 0, 0, 0, TimeSpan.Zero);
         _tableWriter.Verify(t => t.UpsertAsync("Matches",
             It.Is<MatchEntity>(e => e.Date >= azureMin),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_CopiesRoundFromListBlob()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025", RowKey = "8444",
+            Name = "Olís deild karla", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+        SetupRoundBlob("8444", "5001", "3");
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444");
+
+        await CreateSut().ParseAsync(blobContent, "5001");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.RowKey == "5001" && e.Round == "3"),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MissingListBlob_LeavesRoundEmpty()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025", RowKey = "8444",
+            Name = "Olís deild karla", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+        // No SetupRoundBlob → ExistsAsync returns false.
+
+        var blobContent = BuildMatchDetailsJson(tournamentId: "8444");
+
+        await CreateSut().ParseAsync(blobContent, "5001");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.RowKey == "5001" && e.Round == ""),
             default), Times.Once);
     }
 }
