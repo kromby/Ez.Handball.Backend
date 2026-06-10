@@ -94,4 +94,33 @@ public class GetRoundsUseCaseTests
         var round1 = found.Listing.Rounds.Single();
         Assert.Equal(round1.StartDate, round1.EndDate);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_EmptyTournament_ReturnsEmptyRoundList()
+    {
+        Setup("8444"); // no items
+
+        var found = Assert.IsType<GetRoundsResult.Found>(await CreateSut().ExecuteAsync("8444", default));
+
+        Assert.Empty(found.Listing.Rounds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_MixedPlayedAndUpcomingInSameRound_GatesScorePerMatch()
+    {
+        Setup("8444",
+            Item("a", "1", new DateTimeOffset(2025, 9, 3, 19, 0, 0, TimeSpan.Zero), "S", 28, 25),
+            Item("b", "1", new DateTimeOffset(2025, 9, 3, 21, 0, 0, TimeSpan.Zero), "O", 0, 0));
+
+        var found = Assert.IsType<GetRoundsResult.Found>(await CreateSut().ExecuteAsync("8444", default));
+
+        var round1 = found.Listing.Rounds.Single(r => r.Round == "1");
+        var played = round1.Matches.Single(m => m.MatchId == "a");
+        var upcoming = round1.Matches.Single(m => m.MatchId == "b");
+        Assert.True(played.Played);
+        Assert.Equal(28, played.Home.Score);
+        Assert.False(upcoming.Played);
+        Assert.Null(upcoming.Home.Score);
+        Assert.Null(upcoming.Away.Score);
+    }
 }

@@ -29,8 +29,8 @@ public sealed class GetRoundsUseCase : IGetRoundsUseCase
             .GroupBy(m => m.Round)
             .Select(BuildRound)
             // Numeric rounds ascending; non-numeric labels last, then by ordinal label.
-            .OrderBy(r => int.TryParse(r.Round, out _) ? 0 : 1)
-            .ThenBy(r => int.TryParse(r.Round, out var n) ? n : 0)
+            .OrderBy(r => RoundSortKey(r.Round).Bucket)
+            .ThenBy(r => RoundSortKey(r.Round).Value)
             .ThenBy(r => r.Round, StringComparer.Ordinal)
             .ToList();
 
@@ -41,7 +41,7 @@ public sealed class GetRoundsUseCase : IGetRoundsUseCase
     private static RoundGroup BuildRound(IGrouping<string, MatchListItem> group)
     {
         var ordered = group.OrderBy(m => m.Date).ToList();
-        var days = ordered.Select(m => DateOnly.FromDateTime(m.Date.Date)).ToList();
+        var days = ordered.Select(m => DateOnly.FromDateTime(m.Date.UtcDateTime.Date)).ToList();
         return new RoundGroup(
             Round: group.Key,
             StartDate: days.Min(),
@@ -63,4 +63,8 @@ public sealed class GetRoundsUseCase : IGetRoundsUseCase
 
     private static RoundTeam ToRoundTeam(MatchListTeam t, bool played) =>
         new(t.TeamId, t.ClubId, t.ClubName, t.LogoSrc, played ? t.Score : null);
+
+    // Numeric rounds first (bucket 0, ordered by value); non-numeric labels last (bucket 1).
+    private static (int Bucket, int Value) RoundSortKey(string round) =>
+        int.TryParse(round, out var n) ? (0, n) : (1, 0);
 }
