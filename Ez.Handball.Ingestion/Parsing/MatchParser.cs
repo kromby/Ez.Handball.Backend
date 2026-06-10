@@ -172,6 +172,10 @@ public class MatchParser : IMatchParser
 
             return summary.Round;
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(

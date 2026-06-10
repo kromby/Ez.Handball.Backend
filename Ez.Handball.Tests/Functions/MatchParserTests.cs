@@ -27,8 +27,8 @@ public class MatchParserTests
         {
             Data = new List<MatchSummary> { new() { GameId = gameId, Round = round } }
         });
-        _blobArchiver.Setup(b => b.ExistsAsync(path, default)).ReturnsAsync(true);
-        _blobArchiver.Setup(b => b.ReadAsync(path, default)).ReturnsAsync(json);
+        _blobArchiver.Setup(b => b.ExistsAsync(path, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _blobArchiver.Setup(b => b.ReadAsync(path, It.IsAny<CancellationToken>())).ReturnsAsync(json);
     }
 
     private static string BuildMatchDetailsJson(
@@ -334,6 +334,33 @@ public class MatchParserTests
         var blobContent = BuildMatchDetailsJson(tournamentId: "8444");
 
         await CreateSut().ParseAsync(blobContent, "5001");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Matches",
+            It.Is<MatchEntity>(e => e.RowKey == "5001" && e.Round == ""),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MatchIdNotInListBlob_LeavesRoundEmpty()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025", RowKey = "8444",
+            Name = "Olís deild karla", Gender = "karlar", Division = "1"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var path = "tournaments/8444/matches.json";
+        var json = JsonSerializer.Serialize(new MatchListResponse
+        {
+            Data = new List<MatchSummary> { new() { GameId = "9999", Round = "2" } }
+        });
+        _blobArchiver.Setup(b => b.ExistsAsync(path, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _blobArchiver.Setup(b => b.ReadAsync(path, It.IsAny<CancellationToken>())).ReturnsAsync(json);
+
+        await CreateSut().ParseAsync(BuildMatchDetailsJson(tournamentId: "8444"), "5001");
 
         _tableWriter.Verify(t => t.UpsertAsync("Matches",
             It.Is<MatchEntity>(e => e.RowKey == "5001" && e.Round == ""),
