@@ -217,6 +217,25 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_ZeroGames_DerivesAvgGoalsZero_NoDivideByZero()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(Games: 0, Goals: 0, YellowCards: 0,
+                         TwoMinuteSuspensions: 0, RedCards: 0)),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        Assert.Equal(0, entry.AvgGoals); // Games == 0 => guarded to 0, no divide-by-zero
+    }
+
+    [Fact]
     public async Task Execute_ForwardsResolvedScopeAndGenderToRepository()
     {
         SetupResolver(new[] { "8444" });
