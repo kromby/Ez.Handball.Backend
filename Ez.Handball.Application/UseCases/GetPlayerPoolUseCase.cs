@@ -91,6 +91,14 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                     ClubName: p.ClubName,
                     Gender: p.Gender,
                     Position: p.Position,
+                    Games: p.Stats.Games,
+                    Goals: p.Stats.Goals,
+                    YellowCards: p.Stats.YellowCards,
+                    TwoMinuteSuspensions: p.Stats.TwoMinuteSuspensions,
+                    RedCards: p.Stats.RedCards,
+                    AvgGoals: p.Stats.Games > 0
+                        ? Math.Round((double)p.Stats.Goals / p.Stats.Games, 2)
+                        : 0,
                     Price: priced.Price,
                     Rating: priced.Rating,
                     PickPercentage: null); // deferred — ownership aggregation follow-up

@@ -192,6 +192,31 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_SurfacesStatsOnEntry_WithDerivedAvgGoals()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        // Pooled() builds AggregatedStats(games, goals, 0, 0, 0); use a non-trivial line.
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(Games: 8, Goals: 20, YellowCards: 3,
+                         TwoMinuteSuspensions: 2, RedCards: 1)),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        Assert.Equal(8, entry.Games);
+        Assert.Equal(20, entry.Goals);
+        Assert.Equal(3, entry.YellowCards);
+        Assert.Equal(2, entry.TwoMinuteSuspensions);
+        Assert.Equal(1, entry.RedCards);
+        Assert.Equal(2.5, entry.AvgGoals); // 20 / 8, rounded to 2dp
+    }
+
+    [Fact]
     public async Task Execute_ForwardsResolvedScopeAndGenderToRepository()
     {
         SetupResolver(new[] { "8444" });
