@@ -99,7 +99,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         new[]
         {
             new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar",
-                new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK"))
+                new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK"), Rating: 0.0)
         },
         BudgetUsed: new PlayerPrice(42_000_000, "ISK"),
         RemainingBudget: new PlayerPrice(8_000_000, "ISK"),

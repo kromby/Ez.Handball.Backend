@@ -130,6 +130,7 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
         Assert.Equal(HttpStatusCode.OK, meResp.StatusCode);
         var me = await meResp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(email, me.GetProperty("email").GetString());
+        Assert.False(string.IsNullOrEmpty(me.GetProperty("teamName").GetString()));
 
         var refreshResp = await _client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = refresh });
         Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);

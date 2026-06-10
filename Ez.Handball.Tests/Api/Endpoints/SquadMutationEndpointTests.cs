@@ -89,7 +89,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     }
 
     private static SquadView View() => new(
-        new[] { new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar", new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK")) },
+        new[] { new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar", new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK"), Rating: 0.0) },
         new PlayerPrice(42_000_000, "ISK"), new PlayerPrice(8_000_000, "ISK"), new PlayerPrice(50_000_000, "ISK"));
 
     [Fact]

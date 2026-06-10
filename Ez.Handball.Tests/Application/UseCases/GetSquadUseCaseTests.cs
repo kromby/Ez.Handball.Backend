@@ -43,6 +43,7 @@ public class GetSquadUseCaseTests
         Assert.Equal("Aron", p1.Name);
         Assert.Equal("Stjarnan", p1.ClubName);
         Assert.Equal("VS", p1.Position);
+        Assert.Equal(50.0, p1.Rating);
         Assert.Equal(50_000_000, p1.Price.Amount);
         Assert.Equal(40_000_000, p1.PricePaid.Amount);
         Assert.Equal(70_000_000, view.BudgetUsed.Amount);

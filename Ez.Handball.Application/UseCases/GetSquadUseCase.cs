@@ -56,7 +56,8 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
                 Position: player?.Position,
                 Gender: player?.Gender,
                 Price: price.Price,
-                PricePaid: slot.PricePaid));
+                PricePaid: slot.PricePaid,
+                Rating: price.Rating));
 
             squadValue += price.Price.Amount;
             budgetUsed += slot.PricePaid.Amount;
