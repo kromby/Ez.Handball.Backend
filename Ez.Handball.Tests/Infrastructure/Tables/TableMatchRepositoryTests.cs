@@ -180,4 +180,78 @@ public class TableMatchRepositoryTests
 
         Assert.Equal(expectedClubId, result!.HomeTeam.ClubId);
     }
+
+    private void SetupMatchesByTournament(string tournamentId, params MatchEntity[] rows) =>
+        _query.Setup(q => q.QueryAsync<MatchEntity>(
+                Ez.Handball.Infrastructure.Tables.Matches, $"PartitionKey eq '{tournamentId}'", default))
+              .Returns(ToAsync(rows));
+
+    private void SetupClubs(string filter, params ClubEntity[] rows) =>
+        _query.Setup(q => q.QueryAsync<ClubEntity>(
+                Ez.Handball.Infrastructure.Tables.Clubs, filter, default))
+              .Returns(ToAsync(rows));
+
+    private static ClubEntity Club(string clubId, string name, string? logo) =>
+        new() { PartitionKey = "club", RowKey = clubId, Name = name, LogoSrc = logo };
+
+    [Fact]
+    public async Task ListByTournamentAsync_UnknownTournament_ReturnsNull()
+    {
+        SetupTournament("9999"); // no rows
+
+        var result = await CreateSut().ListByTournamentAsync("9999", default);
+
+        Assert.Null(result);
+        _query.Verify(q => q.QueryAsync<MatchEntity>(
+            Ez.Handball.Infrastructure.Tables.Matches, It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ListByTournamentAsync_KnownTournamentNoMatches_ReturnsEmptyList()
+    {
+        SetupTournament("8444", new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar"
+        });
+        SetupMatchesByTournament("8444"); // zero rows
+
+        var result = await CreateSut().ListByTournamentAsync("8444", default);
+
+        Assert.NotNull(result);
+        Assert.Empty(result!.Matches);
+    }
+
+    [Fact]
+    public async Task ListByTournamentAsync_JoinsClubNameAndLogo_AndCarriesRound()
+    {
+        SetupTournament("8444", new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar"
+        });
+
+        var match = Match("5001", "8444", "385-karlar", "390-karlar", 28, 25, 14, 12);
+        match.Round = "3";
+        SetupMatchesByTournament("8444", match);
+
+        SetupClubs(
+            "PartitionKey eq 'club' and (RowKey eq '385' or RowKey eq '390')",
+            Club("385", "KR", "https://logo/385.png"),
+            Club("390", "Breiðablik", null));
+
+        var result = await CreateSut().ListByTournamentAsync("8444", default);
+
+        Assert.NotNull(result);
+        Assert.Equal("Olís deild karla", result!.TournamentName);
+        Assert.Equal("2025-26", result.Season);
+        var item = Assert.Single(result.Matches);
+        Assert.Equal("5001", item.MatchId);
+        Assert.Equal("3", item.Round);
+        Assert.Equal("385", item.Home.ClubId);
+        Assert.Equal("KR", item.Home.ClubName);
+        Assert.Equal("https://logo/385.png", item.Home.LogoSrc);
+        Assert.Equal(28, item.Home.Score);
+        Assert.Equal("Breiðablik", item.Away.ClubName);
+        Assert.Null(item.Away.LogoSrc);
+    }
 }

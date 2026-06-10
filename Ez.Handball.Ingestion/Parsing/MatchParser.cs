@@ -15,11 +15,13 @@ public class MatchParser : IMatchParser
         new(1601, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly ITableWriter _tableWriter;
+    private readonly IBlobArchiver _blobArchiver;
     private readonly ILogger<MatchParser> _logger;
 
-    public MatchParser(ITableWriter tableWriter, ILogger<MatchParser> logger)
+    public MatchParser(ITableWriter tableWriter, IBlobArchiver blobArchiver, ILogger<MatchParser> logger)
     {
         _tableWriter = tableWriter;
+        _blobArchiver = blobArchiver;
         _logger = logger;
     }
 
@@ -117,6 +119,8 @@ public class MatchParser : IMatchParser
         _ = int.TryParse(details.GuestHalftimeGoals, out var awayHalftime);
         int? attendance = int.TryParse(details.GameSpectators, out var spectators) ? spectators : null;
 
+        var round = await ResolveRoundAsync(tournamentId, matchId, ct);
+
         await _tableWriter.UpsertAsync("Matches", new MatchEntity
         {
             PartitionKey = tournamentId,
@@ -130,11 +134,52 @@ public class MatchParser : IMatchParser
             Venue = details.PlayingFieldName,
             Attendance = attendance,
             HomeHalftimeScore = homeHalftime,
-            AwayHalftimeScore = awayHalftime
+            AwayHalftimeScore = awayHalftime,
+            Round = round
         }, ct);
 
         _logger.LogInformation(
             "Parsed match {MatchId} (tournament {TournamentId}, gender {Gender})",
             matchId, tournamentId, gender);
+    }
+
+    // Round lives only in the per-tournament match list, not the per-match details
+    // this parser reads. Pull it from the archived list blob (source of truth) so a
+    // plain reparse backfills it. Missing/unreadable → empty round, match still writes.
+    private async Task<string> ResolveRoundAsync(string tournamentId, string matchId, CancellationToken ct)
+    {
+        var path = $"tournaments/{tournamentId}/matches.json";
+        try
+        {
+            if (!await _blobArchiver.ExistsAsync(path, ct))
+            {
+                _logger.LogWarning(
+                    "Match list blob {Path} not found; round unset for match {MatchId}", path, matchId);
+                return string.Empty;
+            }
+
+            var json = await _blobArchiver.ReadAsync(path, ct);
+            var summary = JsonSerializer.Deserialize<MatchListResponse>(json)?.Data
+                .FirstOrDefault(s => s.GameId == matchId);
+
+            if (summary is null)
+            {
+                _logger.LogWarning(
+                    "Match {MatchId} not found in list blob {Path}; round unset", matchId, path);
+                return string.Empty;
+            }
+
+            return summary.Round;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex, "Failed to read round for match {MatchId} from {Path}", matchId, path);
+            return string.Empty;
+        }
     }
 }

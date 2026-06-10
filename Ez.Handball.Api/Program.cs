@@ -122,6 +122,7 @@ builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetPlayerPoolUseCase, GetPlayerPoolUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
+builder.Services.AddScoped<IGetRoundsUseCase, GetRoundsUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
@@ -418,6 +419,23 @@ app.MapGet("/api/matches/{matchId}", async (
         GetMatchResult.NotFound       => Results.NotFound(new { error = "match_not_found" }),
         GetMatchResult.Found f        => Results.Ok(f.Match),
         _                             => Results.Problem()
+    };
+});
+
+app.MapGet("/api/tournaments/{tournamentId}/rounds", async (
+    string tournamentId,
+    IGetRoundsUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(tournamentId))
+        return Results.BadRequest(new { error = "invalid_tournament_id" });
+
+    var result = await uc.ExecuteAsync(tournamentId, ct);
+    return result switch
+    {
+        GetRoundsResult.NotFound  => Results.NotFound(new { error = "tournament_not_found" }),
+        GetRoundsResult.Found f   => Results.Ok(f.Listing),
+        _                         => Results.Problem()
     };
 });
 
