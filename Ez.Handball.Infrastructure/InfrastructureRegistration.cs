@@ -31,6 +31,8 @@ public static class InfrastructureRegistration
         services.AddScoped<IGameTeamNameIndexRepository, TableGameTeamNameIndexRepository>();
         services.AddScoped<IGameBudgetRepository, TableGameBudgetRepository>();
         services.AddScoped<IGameRosterRepository, TableGameRosterRepository>();
+        services.AddScoped<ILineupRepository, TableLineupRepository>();
+        services.AddScoped<ILineupConstraintsRepository, TableLineupConstraintsRepository>();
         services.AddScoped<IMiniLeagueRepository, TableMiniLeagueRepository>();
         services.AddScoped<IMiniLeagueInviteRepository, TableMiniLeagueInviteRepository>();
         services.AddScoped<INotificationPreferenceRepository, TableNotificationPreferenceRepository>();
