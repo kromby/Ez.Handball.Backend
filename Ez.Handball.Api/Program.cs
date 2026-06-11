@@ -122,6 +122,7 @@ builder.Services.AddScoped<IGetPlayerHistoryUseCase, GetPlayerHistoryUseCase>();
 builder.Services.AddScoped<IGetLeaderboardUseCase, GetLeaderboardUseCase>();
 builder.Services.AddScoped<IGetPlayerPoolUseCase, GetPlayerPoolUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
+builder.Services.AddScoped<IGetRoundsUseCase, GetRoundsUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
@@ -163,6 +164,8 @@ builder.Services.AddScoped<IUpdateProfileUseCase, UpdateProfileUseCase>();
 builder.Services.AddScoped<IResendVerificationUseCase, ResendVerificationUseCase>();
 builder.Services.AddScoped<IGetManagerUseCase, GetManagerUseCase>();
 builder.Services.AddScoped<IRenameTeamUseCase, RenameTeamUseCase>();
+builder.Services.AddScoped<IGetLineupUseCase, GetLineupUseCase>();
+builder.Services.AddScoped<ISetLineupUseCase, SetLineupUseCase>();
 builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 
 var app = builder.Build();
@@ -198,6 +201,7 @@ app.MapGet("/api/players/{playerId}", async (
             f.Player.ClubName,
             f.Player.Gender,
             f.Player.Position,
+            f.Player.Retired,
             price = f.Price,
             rating = f.Rating
         }),
@@ -358,7 +362,7 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     return Results.Ok(result);
 });
 
-app.MapGet("/api/players/pool", async Task<IResult> (
+app.MapGet("/api/players", async Task<IResult> (
     string? season,
     string? tournamentId,
     string? competitionId,
@@ -416,6 +420,23 @@ app.MapGet("/api/matches/{matchId}", async (
         GetMatchResult.NotFound       => Results.NotFound(new { error = "match_not_found" }),
         GetMatchResult.Found f        => Results.Ok(f.Match),
         _                             => Results.Problem()
+    };
+});
+
+app.MapGet("/api/tournaments/{tournamentId}/rounds", async (
+    string tournamentId,
+    IGetRoundsUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(tournamentId))
+        return Results.BadRequest(new { error = "invalid_tournament_id" });
+
+    var result = await uc.ExecuteAsync(tournamentId, ct);
+    return result switch
+    {
+        GetRoundsResult.NotFound  => Results.NotFound(new { error = "tournament_not_found" }),
+        GetRoundsResult.Found f   => Results.Ok(f.Listing),
+        _                         => Results.Problem()
     };
 });
 
@@ -477,6 +498,7 @@ app.MapAuthEndpoints();
 
 app.MapShortlistEndpoints();
 app.MapSquadEndpoints();
+app.MapLineupEndpoints();
 app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
 app.MapMiniLeagueInviteEndpoints();
@@ -497,7 +519,7 @@ static bool TryParsePoolSort(string? value, out PlayerPoolSort sort)
 {
     if (string.IsNullOrWhiteSpace(value))
     {
-        sort = PlayerPoolSort.Rating;
+        sort = PlayerPoolSort.Goals;
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out sort) && Enum.IsDefined(sort);

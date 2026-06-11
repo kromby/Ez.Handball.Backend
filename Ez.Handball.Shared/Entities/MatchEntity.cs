@@ -24,4 +24,5 @@ public class MatchEntity : ITableEntity
     public int? Attendance { get; set; }                 // GAME_SPECTATORS (nullable)
     public int HomeHalftimeScore { get; set; }           // HOME_HALFTIME_GOALS
     public int AwayHalftimeScore { get; set; }           // GUEST_HALFTIME_GOALS
+    public string Round { get; set; } = string.Empty;   // HSÍ round label from the match list (e.g. "1", "Undanúrslit")
 }

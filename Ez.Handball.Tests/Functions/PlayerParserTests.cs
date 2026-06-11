@@ -81,7 +81,7 @@ public class PlayerParserTests
         // Act
         await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
-        // Assert — PlayerEntity upsert
+        // Assert — PlayerEntity upsert (Merge preserves the out-of-band Retired flag)
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.Is<PlayerEntity>(e =>
                 e.PartitionKey == teamId &&
@@ -90,8 +90,9 @@ public class PlayerParserTests
                 e.Position == "Goalkeeper" &&
                 e.Gender == "karlar" &&
                 e.ClubId == "385" &&
-                e.ClubName == "Stjarnan"),
-            default), Times.Once);
+                e.ClubName == "Stjarnan" &&
+                e.Retired == null),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
 
         // Assert — PlayerStatEntity upsert
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
@@ -155,7 +156,7 @@ public class PlayerParserTests
         // Act
         await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
-        // Assert — teamId resolves to away team
+        // Assert — teamId resolves to away team (Players upsert uses Merge)
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.Is<PlayerEntity>(e =>
                 e.PartitionKey == awayTeamId &&
@@ -163,7 +164,7 @@ public class PlayerParserTests
                 e.Gender == "karlar" &&
                 e.ClubId == "390" &&
                 e.ClubName == "Breiðablik"),
-            default), Times.Once);
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
 
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
             It.Is<PlayerStatEntity>(e =>
@@ -288,7 +289,7 @@ public class PlayerParserTests
         // Act — must not throw
         await CreateSut().ParseAsync(blobContent, matchId, clubId);
 
-        // Assert — PlayerEntity still written, ClubName is null
+        // Assert — PlayerEntity still written, ClubName is null (Merge preserves Retired)
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.Is<PlayerEntity>(e =>
                 e.PartitionKey == teamId &&
@@ -296,7 +297,7 @@ public class PlayerParserTests
                 e.ClubName == null &&
                 e.Gender == "karlar" &&
                 e.ClubId == "385"),
-            default), Times.Once);
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
 
         // PlayerStat write still happens
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
@@ -349,9 +350,9 @@ public class PlayerParserTests
                 e.Season == string.Empty),
             default), Times.Once);
 
-        // PlayerEntity still written
+        // PlayerEntity still written (Merge preserves Retired)
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.IsAny<PlayerEntity>(),
-            default), Times.Once);
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
     }
 }

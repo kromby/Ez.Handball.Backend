@@ -11,7 +11,8 @@ public sealed record SquadPlayer(
     string? Position,
     string? Gender,
     PlayerPrice Price,
-    PlayerPrice PricePaid);
+    PlayerPrice PricePaid,
+    double Rating);   // current-season fantasy rating (#52); 0 = below min-games guard
 
 public sealed record SquadView(
     IReadOnlyList<SquadPlayer> Players,

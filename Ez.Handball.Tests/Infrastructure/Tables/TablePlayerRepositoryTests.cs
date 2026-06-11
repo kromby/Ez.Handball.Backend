@@ -128,4 +128,46 @@ public class TablePlayerRepositoryTests
 
         Assert.Equal(expectedAge, result!.Age);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_RetiredTrue_MapsToRetiredTrue()
+    {
+        const string playerId = "777";
+        SetupRows(playerId, new PlayerEntity
+        {
+            PartitionKey = "385-karlar",
+            RowKey = playerId,
+            Name = "Retired Rúnar",
+            Gender = "karlar",
+            ClubId = "385",
+            Position = "VS",
+            Retired = true
+        });
+
+        var result = await CreateSut(today: new DateOnly(2026, 5, 22)).GetByIdAsync(playerId, default);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Retired);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_RetiredNull_MapsToFalse()
+    {
+        const string playerId = "778";
+        SetupRows(playerId, new PlayerEntity
+        {
+            PartitionKey = "385-karlar",
+            RowKey = playerId,
+            Name = "Active Aron",
+            Gender = "karlar",
+            ClubId = "385",
+            Position = "VS",
+            Retired = null
+        });
+
+        var result = await CreateSut(today: new DateOnly(2026, 5, 22)).GetByIdAsync(playerId, default);
+
+        Assert.NotNull(result);
+        Assert.False(result!.Retired);
+    }
 }

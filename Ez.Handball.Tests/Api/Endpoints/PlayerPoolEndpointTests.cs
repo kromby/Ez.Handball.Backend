@@ -56,7 +56,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
             .ReturnsAsync(new PlayerPoolResult.Found(pool));
 
     [Fact]
-    public async Task Get_NoParams_DefaultsRatingSortOffset0Limit50Version1()
+    public async Task Get_NoParams_DefaultsGoalsSortOffset0Limit50Version1()
     {
         PlayerPoolRequest? captured = null;
         var capturedOffset = -1;
@@ -70,11 +70,11 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
             })
             .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool()));
 
-        var response = await _client.GetAsync("/api/players/pool");
+        var response = await _client.GetAsync("/api/players");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(captured);
-        Assert.Equal(PlayerPoolSort.Rating, captured!.Sort);
+        Assert.Equal(PlayerPoolSort.Goals, captured!.Sort);
         Assert.Equal(1, captured.PriceVersion);
         Assert.Null(captured.Position);
         Assert.Equal(0, capturedOffset);
@@ -92,7 +92,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
             .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool("Price")));
 
         var response = await _client.GetAsync(
-            "/api/players/pool?season=2025-26&gender=karlar&position=CB&sort=price&version=2");
+            "/api/players?season=2025-26&gender=karlar&position=CB&sort=price&version=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("2025-26", captured!.Season);
@@ -107,7 +107,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     {
         SetupFound(EmptyPool("PickPercentage"));
 
-        var response = await _client.GetAsync("/api/players/pool?sort=pickPercentage");
+        var response = await _client.GetAsync("/api/players?sort=pickPercentage");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -115,7 +115,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     [Fact]
     public async Task Get_InvalidSort_Returns400()
     {
-        var response = await _client.GetAsync("/api/players/pool?sort=bogus");
+        var response = await _client.GetAsync("/api/players?sort=bogus");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -125,7 +125,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     [Fact]
     public async Task Get_InvalidGender_Returns400()
     {
-        var response = await _client.GetAsync("/api/players/pool?gender=bogus");
+        var response = await _client.GetAsync("/api/players?gender=bogus");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -134,7 +134,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     public async Task Get_TournamentIdAndCompetitionId_Returns400()
     {
         var response = await _client.GetAsync(
-            "/api/players/pool?tournamentId=8444&competitionId=olis-karla");
+            "/api/players?tournamentId=8444&competitionId=olis-karla");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -144,7 +144,7 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     [Fact]
     public async Task Get_LimitTooLarge_Returns400()
     {
-        var response = await _client.GetAsync("/api/players/pool?limit=500");
+        var response = await _client.GetAsync("/api/players?limit=500");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -157,10 +157,26 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
                 It.IsAny<PlayerPoolRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PlayerPoolResult.RuleSetNotFound());
 
-        var response = await _client.GetAsync("/api/players/pool");
+        var response = await _client.GetAsync("/api/players");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_rule_set", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Get_StatSort_AcceptedAndPassedThrough()
+    {
+        PlayerPoolRequest? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<PlayerPoolRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<PlayerPoolRequest, int, int, CancellationToken>((r, _, _, _) => captured = r)
+            .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool("Goals")));
+
+        var response = await _client.GetAsync("/api/players?sort=redCards");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(PlayerPoolSort.RedCards, captured!.Sort);
     }
 }

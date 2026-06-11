@@ -19,6 +19,7 @@ public static class Tables
     public const string GameRosters = "GameRosters";
     public const string GameBudgets = "GameBudgets";
     public const string GameTeamNameIndex = "GameTeamNameIndex";
+    public const string GameLineups = "GameLineups";
     public const string MiniLeagues = "MiniLeagues";
     public const string MiniLeagueMembers = "MiniLeagueMembers";
     public const string MiniLeagueInvites = "MiniLeagueInvites";

@@ -96,6 +96,22 @@ public class TablePlayerPoolRepositoryTests
     }
 
     [Fact]
+    public async Task GetAggregated_PopulatesRetiredFromPlayersTable()
+    {
+        SetupStats(
+            Stat("m1", "active", "2025-26", "8444", "385-karlar", "Stjarnan", 5),
+            Stat("m2", "retiree", "2025-26", "8444", "385-karlar", "Stjarnan", 3));
+        SetupPlayers(
+            new PlayerEntity { PartitionKey = "385-karlar", RowKey = "active", Name = "A", Position = "CB", Retired = false },
+            new PlayerEntity { PartitionKey = "385-karlar", RowKey = "retiree", Name = "R", Position = "CB", Retired = true });
+
+        var result = await CreateSut().GetAggregatedAsync(Q(), CancellationToken.None);
+
+        Assert.True(result.Single(p => p.PlayerId == "retiree").Retired);
+        Assert.False(result.Single(p => p.PlayerId == "active").Retired);
+    }
+
+    [Fact]
     public async Task GetAggregated_MissingPlayerRow_PositionEmpty_NameNull()
     {
         SetupStats(Stat("m1", "p9", "2025-26", "8444", "385-karlar", "Stjarnan", 5));

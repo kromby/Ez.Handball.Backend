@@ -14,7 +14,7 @@ public class GetBuyDecisionUseCaseTests
     private readonly Mock<ISquadRepository> _squad = new();
 
     private static Player Player(string id) =>
-        new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back");
+        new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back", false);
 
     private static PlayerPricing Price() =>
         new("p1", new PlayerPrice(20_000_000, "ISK"), 6, 8, "fantasy-price-v1", 48);

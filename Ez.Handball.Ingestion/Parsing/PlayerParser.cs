@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -92,7 +93,8 @@ public class PlayerParser : IPlayerParser
                 Gender = derivedGender,
                 ClubId = derivedClubId,
                 ClubName = club?.Name
-            }, ct);
+                // Retired intentionally not set — Merge preserves the maintainer's value.
+            }, ct, TableUpdateMode.Merge);
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
             {

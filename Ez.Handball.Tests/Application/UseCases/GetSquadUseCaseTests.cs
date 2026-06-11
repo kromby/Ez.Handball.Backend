@@ -14,7 +14,7 @@ public class GetSquadUseCaseTests
     private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _price.Object);
 
     private static Player AnyPlayer(string id, string position) => new(
-        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
+        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
@@ -43,6 +43,7 @@ public class GetSquadUseCaseTests
         Assert.Equal("Aron", p1.Name);
         Assert.Equal("Stjarnan", p1.ClubName);
         Assert.Equal("VS", p1.Position);
+        Assert.Equal(50.0, p1.Rating);
         Assert.Equal(50_000_000, p1.Price.Amount);
         Assert.Equal(40_000_000, p1.PricePaid.Amount);
         Assert.Equal(70_000_000, view.BudgetUsed.Amount);
