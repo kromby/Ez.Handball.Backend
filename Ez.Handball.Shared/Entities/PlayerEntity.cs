@@ -19,4 +19,7 @@ public class PlayerEntity : ITableEntity
     public string Gender { get; set; } = string.Empty;
     public string ClubId { get; set; } = string.Empty;
     public string? ClubName { get; set; }
+    // Out-of-band, maintainer-owned flag. Nullable so a Merge upsert that doesn't
+    // set it leaves the stored value untouched (same trick as LogoSrc on Clubs).
+    public bool? Retired { get; set; }
 }

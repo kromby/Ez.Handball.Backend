@@ -16,7 +16,7 @@ public class GetPlayerProfileUseCaseTests
         PlayerId: "12345", Name: "Aron Pálmarsson", JerseyNumber: "23",
         DateOfBirth: new DateOnly(1990, 7, 19), Age: 35,
         TeamId: "385-karlar", ClubId: "385", ClubName: "Stjarnan", Gender: "karlar",
-        Position: "VS");
+        Position: "VS", Retired: false);
 
     [Fact]
     public async Task ExecuteAsync_PlayerMissing_ReturnsNotFound()

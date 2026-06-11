@@ -20,7 +20,7 @@ public class GetPlayerRatingUseCaseTests
         _players.Object, _aggregator.Object, _ruleSets.Object);
 
     private static Player Player(string id) =>
-        new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back");
+        new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back", false);
 
     private static PlayerRatingContext Ctx(
         string? season = null, string? tournamentId = null, int? ruleSetVersion = null) =>

@@ -15,7 +15,7 @@ public class AddToShortlistUseCaseTests
         new(_shortlist.Object, _players.Object, new ShortlistSettings(maxSize), () => Now);
 
     private static Player AnyPlayer(string id) => new(
-        id, "Aron", "23", null, null, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+        id, "Aron", "23", null, null, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
 
     // Helper: matches any UpsertAsync call.
     private static System.Linq.Expressions.Expression<Func<IShortlistRepository, Task>> AnyUpsert() =>

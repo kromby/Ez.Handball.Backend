@@ -79,7 +79,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var player = new Player(
             "12345", "Aron Pálmarsson", "23",
             new DateOnly(1990, 7, 19),
-            35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
@@ -108,7 +108,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var player = new Player(
             "12345", "Aron Pálmarsson", "23",
             new DateOnly(1990, 7, 19),
-            35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
@@ -127,7 +127,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var player = new Player(
             "12345", "Aron Pálmarsson", "23",
             new DateOnly(1990, 7, 19),
-            35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))

@@ -14,7 +14,7 @@ public class GetShortlistUseCaseTests
         new(_shortlist.Object, _players.Object, new ShortlistSettings(maxSize));
 
     private static Player AnyPlayer(string id) => new(
-        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", "VS");
+        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
 
     [Fact]
     public async Task ResolvedPlayer_IsEnriched_PriceAndPkNull_CountAndMaxReturned()
