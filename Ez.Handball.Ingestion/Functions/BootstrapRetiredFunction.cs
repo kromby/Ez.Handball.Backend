@@ -4,6 +4,7 @@ using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
 
 namespace Ez.Handball.Ingestion.Functions;
 
@@ -23,14 +24,15 @@ public class BootstrapRetiredFunction
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "players/bootstrap-retired")] HttpRequestData req,
         FunctionContext context)
     {
-        var result = await ProcessAsync(context.CancellationToken);
+        var logger = context.GetLogger<BootstrapRetiredFunction>();
+        var result = await ProcessAsync(logger, context.CancellationToken);
 
         var response = req.CreateResponse(HttpStatusCode.OK);
         await response.WriteAsJsonAsync(result);
         return response;
     }
 
-    public async Task<BootstrapRetiredResult> ProcessAsync(CancellationToken ct = default)
+    public async Task<BootstrapRetiredResult> ProcessAsync(ILogger? logger = null, CancellationToken ct = default)
     {
         // 1. Latest season = lexical max of the distinct Tournaments partition keys
         //    (the YYYY-YY label format sorts correctly: "2025-26" > "2024-25").
@@ -62,6 +64,7 @@ public class BootstrapRetiredFunction
             marked++;
         }
 
+        logger?.LogInformation("Bootstrap-retired complete: season={Season}, marked={Marked}", latestSeason, marked);
         return new BootstrapRetiredResult(latestSeason, marked);
     }
 }

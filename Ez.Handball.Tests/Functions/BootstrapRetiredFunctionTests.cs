@@ -70,6 +70,21 @@ public class BootstrapRetiredFunctionTests
     }
 
     [Fact]
+    public async Task Process_AllPlayersHaveStats_MarksNothing()
+    {
+        SetupTournaments("2025-26");
+        SetupStatsForSeason("2025-26", "active");
+        SetupPlayers(Plr("active"));
+
+        var result = await CreateSut().ProcessAsync();
+
+        Assert.Equal("2025-26", result.Season);
+        Assert.Equal(0, result.Marked);
+        _tableWriter.Verify(t => t.UpsertAsync(It.IsAny<string>(), It.IsAny<PlayerEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Process_NoTournaments_MarksNothing()
     {
         SetupTournaments();
