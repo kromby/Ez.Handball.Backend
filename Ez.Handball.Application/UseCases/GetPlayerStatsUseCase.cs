@@ -40,12 +40,13 @@ public class GetPlayerStatsUseCase : IGetPlayerStatsUseCase
         var player = await _players.GetByIdAsync(playerId, ct);
         if (player is null) return new GetPlayerStatsResult.NotFound();
 
+        var season = await _scope.ResolveSeasonLabelAsync(query.Season, ct);
         var ids = await _scope.ResolveTournamentIdsAsync(
-            query.Season, query.TournamentId, query.CompetitionId, query.Type, ct);
+            season, query.TournamentId, query.CompetitionId, query.Type, ct);
 
         IEnumerable<PlayerStat> rows = await _stats.GetByPlayerAsync(playerId, ct);
-        if (!string.IsNullOrWhiteSpace(query.Season))
-            rows = rows.Where(r => r.Season == query.Season);
+        if (!string.IsNullOrWhiteSpace(season))
+            rows = rows.Where(r => r.Season == season);
         if (ids is not null)
             rows = rows.Where(r => ids.Contains(r.TournamentId));
 

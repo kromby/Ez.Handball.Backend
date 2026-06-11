@@ -22,6 +22,12 @@ public class GetLeaderboardUseCaseTests
         string? competitionId = null, TournamentType? type = null, string? gender = null) =>
         new(metric, season, tournamentId, competitionId, type, gender);
 
+    public GetLeaderboardUseCaseTests()
+    {
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((string? s, CancellationToken _) => s);
+    }
+
     private void SetupRanked(params LeaderboardEntry[] entries) =>
         _repo.Setup(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(entries);
@@ -153,5 +159,23 @@ public class GetLeaderboardUseCaseTests
         await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, cts.Token);
 
         _repo.Verify(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), cts.Token), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_NullSeason_DefaultsToCurrentSeason()
+    {
+        _scope.Setup(s => s.ResolveSeasonLabelAsync(null, It.IsAny<CancellationToken>()))
+              .ReturnsAsync("2025-26");
+        SetupResolver(null);
+        LeaderboardQuery? captured = null;
+        _repo.Setup(r => r.GetRankedAsync(It.IsAny<LeaderboardQuery>(), It.IsAny<CancellationToken>()))
+             .Callback<LeaderboardQuery, CancellationToken>((q, _) => captured = q)
+             .ReturnsAsync(Array.Empty<LeaderboardEntry>());
+
+        await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, CancellationToken.None);
+
+        Assert.Equal("2025-26", captured!.Season);
+        _scope.Verify(s => s.ResolveTournamentIdsAsync(
+            "2025-26", null, null, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

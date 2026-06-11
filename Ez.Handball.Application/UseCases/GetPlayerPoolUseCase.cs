@@ -72,15 +72,16 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         var prices = await _prices.GetAsync(request.PriceVersion, ct);
         if (prices is null) return PlayerPoolResult.RuleSetNotFound.Instance;
 
+        var season = await _scope.ResolveSeasonLabelAsync(request.Season, ct);
         var tournamentIds = await _scope.ResolveTournamentIdsAsync(
-            request.Season, request.TournamentId, request.CompetitionId, request.Type, ct);
+            season, request.TournamentId, request.CompetitionId, request.Type, ct);
 
-        var query = new PlayerPoolQuery(request.Season, tournamentIds, request.Gender);
+        var query = new PlayerPoolQuery(season, tournamentIds, request.Gender);
         var players = await _repo.GetAggregatedAsync(query, ct);
 
         // Context is accepted by the rating function but unused by the fantasy
         // formula; pass the season for completeness.
-        var ctx = new PlayerRatingContext(request.Season, null, null, null, null, null);
+        var ctx = new PlayerRatingContext(season, null, null, null, null, null);
 
         var computed = players
             .Where(p => !p.Retired)
