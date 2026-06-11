@@ -142,3 +142,12 @@ without re-fetching from hsi.is. Scope to one match with `?matchId={id}`. This i
 the preferred backfill after any change to `MatchEntity`, `PlayerEntity`, or
 `PlayerStatEntity`. (Re-running `POST /api/sync` still works but re-fetches every
 match from hsi.is.)
+
+After deploying the `Retired` flag, run `POST /api/players/bootstrap-retired`
+once. It marks every player with no `PlayerStats` in the latest season
+(lexical-max `Tournaments` partition key) as `Retired = true`, writing back the
+full row via `Merge`. It only ever sets `true`, so it is safe to re-run and never
+clobbers manual edits. Curate further by editing the `Retired` column directly in
+the `Players` table — use `Edm.Boolean`, not String (a String value causes a 500
+on read). `POST /api/reparse` preserves all `Retired` values because the Players
+upsert uses `Merge`.

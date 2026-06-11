@@ -10,4 +10,5 @@ public sealed record Player(
     string ClubId,
     string? ClubName,
     string Gender,
-    string Position);
+    string Position,
+    bool Retired);

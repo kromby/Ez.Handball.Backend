@@ -14,7 +14,7 @@ public class GetSquadUseCaseTests
     private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _price.Object);
 
     private static Player AnyPlayer(string id, string position) => new(
-        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
+        id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);

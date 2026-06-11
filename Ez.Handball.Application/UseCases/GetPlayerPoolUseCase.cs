@@ -83,6 +83,7 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         var ctx = new PlayerRatingContext(request.Season, null, null, null, null, null);
 
         var computed = players
+            .Where(p => !p.Retired)
             .Where(p => string.IsNullOrWhiteSpace(request.Position)
                 || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
             .Select(p =>

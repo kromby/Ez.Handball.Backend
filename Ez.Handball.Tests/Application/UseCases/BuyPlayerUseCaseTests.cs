@@ -20,7 +20,7 @@ public class BuyPlayerUseCaseTests
         _teams.Object, _roster.Object, _budget.Object, () => Now);
 
     private static Player AnyPlayer(string id, string position) =>
-        new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position);
+        new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
 
     private static BuyDecision Allowed(string id, double cost) =>
         new(id, "fantasy", true, new PlayerPrice(cost, "ISK"), System.Array.Empty<BuyRuleViolation>(), "fantasy-price-v1");

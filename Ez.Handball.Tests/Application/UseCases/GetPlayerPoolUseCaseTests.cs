@@ -49,9 +49,10 @@ public class GetPlayerPoolUseCaseTests
              .ReturnsAsync(players);
 
     private static PooledPlayer Pooled(
-        string playerId, int goals, int games = 10, string position = "CB", string gender = "karlar") =>
+        string playerId, int goals, int games = 10, string position = "CB",
+        string gender = "karlar", bool retired = false) =>
         new(playerId, $"P{playerId}", "385", "Stjarnan", gender, position,
-            new AggregatedStats(games, goals, 0, 0, 0));
+            new AggregatedStats(games, goals, 0, 0, 0), retired);
 
     private static PlayerPoolRequest Req(
         PlayerPoolSort sort = PlayerPoolSort.Rating, string? position = null,
@@ -202,7 +203,7 @@ public class GetPlayerPoolUseCaseTests
              {
                  new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
                      new AggregatedStats(Games: 8, Goals: 20, YellowCards: 3,
-                         TwoMinuteSuspensions: 2, RedCards: 1)),
+                         TwoMinuteSuspensions: 2, RedCards: 1), false),
              });
 
         var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
@@ -226,7 +227,7 @@ public class GetPlayerPoolUseCaseTests
              {
                  new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
                      new AggregatedStats(Games: 0, Goals: 0, YellowCards: 0,
-                         TwoMinuteSuspensions: 0, RedCards: 0)),
+                         TwoMinuteSuspensions: 0, RedCards: 0), false),
              });
 
         var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
@@ -278,8 +279,8 @@ public class GetPlayerPoolUseCaseTests
         _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(new[]
              {
-                 new PooledPlayer("clean", "Pc", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 0)),
-                 new PooledPlayer("dirty", "Pd", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 3)),
+                 new PooledPlayer("clean", "Pc", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 0), false),
+                 new PooledPlayer("dirty", "Pd", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 10, 0, 0, 3), false),
              });
 
         var result = await CreateSut().ExecuteAsync(
@@ -287,6 +288,23 @@ public class GetPlayerPoolUseCaseTests
 
         var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
         Assert.Equal(new[] { "dirty", "clean" }, pool.Entries.Select(e => e.PlayerId));
+    }
+
+    [Fact]
+    public async Task Execute_ExcludesRetiredPlayers_FromEntriesAndTotal()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            Pooled("active", goals: 10, retired: false),
+            Pooled("retired", goals: 99, retired: true));
+
+        var result = await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(1, pool.Total);
+        var entry = Assert.Single(pool.Entries);
+        Assert.Equal("active", entry.PlayerId);
     }
 
     [Fact]
