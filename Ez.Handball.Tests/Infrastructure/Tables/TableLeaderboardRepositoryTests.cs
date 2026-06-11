@@ -300,6 +300,25 @@ public class TableLeaderboardRepositoryTests
         Assert.Null(e.Name);
     }
 
+    // ---- retired player exclusion ----
+
+    [Fact]
+    public async Task GetRankedAsync_ExcludesRetiredPlayers()
+    {
+        SetupStats(null,
+            Stat("m1", "active", "2025-26", "8444", "385-karlar", "Stjarnan", 5),
+            Stat("m2", "retiree", "2025-26", "8444", "385-karlar", "Stjarnan", 99));
+        SetupPlayers(
+            new PlayerEntity { PartitionKey = "385-karlar", RowKey = "active", Name = "Active", Retired = false },
+            new PlayerEntity { PartitionKey = "385-karlar", RowKey = "retiree", Name = "Retiree", Retired = true });
+
+        var result = await CreateSut().GetRankedAsync(Q(), default);
+
+        var entry = Assert.Single(result);
+        Assert.Equal("active", entry.PlayerId);
+        Assert.Equal(1, entry.Rank);
+    }
+
     // ---- empty ----
 
     [Fact]

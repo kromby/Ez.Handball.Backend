@@ -34,23 +34,31 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
 
         if (rows.Count == 0) return Array.Empty<LeaderboardEntry>();
 
+        // Load players first: their Retired flag must gate the ranking, and we
+        // reuse the same dictionary for name resolution below.
+        var playerById = new Dictionary<string, PlayerEntity>();
+        await foreach (var p in _query.QueryAsync<PlayerEntity>(Tables.Players, null, ct))
+            playerById[p.RowKey] = p;
+
         var aggregates = rows
             .GroupBy(r => r.RowKey)
+            .Where(g => !(playerById.TryGetValue(g.Key, out var pe) && (pe.Retired ?? false)))
             .Select(g => BuildAggregate(g.Key, g.ToList()))
             .OrderByDescending(a => MetricValue(a, q.Metric))
             .ThenBy(a => a.Games)
             .ThenBy(a => a.PlayerId, StringComparer.Ordinal)
             .ToList();
 
-        var nameById = new Dictionary<string, string>();
-        await foreach (var p in _query.QueryAsync<PlayerEntity>(Tables.Players, null, ct))
-            nameById[p.RowKey] = p.Name;
-
         var result = new List<LeaderboardEntry>(aggregates.Count);
         for (var i = 0; i < aggregates.Count; i++)
         {
             var a = aggregates[i];
-            if (!nameById.TryGetValue(a.PlayerId, out var name))
+            string? name = null;
+            if (playerById.TryGetValue(a.PlayerId, out var pe))
+            {
+                name = pe.Name;
+            }
+            else
             {
                 _logger.LogWarning(
                     "Player {PlayerId} not found in Players table while building leaderboard", a.PlayerId);
