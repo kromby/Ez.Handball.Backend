@@ -63,7 +63,7 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     Gender: gender,
                     Position: player?.Position ?? string.Empty,
                     Stats: stats,
-                    Retired: player?.Retired ?? false);
+                    Retired: player?.Retired == true);
             })
             .ToList();
 

@@ -42,7 +42,7 @@ internal sealed class TableLeaderboardRepository : ILeaderboardRepository
 
         var aggregates = rows
             .GroupBy(r => r.RowKey)
-            .Where(g => !(playerById.TryGetValue(g.Key, out var pe) && (pe.Retired ?? false)))
+            .Where(g => !(playerById.TryGetValue(g.Key, out var pe) && pe.Retired == true))
             .Select(g => BuildAggregate(g.Key, g.ToList()))
             .OrderByDescending(a => MetricValue(a, q.Metric))
             .ThenBy(a => a.Games)
