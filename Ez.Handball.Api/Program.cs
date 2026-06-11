@@ -201,6 +201,7 @@ app.MapGet("/api/players/{playerId}", async (
             f.Player.ClubName,
             f.Player.Gender,
             f.Player.Position,
+            f.Player.Retired,
             price = f.Price,
             rating = f.Rating
         }),

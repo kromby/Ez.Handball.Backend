@@ -141,6 +141,25 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task GetPlayer_RetiredPlayer_Returns200WithRetiredTrue()
+    {
+        var player = new Player(
+            "12345", "Retired Rúnar", "23",
+            new DateOnly(1985, 7, 19),
+            40, "385-karlar", "385", "Stjarnan", "karlar", "VS", true);
+
+        _factory.Profile
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(5_000_000, "ISK"), 50.0));
+
+        var response = await _client.GetAsync("/api/players/12345");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("retired").GetBoolean());
+    }
+
+    [Fact]
     public async Task GetStats_PlayerNotFound_Returns404()
     {
         _factory.Stats
