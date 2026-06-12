@@ -25,6 +25,8 @@ public sealed record PlayerPoolRequest(
     TournamentType? Type,
     string? Gender,
     string? Position,
+    string? Name,
+    string? ClubId,
     PlayerPoolSort Sort,
     int PriceVersion);
 
@@ -83,10 +85,20 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         // formula; pass the season for completeness.
         var ctx = new PlayerRatingContext(season, null, null, null, null, null);
 
+        // Request-time filters, mirroring the position filter: clubId = exact match;
+        // name = case-insensitive substring on the player name. Trim the name so stray
+        // whitespace from the client never narrows the list to nothing.
+        var nameNeedle = request.Name?.Trim();
+        var hasName = !string.IsNullOrEmpty(nameNeedle);
+
         var computed = players
             .Where(p => !p.Retired)
             .Where(p => string.IsNullOrWhiteSpace(request.Position)
                 || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
+            .Where(p => string.IsNullOrWhiteSpace(request.ClubId)
+                || string.Equals(p.ClubId, request.ClubId, StringComparison.Ordinal))
+            .Where(p => !hasName
+                || (p.Name is not null && p.Name.Contains(nameNeedle!, StringComparison.OrdinalIgnoreCase)))
             .Select(p =>
             {
                 var priced = _pricing.Compute(p.PlayerId, p.Stats, scoring, prices, ctx);
