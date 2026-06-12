@@ -369,6 +369,8 @@ app.MapGet("/api/players", async Task<IResult> (
     string? type,
     string? gender,
     string? position,
+    string? name,
+    string? clubId,
     string? sort,
     int? offset,
     int? limit,
@@ -395,7 +397,7 @@ app.MapGet("/api/players", async Task<IResult> (
 
     var request = new PlayerPoolRequest(
         season, tournamentId, competitionId, parsedType, parsedGender, position,
-        parsedSort, version ?? 1);
+        name, clubId, parsedSort, version ?? 1);
 
     var result = await uc.ExecuteAsync(request, off, lim, ct);
     return result switch

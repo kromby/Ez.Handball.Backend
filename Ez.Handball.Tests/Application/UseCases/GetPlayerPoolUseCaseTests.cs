@@ -56,8 +56,9 @@ public class GetPlayerPoolUseCaseTests
 
     private static PlayerPoolRequest Req(
         PlayerPoolSort sort = PlayerPoolSort.Rating, string? position = null,
-        string? season = null, string? gender = null) =>
-        new(season, null, null, null, gender, position, sort, PriceVersion: 1);
+        string? season = null, string? gender = null,
+        string? name = null, string? clubId = null) =>
+        new(season, null, null, null, gender, position, name, clubId, sort, PriceVersion: 1);
 
     [Fact]
     public async Task Execute_ComputesRatingAndPrice_PickPercentageNull()
@@ -143,6 +144,91 @@ public class GetPlayerPoolUseCaseTests
         var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
         Assert.Equal(new[] { "a", "c" }, pool.Entries.Select(e => e.PlayerId));
         Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_NameFilter_MatchesSubstring_CaseInsensitive()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            new PooledPlayer("a", "Bergström", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 50, 0, 0, 0), false),
+            new PooledPlayer("b", "Halldór", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 40, 0, 0, 0), false),
+            new PooledPlayer("c", "Berg Hansson", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 30, 0, 0, 0), false));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(name: "BERG"), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a", "c" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_NameFilter_TrimsWhitespace_AndIgnoresNullNames()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            new PooledPlayer("a", "Bergström", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 50, 0, 0, 0), false),
+            new PooledPlayer("b", null, "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 40, 0, 0, 0), false));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(name: "  berg  "), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal(1, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_BlankNameFilter_DoesNotNarrow()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(Pooled("a", goals: 50), Pooled("b", goals: 40));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(name: "   "), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_ClubIdFilter_NarrowsToExactClub()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 50, 0, 0, 0), false),
+            new PooledPlayer("b", "Pb", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 40, 0, 0, 0), false),
+            new PooledPlayer("c", "Pc", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 30, 0, 0, 0), false));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(clubId: "385"), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a", "c" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_NameAndClubIdFilters_Compose()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            new PooledPlayer("a", "Bergström", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 50, 0, 0, 0), false),
+            new PooledPlayer("b", "Bergsson", "1", "Catalunya", "karlar", "CB", new AggregatedStats(10, 40, 0, 0, 0), false),
+            new PooledPlayer("c", "Halldór", "385", "Stjarnan", "karlar", "CB", new AggregatedStats(10, 30, 0, 0, 0), false));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(name: "berg", clubId: "385"), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal(1, pool.Total);
     }
 
     [Fact]

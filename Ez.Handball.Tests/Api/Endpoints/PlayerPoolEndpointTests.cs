@@ -103,6 +103,23 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     }
 
     [Fact]
+    public async Task Get_PassesNameAndClubIdThrough()
+    {
+        PlayerPoolRequest? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<PlayerPoolRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<PlayerPoolRequest, int, int, CancellationToken>((r, _, _, _) => captured = r)
+            .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool()));
+
+        var response = await _client.GetAsync("/api/players?name=berg%20str%C3%B6m&clubId=385");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("berg ström", captured!.Name);
+        Assert.Equal("385", captured.ClubId);
+    }
+
+    [Fact]
     public async Task Get_SortPickPercentage_Accepted()
     {
         SetupFound(EmptyPool("PickPercentage"));
