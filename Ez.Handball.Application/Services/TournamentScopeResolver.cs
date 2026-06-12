@@ -26,14 +26,9 @@ public sealed class TournamentScopeResolver : ITournamentScopeResolver
         if (string.IsNullOrWhiteSpace(competitionId) && type is null)
             return null;
 
-        var label = season;
+        var label = await ResolveSeasonLabelAsync(season, ct);
         if (string.IsNullOrWhiteSpace(label))
-        {
-            var seasons = await _seasons.ListAsync(ct);
-            label = seasons.FirstOrDefault(s => s.IsCurrent)?.Label;
-            if (string.IsNullOrWhiteSpace(label))
-                return Array.Empty<string>();
-        }
+            return Array.Empty<string>();
 
         var tournaments = await _tournaments.ListBySeasonAsync(label, ct);
         return tournaments
@@ -41,5 +36,12 @@ public sealed class TournamentScopeResolver : ITournamentScopeResolver
             .Where(t => type is null || t.Type == type)
             .Select(t => t.TournamentId)
             .ToList();
+    }
+
+    public async Task<string?> ResolveSeasonLabelAsync(string? season, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(season)) return season;
+        var seasons = await _seasons.ListAsync(ct);
+        return seasons.FirstOrDefault(s => s.IsCurrent)?.Label;
     }
 }

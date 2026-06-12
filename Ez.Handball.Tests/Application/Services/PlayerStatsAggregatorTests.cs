@@ -14,7 +14,7 @@ public class PlayerStatsAggregatorTests
     private PlayerStatsAggregator CreateSut()
     {
         var scope = new TournamentScopeResolver(_tournaments.Object, _seasons.Object);
-        return new PlayerStatsAggregator(_stats.Object, _seasons.Object, scope);
+        return new PlayerStatsAggregator(_stats.Object, scope);
     }
 
     private static PlayerStat Stat(string season, string tournamentId, int goals) =>
