@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.UseCases;
@@ -25,15 +26,18 @@ public sealed class SetLineupUseCase : ISetLineupUseCase
     private readonly IGetSquadUseCase _squad;
     private readonly ILineupRepository _lineup;
     private readonly ILineupConstraintsRepository _constraints;
+    private readonly IGameweekSnapshotGuard _guard;
 
     public SetLineupUseCase(
         IGameTeamRepository teams, IGetSquadUseCase squad,
-        ILineupRepository lineup, ILineupConstraintsRepository constraints)
+        ILineupRepository lineup, ILineupConstraintsRepository constraints,
+        IGameweekSnapshotGuard guard)
     {
         _teams = teams;
         _squad = squad;
         _lineup = lineup;
         _constraints = constraints;
+        _guard = guard;
     }
 
     public async Task<SetLineupResult> ExecuteAsync(
@@ -41,6 +45,8 @@ public sealed class SetLineupUseCase : ISetLineupUseCase
     {
         if (!await _teams.ExistsAsync(userId, GameFlavor.Fantasy, ct))
             return SetLineupResult.NoTeam.Instance;
+
+        await _guard.EnsureSnapshotsAsync(GameTeamId.For(userId, GameFlavor.Fantasy), null, ct);
 
         var version = ruleSetVersion ?? DefaultVersion;
         var constraints = await _constraints.GetAsync(version, ct);

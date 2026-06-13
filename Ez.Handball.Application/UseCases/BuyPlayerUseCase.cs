@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.UseCases;
@@ -29,11 +30,12 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
     private readonly IGameRosterRepository _roster;
     private readonly IGameBudgetRepository _budget;
     private readonly Func<DateTimeOffset> _now;
+    private readonly IGameweekSnapshotGuard _guard;
 
     public BuyPlayerUseCase(
         IGetBuyDecisionUseCase decision, IGetSquadUseCase squadView, IPlayerRepository players,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard)
     {
         _decision = decision;
         _squadView = squadView;
@@ -42,6 +44,7 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         _roster = roster;
         _budget = budget;
         _now = now;
+        _guard = guard;
     }
 
     public async Task<BuyPlayerResult> ExecuteAsync(
@@ -49,6 +52,8 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
     {
         if (!await _teams.ExistsAsync(userId, GameFlavor.Fantasy, ct))
             return BuyPlayerResult.NoTeam.Instance;
+
+        await _guard.EnsureSnapshotsAsync(GameTeamId.For(userId, GameFlavor.Fantasy), null, ct);
 
         var player = await _players.GetByIdAsync(playerId, ct);
         if (player is null) return BuyPlayerResult.PlayerNotFound.Instance;
