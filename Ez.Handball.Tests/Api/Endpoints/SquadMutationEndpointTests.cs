@@ -110,8 +110,10 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("p-1", body.GetProperty("players")[0].GetProperty("playerId").GetString());
-        Assert.Equal(8_000_000, body.GetProperty("remainingBudget").GetProperty("amount").GetDouble());
+        var squad = body.GetProperty("squad");
+        Assert.Equal("p-1", squad.GetProperty("players")[0].GetProperty("playerId").GetString());
+        Assert.Equal(8_000_000, squad.GetProperty("remainingBudget").GetProperty("amount").GetDouble());
+        Assert.True(body.TryGetProperty("gameweek", out _));
     }
 
     [Fact]

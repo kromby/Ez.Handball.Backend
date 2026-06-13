@@ -4,6 +4,16 @@ using Ez.Handball.Domain;
 
 namespace Ez.Handball.Api;
 
+public static class GameweekEcho
+{
+    public static async Task<object> BuildAsync(IGetCurrentGameweekUseCase gw, CancellationToken ct)
+    {
+        var r = await gw.ExecuteAsync(null, ct);
+        var current = (r as GetCurrentGameweekResult.Found)?.Current;
+        return new { appliedToGameweek = current?.Number, currentGameweekLocked = current is null };
+    }
+}
+
 public static class GameweekEndpoints
 {
     public static void MapGameweekEndpoints(this WebApplication app)

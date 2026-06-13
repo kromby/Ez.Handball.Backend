@@ -42,7 +42,7 @@ public static class SquadEndpoints
         });
 
         group.MapPost("/players", async (
-            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, CancellationToken ct) =>
+            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(req.PlayerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -53,9 +53,13 @@ public static class SquadEndpoints
 
             var result = await uc.ExecuteAsync(userId,
                 req.PlayerId, new BuyPlayerContext(req.Season, req.TournamentId, req.RuleSetVersion), ct);
+            if (result is BuyPlayerResult.Committed c)
+            {
+                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                return Results.Json(new { squad = SquadBody(c.View), gameweek }, statusCode: StatusCodes.Status201Created);
+            }
             return result switch
             {
-                BuyPlayerResult.Committed c     => Results.Json(SquadBody(c.View), statusCode: StatusCodes.Status201Created),
                 BuyPlayerResult.Rejected r      => Results.Json(new { violations = r.Violations }, statusCode: StatusCodes.Status422UnprocessableEntity),
                 BuyPlayerResult.Duplicate       => Results.Json(new { error = "duplicate_player" }, statusCode: StatusCodes.Status409Conflict),
                 BuyPlayerResult.NoTeam          => Results.Json(new { error = "no_team" }, statusCode: StatusCodes.Status409Conflict),
@@ -67,7 +71,7 @@ public static class SquadEndpoints
 
         group.MapDelete("/players/{playerId}", async (
             string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
-            HttpContext http, ISellPlayerUseCase uc, CancellationToken ct) =>
+            HttpContext http, ISellPlayerUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -78,9 +82,13 @@ public static class SquadEndpoints
 
             var result = await uc.ExecuteAsync(userId,
                 playerId, new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
+            if (result is SellPlayerResult.Sold s)
+            {
+                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                return Results.Ok(new { squad = SquadBody(s.View), gameweek });
+            }
             return result switch
             {
-                SellPlayerResult.Sold s          => Results.Ok(SquadBody(s.View)),
                 SellPlayerResult.NotInSquad      => Results.NotFound(new { error = "not_in_squad" }),
                 SellPlayerResult.NoTeam          => Results.Json(new { error = "no_team" }, statusCode: StatusCodes.Status409Conflict),
                 SellPlayerResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),

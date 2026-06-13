@@ -197,7 +197,9 @@ public class LineupEndpointTests : IClassFixture<LineupEndpointTests.Factory>, I
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("p0", body.GetProperty("captainId").GetString());
+        var lineup = body.GetProperty("lineup");
+        Assert.Equal("p0", lineup.GetProperty("captainId").GetString());
+        Assert.True(body.TryGetProperty("gameweek", out _));
     }
 
     [Fact]
