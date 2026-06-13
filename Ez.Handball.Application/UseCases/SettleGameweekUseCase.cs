@@ -55,6 +55,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         _scoring = scoring;
     }
 
+    // Caller contract: userId and teamId MUST refer to the same team (teamId == GameTeamId.For(userId, Fantasy)). The owned squad (for positions) is resolved from userId.
     public async Task<SettleGameweekResult> ExecuteAsync(
         string userId, string teamId, string roundLabel, int? configVersion, CancellationToken ct)
     {

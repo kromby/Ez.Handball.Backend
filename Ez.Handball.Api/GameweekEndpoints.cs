@@ -70,17 +70,16 @@ public static class GameweekEndpoints
         }).RequireAuthorization();
 
         app.MapPost("/api/gameweeks/settle", async (
-            string round, string? teamId, HttpContext http, int? version,
+            string round, HttpContext http, int? version,
             ISettleGameweekUseCase uc, CancellationToken ct) =>
         {
-            // Authed: the caller settles their own team unless an explicit teamId is given (admin/ingestion).
             var userId = http.User.UserId();
             if (string.IsNullOrEmpty(userId))
                 return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
             if (string.IsNullOrWhiteSpace(round))
                 return Results.BadRequest(new { error = "invalid_round" });
 
-            var team = string.IsNullOrWhiteSpace(teamId) ? GameTeamId.For(userId, GameFlavor.Fantasy) : teamId;
+            var team = GameTeamId.For(userId, GameFlavor.Fantasy);
             var result = await uc.ExecuteAsync(userId, team, round, version, ct);
             return result switch
             {

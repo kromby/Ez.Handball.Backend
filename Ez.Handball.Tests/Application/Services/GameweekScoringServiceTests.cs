@@ -115,4 +115,66 @@ public class GameweekScoringServiceTests
         Assert.False(score.Breakdown.Single(b => b.PlayerId == "fp2").AutoSubbedIn);
         Assert.Equal(6, score.Points);
     }
+
+    [Fact]
+    public void MultipleNonPlayingStarters_BothAutoSubbedByValidBench()
+    {
+        // gk1 (GK) and fp1 (FP) both didn't play; bench gk2 (GK) and fp2 (FP) both played →
+        // each non-playing starter is replaced by a same-position bench player.
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("fp1", LineupRole.Captain, null),
+            new LineupSlot("gk2", LineupRole.Bench, 0),
+            new LineupSlot("fp2", LineupRole.Bench, 1),
+        });
+        var squad = new[] { Owned("gk1", "GK"), Owned("fp1", "FP"), Owned("gk2", "GK"), Owned("fp2", "FP") };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["gk2"] = Played(0), // 1 appearance
+            ["fp2"] = Played(2), // 3
+        };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, Constraints);
+
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "gk2").AutoSubbedIn);
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp2").AutoSubbedIn);
+        Assert.Equal(0, score.Breakdown.Single(b => b.PlayerId == "gk1").Points);
+        Assert.Equal(0, score.Breakdown.Single(b => b.PlayerId == "fp1").Points);
+        Assert.Null(score.CaptainPlayerId);  // captain fp1 didn't play, no vice
+        Assert.Equal(1 + 3, score.Points);
+    }
+
+    [Fact]
+    public void CaptainAutoSubbedOut_ArmbandFallsToVice()
+    {
+        // StarterCount=3 (1 GK + 2 FP). Captain fp1 didn't play but has a valid same-position bench
+        // sub (fp3); vice fp2 played → the armband falls to the vice, the sub scores un-multiplied.
+        var constraints = new LineupConstraints(
+            Version: 1, StarterCount: 3,
+            PositionStart: new Dictionary<string, (int Min, int Max)> { ["GK"] = (1, 1), ["FP"] = (1, 3) },
+            CaptainMultiplier: 2, CaptainRequired: true, ViceRequired: false);
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("fp1", LineupRole.Captain, null),
+            new LineupSlot("fp2", LineupRole.Vice, null),
+            new LineupSlot("fp3", LineupRole.Bench, 0),
+        });
+        var squad = new[] { Owned("gk1", "GK"), Owned("fp1", "FP"), Owned("fp2", "FP"), Owned("fp3", "FP") };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["gk1"] = Played(0), // 1
+            ["fp2"] = Played(3), // 4 raw × 2 (vice armband) = 8
+            ["fp3"] = Played(1), // 2 (subbed in for fp1, no multiplier)
+        };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, constraints);
+
+        Assert.Equal("fp2", score.CaptainPlayerId);
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp2").CaptainApplied);
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp3").AutoSubbedIn);
+        Assert.Equal(0, score.Breakdown.Single(b => b.PlayerId == "fp1").Points); // captain replaced
+        Assert.Equal(1 + 8 + 2, score.Points);
+    }
 }
