@@ -167,6 +167,9 @@ builder.Services.AddScoped<IRenameTeamUseCase, RenameTeamUseCase>();
 builder.Services.AddScoped<IGetLineupUseCase, GetLineupUseCase>();
 builder.Services.AddScoped<ISetLineupUseCase, SetLineupUseCase>();
 builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
+builder.Services.AddScoped<IGameweekCalendarService, GameweekCalendarService>();
+builder.Services.AddScoped<IGetGameweeksUseCase, GetGameweeksUseCase>();
+builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase>();
 
 var app = builder.Build();
 
@@ -504,6 +507,7 @@ app.MapLineupEndpoints();
 app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
 app.MapMiniLeagueInviteEndpoints();
+app.MapGameweekEndpoints();
 
 app.Run();
 
