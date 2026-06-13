@@ -20,10 +20,7 @@ public sealed class GetMyGameweekScoresUseCase : IGetMyGameweekScoresUseCase
     {
         var teamId = GameTeamId.For(userId, GameFlavor.Fantasy);
         var rows = await _scores.ListByTeamAsync(teamId, ct);
-        var ordered = rows.OrderBy(r => RoundSortKey(r.RoundLabel)).ThenBy(r => r.RoundLabel, StringComparer.Ordinal).ToList();
+        var ordered = rows.OrderBy(r => RoundOrder.Key(r.RoundLabel)).ThenBy(r => r.RoundLabel, StringComparer.Ordinal).ToList();
         return new MyGameweekScores(ordered.Sum(r => r.Points), ordered);
     }
-
-    private static (int, int) RoundSortKey(string round)
-        => int.TryParse(round, out var n) ? (0, n) : (1, 0);
 }
