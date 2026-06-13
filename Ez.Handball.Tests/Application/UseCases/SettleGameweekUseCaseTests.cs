@@ -19,6 +19,10 @@ public class SettleGameweekUseCaseTests
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
 
+    // The use case enforces teamId == GameTeamId.For(userId, Fantasy), so the test team id must
+    // be the real composite for "user".
+    private static readonly string Team = GameTeamId.For("user", GameFlavor.Fantasy);
+
     private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1);
     private static readonly ScoringRuleSet Rules =
         new(GameFlavor.Fantasy, 1, 1, 0, 0, 0, 1);
@@ -53,9 +57,9 @@ public class SettleGameweekUseCaseTests
             .ReturnsAsync(new[] { GW("1", status, Match("m1", final: status == GameweekStatus.Settled)) });
         _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>())).ReturnsAsync(Rules);
         _constraints.Setup(r => r.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Constraints);
-        _snapshots.Setup(s => s.GetSnapshotAsync("team", "1", It.IsAny<CancellationToken>()))
+        _snapshots.Setup(s => s.GetSnapshotAsync(Team, "1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(snapshotExists ? Lineup() : null);
-        _liveLineup.Setup(s => s.GetAsync("team", It.IsAny<CancellationToken>())).ReturnsAsync(Lineup());
+        _liveLineup.Setup(s => s.GetAsync(Team, It.IsAny<CancellationToken>())).ReturnsAsync(Lineup());
         _squad.Setup(s => s.ExecuteAsync("user", null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetSquadResult.Found(new SquadView(
                 new[] { Owned("gk1", "GK"), Owned("fp1", "FP"), Owned("fp2", "FP") },
@@ -74,7 +78,7 @@ public class SettleGameweekUseCaseTests
         _calendar.Setup(c => c.GetCalendarAsync(Config, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { GW("1", GameweekStatus.InPlay, Match("m1", true), Match("m2", false)) });
 
-        var result = await CreateSut().ExecuteAsync("user", "team", "1", null, default);
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
 
         Assert.IsType<SettleGameweekResult.NotReady>(result);
         _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -85,12 +89,12 @@ public class SettleGameweekUseCaseTests
     {
         SetupCommon(GameweekStatus.Settled, snapshotExists: true);
 
-        var result = await CreateSut().ExecuteAsync("user", "team", "1", null, default);
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
 
         var settled = Assert.IsType<SettleGameweekResult.Settled>(result);
         Assert.Equal(1 + (4 * 2), settled.Score.Points); // gk1: 1, fp1: 4 raw × 2 captain
         _scores.Verify(s => s.SaveAsync(
-            It.Is<GameweekScore>(g => g.TeamId == "team" && g.RoundLabel == "1"), It.IsAny<CancellationToken>()), Times.Once);
+            It.Is<GameweekScore>(g => g.TeamId == Team && g.RoundLabel == "1"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -98,16 +102,40 @@ public class SettleGameweekUseCaseTests
     {
         SetupCommon(GameweekStatus.Settled, snapshotExists: false);
 
-        await CreateSut().ExecuteAsync("user", "team", "1", null, default);
+        await CreateSut().ExecuteAsync("user", Team, "1", null, default);
 
-        _snapshots.Verify(s => s.SaveSnapshotAsync("team", "1", It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Once);
+        _snapshots.Verify(s => s.SaveSnapshotAsync(Team, "1", It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task UnknownRound_ReturnsNotFound()
     {
         SetupCommon(GameweekStatus.Settled, snapshotExists: true);
-        var result = await CreateSut().ExecuteAsync("user", "team", "99", null, default);
+        var result = await CreateSut().ExecuteAsync("user", Team, "99", null, default);
         Assert.IsType<SettleGameweekResult.NotFound>(result);
+    }
+
+    [Fact]
+    public async Task MismatchedTeam_ReturnsNotFound_DoesNotPersist()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: true);
+
+        // teamId belongs to a different user than userId → contract violated.
+        var result = await CreateSut().ExecuteAsync("user", "someone-else:fantasy", "1", null, default);
+
+        Assert.IsType<SettleGameweekResult.NotFound>(result);
+        _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SquadNotResolved_ReturnsSquadNotFound()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: true);
+        _squad.Setup(s => s.ExecuteAsync("user", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetSquadResult.RuleSetNotFound.Instance);
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        Assert.IsType<SettleGameweekResult.SquadNotFound>(result);
     }
 }

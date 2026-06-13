@@ -10,6 +10,7 @@ public abstract record SettleGameweekResult
     public sealed record NotFound : SettleGameweekResult { public static readonly NotFound Instance = new(); }   // unknown round/tournament
     public sealed record RuleSetMissing : SettleGameweekResult { public static readonly RuleSetMissing Instance = new(); }
     public sealed record NoSnapshotPossible : SettleGameweekResult { public static readonly NoSnapshotPossible Instance = new(); } // no live lineup to freeze
+    public sealed record SquadNotFound : SettleGameweekResult { public static readonly SquadNotFound Instance = new(); } // owned squad couldn't be resolved
     public sealed record NotReady : SettleGameweekResult { public static readonly NotReady Instance = new(); }  // not all member matches final
     public sealed record Settled(GameweekScore Score) : SettleGameweekResult;
 }
@@ -59,6 +60,11 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
     public async Task<SettleGameweekResult> ExecuteAsync(
         string userId, string teamId, string roundLabel, int? configVersion, CancellationToken ct)
     {
+        // Enforce the caller contract: the owned squad is resolved from userId, so a teamId that
+        // doesn't belong to userId would score the wrong team's positions. Reject the mismatch.
+        if (teamId != GameTeamId.For(userId, GameFlavor.Fantasy))
+            return SettleGameweekResult.NotFound.Instance;
+
         var config = await _config.GetAsync(configVersion ?? DefaultVersion, ct);
         if (config is null) return SettleGameweekResult.ConfigMissing.Instance;
 
@@ -90,7 +96,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
 
         var squadResult = await _squad.ExecuteAsync(userId, null, null, null, ct);
         if (squadResult is not GetSquadResult.Found found)
-            return SettleGameweekResult.RuleSetMissing.Instance;
+            return SettleGameweekResult.SquadNotFound.Instance;
 
         // Build playerId → aggregated stats across the gameweek's member matches (presence = played).
         var played = await BuildPlayedStatsAsync(gw, ct);

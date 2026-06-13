@@ -31,7 +31,7 @@ The core fantasy loop. A gameweek is the scoring period that ties a manager's **
 
 **`GameweekCalendarService` (Application).** Reads the `Matches` table for the configured fantasy tournament + season, groups by HSÍ `Round` label (reusing the `#10` grouping/sort logic), and produces a `Gameweek` view:
 
-```
+```text
 Gameweek {
   Number,        // ordinal position of the round in sorted order
   RoundLabel,    // HSÍ round label = the gwKey
@@ -72,7 +72,7 @@ Gameweek {
 
 Runs inside every mutation use case (`BuyPlayerUseCase`, `SellPlayerUseCase`, `SetLineupUseCase`):
 
-```
+```text
 Before applying the mutation:
   1. Load the gameweek calendar for this team's tournament/season.
   2. For every gameweek whose (pinned-or-derived) deadline has passed
@@ -108,7 +108,7 @@ Inputs: the frozen `Lineup` snapshot, the gameweek's member matches, each lineup
 
 ### Auto-sub algorithm (FPL-style, position-valid)
 
-```
+```text
 played(p) := p has a PlayerStatEntity row in this gameweek's matches
 1. Start from the 7 frozen starters.
 2. For each starter who did NOT play, in turn:
@@ -139,7 +139,7 @@ For a gameweek whose member matches are all final: snapshot-if-missing → run `
 
 ### Settlement endpoint (authed / internal)
 
-- `POST /api/gameweeks/settle?tournamentId=&round=` — runs `SettleGameweekUseCase`. Idempotent. Called by ingestion after a match's stats finish parsing and the match is final; also usable manually for recompute.
+- `POST /api/gameweeks/settle?round=` (optional `&version=`) — runs `SettleGameweekUseCase` for the **authenticated caller's own team** (the team is derived from the auth token, not passed as a parameter). Idempotent. Called by ingestion after a match's stats finish parsing and the match is final; also usable manually for recompute.
 
 ### Mutating endpoints (existing, now lock-aware)
 

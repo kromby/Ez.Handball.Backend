@@ -38,15 +38,29 @@ internal sealed class TableGameweekLineupRepository : IGameweekLineupRepository
         var table = _client.GetTableClient(Tables.GameweekLineups);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
 
-        var actions = lineup.Slots.Select(s => new TableTransactionAction(
-            TableTransactionActionType.UpsertReplace,
-            new GameweekLineupEntity
-            {
-                PartitionKey = pk,
-                RowKey = s.PlayerId,
-                Role = s.Role.ToString(),
-                BenchOrder = s.BenchOrder
-            })).ToList();
+        var desired = lineup.Slots.Select(s => s.PlayerId).ToHashSet();
+        var actions = new List<TableTransactionAction>();
+
+        // Full replacement: delete any prior snapshot rows whose player is no longer present, so a
+        // re-save (e.g. a player swapped out) leaves no orphans — the save is idempotent.
+        await foreach (var e in _query.QueryAsync<GameweekLineupEntity>(
+                           Tables.GameweekLineups, $"PartitionKey eq '{ODataFilter.Escape(pk)}'", ct))
+        {
+            if (!desired.Contains(e.RowKey))
+                actions.Add(new TableTransactionAction(TableTransactionActionType.Delete,
+                    new GameweekLineupEntity { PartitionKey = pk, RowKey = e.RowKey, ETag = ETag.All }));
+        }
+
+        foreach (var s in lineup.Slots)
+            actions.Add(new TableTransactionAction(
+                TableTransactionActionType.UpsertReplace,
+                new GameweekLineupEntity
+                {
+                    PartitionKey = pk,
+                    RowKey = s.PlayerId,
+                    Role = s.Role.ToString(),
+                    BenchOrder = s.BenchOrder
+                }));
 
         if (actions.Count > 0)
             await table.SubmitTransactionAsync(actions, ct);

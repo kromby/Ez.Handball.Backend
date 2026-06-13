@@ -170,7 +170,8 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   snapshot guard runs before every buy/sell/lineup mutation and freezes the live
   lineup into `GameweekLineups` for any locked-but-unsnapshotted gameweek.
 - **Settlement is idempotent/recomputable:** `POST /api/gameweeks/settle?round={label}`
-  (authed; optional `&teamId=` else the caller's team). Re-running absorbs stat
+  (optional `&version=`; authed, always settles the caller's own team — `teamId` is
+  derived from the token, not accepted as a parameter). Re-running absorbs stat
   corrections and late-played (postponed) matches via `TableUpdateMode.Replace`.
   Returns `not_ready` (409) until every member match is final.
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;

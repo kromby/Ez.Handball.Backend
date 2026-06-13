@@ -49,6 +49,10 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
                 .OrderBy(m => m.Date)
                 .ToList();
 
+            // A GroupBy group is never empty, but guard defensively so Min can't throw if the
+            // grouping source ever changes.
+            if (members.Count == 0) continue;
+
             var derived = members.Min(m => m.Date) - offset;
             var pinned = await _locks.GetPinnedDeadlineAsync(config.TournamentId, roundLabel, ct);
             var deadline = pinned ?? derived;

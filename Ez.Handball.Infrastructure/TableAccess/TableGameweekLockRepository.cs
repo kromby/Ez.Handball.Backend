@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Shared.Entities;
@@ -30,16 +31,21 @@ internal sealed class TableGameweekLockRepository : IGameweekLockRepository
         var table = _client.GetTableClient(Tables.GameweekLocks);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
 
-        // First-write-wins: only pin if no row exists yet, so a passed deadline can't shift later.
-        var existing = await GetPinnedDeadlineAsync(tournamentId, roundLabel, ct);
-        if (existing is not null) return;
-
-        await table.UpsertEntityAsync(new GameweekLockEntity
+        // Atomic first-write-wins: AddEntity fails with 409 if the row already exists, so a passed
+        // deadline can never be overwritten — even under a concurrent pin of the same gameweek.
+        try
         {
-            PartitionKey = tournamentId,
-            RowKey = roundLabel,
-            PinnedDeadline = deadline,
-            LockedAt = lockedAt
-        }, TableUpdateMode.Replace, ct);
+            await table.AddEntityAsync(new GameweekLockEntity
+            {
+                PartitionKey = tournamentId,
+                RowKey = roundLabel,
+                PinnedDeadline = deadline,
+                LockedAt = lockedAt
+            }, ct);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 409)
+        {
+            // Already pinned by an earlier/concurrent write — first write wins, nothing to do.
+        }
     }
 }
