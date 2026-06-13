@@ -22,5 +22,7 @@ public class RoundOrderTests
         Assert.True(RoundOrder.Compare("1", "2") < 0);
         Assert.True(RoundOrder.Compare("10", "Lokaúrslit") < 0); // numeric before text
         Assert.Equal(0, RoundOrder.Compare("3", "3"));
+        Assert.True(RoundOrder.Compare("2", "1") > 0);
+        Assert.True(RoundOrder.Compare("Lokaúrslit", "10") > 0); // text after numeric
     }
 }
