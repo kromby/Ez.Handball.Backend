@@ -170,6 +170,8 @@ builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 builder.Services.AddScoped<IGameweekCalendarService, GameweekCalendarService>();
 builder.Services.AddScoped<IGetGameweeksUseCase, GetGameweeksUseCase>();
 builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase>();
+builder.Services.AddScoped<IGameweekScoringService, GameweekScoringService>();
+builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 
 var app = builder.Build();
 
