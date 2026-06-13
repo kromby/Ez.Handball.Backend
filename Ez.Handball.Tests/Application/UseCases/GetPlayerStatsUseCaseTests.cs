@@ -17,7 +17,7 @@ public class GetPlayerStatsUseCaseTests
         new(id, "Name", null, null, null, "team", "club", "Club", "karlar", "Back", false);
 
     private static PlayerStat Stat(string season, string tournamentId, int goals) =>
-        new("match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
+        new("p1", "match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
 
     private static PlayerStatsQuery Query(
         string? season = null, string? tournamentId = null,

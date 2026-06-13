@@ -43,7 +43,7 @@ public static class LineupEndpoints
         });
 
         group.MapPut("", async (
-            SetLineupRequest req, HttpContext http, ISetLineupUseCase uc, CancellationToken ct) =>
+            SetLineupRequest req, HttpContext http, ISetLineupUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
 
@@ -55,12 +55,16 @@ public static class LineupEndpoints
                 return Results.BadRequest(new { error = "malformed_body" });
 
             var result = await uc.ExecuteAsync(userId, lineup, req.Season, req.TournamentId, req.RuleSetVersion, ct);
+            if (result is SetLineupResult.Committed c)
+            {
+                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                return Results.Ok(new { lineup = LineupBody(c.View), gameweek });
+            }
             return result switch
             {
                 SetLineupResult.NoTeam          => Results.Json(new { error = "no_team" }, statusCode: StatusCodes.Status409Conflict),
                 SetLineupResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
                 SetLineupResult.Rejected r      => Results.Json(new { violations = r.Violations.Select(v => new { code = v.Code, message = v.Message }) }, statusCode: StatusCodes.Status422UnprocessableEntity),
-                SetLineupResult.Committed c     => Results.Ok(LineupBody(c.View)),
                 _                               => Results.Problem()
             };
         });

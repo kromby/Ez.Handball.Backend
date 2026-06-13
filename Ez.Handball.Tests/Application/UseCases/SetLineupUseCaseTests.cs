@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 using Moq;
@@ -11,8 +12,15 @@ public class SetLineupUseCaseTests
     private readonly Mock<IGetSquadUseCase> _squad = new();
     private readonly Mock<ILineupRepository> _lineup = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
+    private readonly Mock<IGameweekSnapshotGuard> _guard = new();
 
-    private SetLineupUseCase Sut() => new(_teams.Object, _squad.Object, _lineup.Object, _constraints.Object);
+    public SetLineupUseCaseTests()
+    {
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new SnapshotGuardResult(null, false));
+    }
+
+    private SetLineupUseCase Sut() => new(_teams.Object, _squad.Object, _lineup.Object, _constraints.Object, _guard.Object);
 
     private static LineupConstraints C() => new(1, 7,
         new Dictionary<string, (int, int)> { ["GK"] = (1, 1) }, 2, true, false);

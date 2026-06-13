@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 using Moq;
@@ -13,11 +14,18 @@ public class BuyPlayerUseCaseTests
     private readonly Mock<IGameTeamRepository> _teams = new();
     private readonly Mock<IGameRosterRepository> _roster = new();
     private readonly Mock<IGameBudgetRepository> _budget = new();
+    private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
+
+    public BuyPlayerUseCaseTests()
+    {
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new SnapshotGuardResult(null, false));
+    }
 
     private BuyPlayerUseCase Sut() => new(
         _decision.Object, _squadView.Object, _players.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object);
 
     private static Player AnyPlayer(string id, string position) =>
         new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
@@ -154,5 +162,20 @@ public class BuyPlayerUseCaseTests
             .ReturnsAsync(GetSquadResult.RuleSetNotFound.Instance);
 
         Assert.IsType<BuyPlayerResult.RuleSetNotFound>(await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RunsSnapshotGuardBeforeBuying()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); DecisionReturns(Allowed("p-1", 42_000_000)); SquadViewReturns();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+        _budget.Setup(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.Added);
+
+        await Sut().ExecuteAsync("u-1", "p-1", new BuyPlayerContext(null, null, null), default);
+
+        _guard.Verify(g => g.EnsureSnapshotsAsync(
+            GameTeamId.For("u-1", GameFlavor.Fantasy), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

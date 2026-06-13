@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 using Moq;
@@ -13,11 +14,18 @@ public class SellPlayerUseCaseTests
     private readonly Mock<IGameTeamRepository> _teams = new();
     private readonly Mock<IGameRosterRepository> _roster = new();
     private readonly Mock<IGameBudgetRepository> _budget = new();
+    private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
+
+    public SellPlayerUseCaseTests()
+    {
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new SnapshotGuardResult(null, false));
+    }
 
     private SellPlayerUseCase Sut() => new(
         _squadView.Object, _price.Object, _constraints.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);

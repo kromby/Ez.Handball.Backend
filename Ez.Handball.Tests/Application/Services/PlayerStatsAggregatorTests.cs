@@ -18,7 +18,7 @@ public class PlayerStatsAggregatorTests
     }
 
     private static PlayerStat Stat(string season, string tournamentId, int goals) =>
-        new("match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
+        new("p1", "match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
 
     private void SetupTournamentsBySeason(string season, params Tournament[] rows) =>
         _tournaments.Setup(r => r.ListBySeasonAsync(season, It.IsAny<CancellationToken>()))

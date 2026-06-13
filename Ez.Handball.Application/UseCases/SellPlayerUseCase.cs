@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.UseCases;
@@ -27,11 +28,12 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
     private readonly IGameRosterRepository _roster;
     private readonly IGameBudgetRepository _budget;
     private readonly Func<DateTimeOffset> _now;
+    private readonly IGameweekSnapshotGuard _guard;
 
     public SellPlayerUseCase(
         IGetSquadUseCase squadView, IPlayerPriceService price, ISquadConstraintsRepository constraints,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard)
     {
         _squadView = squadView;
         _price = price;
@@ -40,6 +42,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         _roster = roster;
         _budget = budget;
         _now = now;
+        _guard = guard;
     }
 
     public async Task<SellPlayerResult> ExecuteAsync(
@@ -49,6 +52,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
             return SellPlayerResult.NoTeam.Instance;
 
         var teamId = GameTeamId.For(userId, GameFlavor.Fantasy);
+        await _guard.EnsureSnapshotsAsync(teamId, null, ct);
         var entry = await _roster.GetAsync(teamId, playerId, ct);
         if (entry is null || entry.DeletedAt is not null)
             return SellPlayerResult.NotInSquad.Instance;
