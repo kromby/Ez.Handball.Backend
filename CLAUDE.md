@@ -151,3 +151,31 @@ clobbers manual edits. Curate further by editing the `Retired` column directly i
 the `Players` table — use `Edm.Boolean`, not String (a String value causes a 500
 on read). `POST /api/reparse` preserves all `Retired` values because the Players
 upsert uses `Merge`.
+
+### Gameweek engine (Backend#60)
+
+The fantasy gameweek engine derives the gameweek calendar on demand from the
+`Matches` table — gameweeks are the configured tournament's HSÍ rounds, not a
+materialized entity. Only three things are persisted: a pinned deadline per
+gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
+(`GameweekLineups`), and the settled per-(team, gameweek) score (`GameweekScores`).
+
+- **Seed config per environment:** `POST /api/seed/gameweek-config` writes the
+  `fantasy-gameweek-v1` Config group (`tournamentId`, `lockOffsetHours`,
+  `scoringRuleSetVersion`, `lineupConstraintsVersion`). The `tournamentId` and
+  `lockOffsetHours` are owner-tunable per season; nothing works until this is seeded.
+- **Locking is lazy** — a gameweek's deadline = earliest member throw-off −
+  `lockOffsetHours`, pinned in `GameweekLocks` the first time it is observed as
+  passed (so a later fixture reschedule can't move a passed deadline). The
+  snapshot guard runs before every buy/sell/lineup mutation and freezes the live
+  lineup into `GameweekLineups` for any locked-but-unsnapshotted gameweek.
+- **Settlement is idempotent/recomputable:** `POST /api/gameweeks/settle?round={label}`
+  (authed; optional `&teamId=` else the caller's team). Re-running absorbs stat
+  corrections and late-played (postponed) matches via `TableUpdateMode.Replace`.
+  Returns `not_ready` (409) until every member match is final.
+- **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
+  authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
+- **V0 limitation:** settlement runs per team. There is no all-teams fan-out yet —
+  the ingestion `TriggerSettlement` blob function is a logging stub establishing the
+  trigger point; the per-team POST loop is a follow-up. Scoring point values come
+  from the configured `ScoringRuleSet` version (#27 calibration plugs in there).
