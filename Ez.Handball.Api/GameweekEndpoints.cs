@@ -1,3 +1,4 @@
+using Ez.Handball.Api.Auth;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 
@@ -36,6 +37,52 @@ public static class GameweekEndpoints
                 _ => Results.Problem()
             };
         });
+
+        app.MapGet("/api/users/me/gameweeks", async (
+            HttpContext http, IGetMyGameweekScoresUseCase uc, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(userId, ct);
+            return Results.Ok(new
+            {
+                runningTotal = result.RunningTotal,
+                gameweeks = result.Gameweeks.Select(g => new
+                {
+                    roundLabel = g.RoundLabel,
+                    points = g.Points,
+                    captainPlayerId = g.CaptainPlayerId,
+                    breakdown = g.Breakdown
+                })
+            });
+        }).RequireAuthorization();
+
+        app.MapPost("/api/gameweeks/settle", async (
+            string round, string? teamId, HttpContext http, int? version,
+            ISettleGameweekUseCase uc, CancellationToken ct) =>
+        {
+            // Authed: the caller settles their own team unless an explicit teamId is given (admin/ingestion).
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            if (string.IsNullOrWhiteSpace(round))
+                return Results.BadRequest(new { error = "invalid_round" });
+
+            var team = string.IsNullOrWhiteSpace(teamId) ? GameTeamId.For(userId, GameFlavor.Fantasy) : teamId;
+            var result = await uc.ExecuteAsync(userId, team, round, version, ct);
+            return result switch
+            {
+                SettleGameweekResult.ConfigMissing      => Results.BadRequest(new { error = "gameweek_config_missing" }),
+                SettleGameweekResult.NotFound           => Results.NotFound(new { error = "round_not_found" }),
+                SettleGameweekResult.RuleSetMissing     => Results.BadRequest(new { error = "rule_set_missing" }),
+                SettleGameweekResult.NoSnapshotPossible => Results.Json(new { error = "no_lineup" }, statusCode: StatusCodes.Status409Conflict),
+                SettleGameweekResult.NotReady           => Results.Json(new { error = "not_ready" }, statusCode: StatusCodes.Status409Conflict),
+                SettleGameweekResult.Settled s          => Results.Ok(new { round = s.Score.RoundLabel, points = s.Score.Points }),
+                _                                       => Results.Problem()
+            };
+        }).RequireAuthorization();
     }
 
     internal static object Body(Gameweek g) => new
