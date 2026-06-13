@@ -45,16 +45,13 @@ public static class ManagerStandingsRanker
                 names);
 
         var ordered = Order(totals.Keys, totals, names);
+        var currentRanks = AssignRanks(ordered, totals);
 
         var entries = new List<ManagerStanding>(ordered.Count);
-        int rank = 0, seen = 0;
-        double? lastTotal = null;
         foreach (var teamId in ordered)
         {
-            seen++;
+            var rank = currentRanks[teamId];
             var total = totals[teamId];
-            if (lastTotal is null || total != lastTotal) rank = seen; // shared rank on ties
-            lastTotal = total;
 
             int? prevRank = previousRanks.TryGetValue(teamId, out var pr) ? pr : null;
             int? delta = prevRank is null ? null : prevRank - rank;
@@ -78,13 +75,25 @@ public static class ManagerStandingsRanker
         IReadOnlyDictionary<string, double> totals,
         IReadOnlyDictionary<string, (string Name, string Color)> names)
     {
-        var ranks = new Dictionary<string, int>(totals.Count);
+        var ordered = Order(totals.Keys, totals, names);
+        return AssignRanks(ordered, totals);
+    }
+
+    // Assigns FPL-style shared ranks to an already-ordered team list:
+    // equal totals share a rank, and the next distinct total jumps to its ordinal position
+    // (two tied for 1st → next is 3rd).
+    private static Dictionary<string, int> AssignRanks(
+        IReadOnlyList<string> ordered,
+        IReadOnlyDictionary<string, double> totals)
+    {
+        var ranks = new Dictionary<string, int>(ordered.Count);
         int rank = 0, seen = 0;
         double? lastTotal = null;
-        foreach (var teamId in Order(totals.Keys, totals, names))
+        foreach (var teamId in ordered)
         {
             seen++;
             var total = totals[teamId];
+            // Totals are summed identically per team, so exact double comparison is intentional here.
             if (lastTotal is null || total != lastTotal) rank = seen;
             lastTotal = total;
             ranks[teamId] = rank;
