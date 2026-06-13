@@ -39,6 +39,8 @@ public static class InfrastructureRegistration
         services.AddScoped<INotificationChannel, LoggingNotificationChannel>();
         services.AddScoped<IGameweekConfigRepository, TableGameweekConfigRepository>();
         services.AddScoped<IGameweekLockRepository, TableGameweekLockRepository>();
+        services.AddScoped<IGameweekLineupRepository, TableGameweekLineupRepository>();
+        services.AddScoped<IGameweekScoreRepository, TableGameweekScoreRepository>();
         return services;
     }
 }
