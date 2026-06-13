@@ -173,6 +173,7 @@ builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase
 builder.Services.AddScoped<IGameweekScoringService, GameweekScoringService>();
 builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCase>();
+builder.Services.AddScoped<IGameweekSnapshotGuard, GameweekSnapshotGuard>();
 
 var app = builder.Build();
 
