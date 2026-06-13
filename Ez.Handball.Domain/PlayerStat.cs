@@ -1,6 +1,7 @@
 namespace Ez.Handball.Domain;
 
 public sealed record PlayerStat(
+    string PlayerId,
     string MatchId,
     string TournamentId,
     string? TournamentName,

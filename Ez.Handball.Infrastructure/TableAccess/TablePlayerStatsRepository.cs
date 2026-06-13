@@ -53,6 +53,7 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
             }
 
             result.Add(new PlayerStat(
+                PlayerId: s.RowKey,
                 MatchId: s.PartitionKey,
                 TournamentId: s.TournamentId,
                 TournamentName: name,
@@ -65,6 +66,28 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 RedCards: s.RedCards));
         }
 
+        return result;
+    }
+
+    public async Task<IReadOnlyList<PlayerStat>> GetByMatchAsync(string matchId, CancellationToken ct)
+    {
+        var result = new List<PlayerStat>();
+        await foreach (var s in _query.QueryAsync<PlayerStatEntity>(
+                           Tables.PlayerStats, $"PartitionKey eq '{ODataFilter.Escape(matchId)}'", ct))
+        {
+            result.Add(new PlayerStat(
+                PlayerId: s.RowKey,
+                MatchId: s.PartitionKey,
+                TournamentId: s.TournamentId,
+                TournamentName: null,
+                Season: s.Season,
+                TeamId: s.TeamId,
+                ClubName: s.ClubName,
+                Goals: s.Goals,
+                YellowCards: s.YellowCards,
+                TwoMinuteSuspensions: s.TwoMinuteSuspensions,
+                RedCards: s.RedCards));
+        }
         return result;
     }
 }
