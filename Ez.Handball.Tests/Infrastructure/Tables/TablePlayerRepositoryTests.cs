@@ -34,6 +34,65 @@ public class TablePlayerRepositoryTests
         await Task.CompletedTask;
     }
 
+    private void SetupClubRows(string clubId, params PlayerEntity[] rows)
+    {
+        _query
+            .Setup(q => q.QueryAsync<PlayerEntity>(
+                Ez.Handball.Infrastructure.Tables.Players, $"ClubId eq '{clubId}'", default))
+            .Returns(ToAsync(rows));
+    }
+
+    private static PlayerEntity ClubPlayer(string id, string name, string clubId,
+        string position = "VS", string? jersey = null, bool? retired = null) =>
+        new()
+        {
+            PartitionKey = $"{clubId}-karlar", RowKey = id, Name = name,
+            Position = position, JerseyNumber = jersey, Gender = "karlar",
+            ClubId = clubId, ClubName = "KR", Retired = retired
+        };
+
+    [Fact]
+    public async Task ListByClubAsync_ReturnsNonRetiredPlayers()
+    {
+        SetupClubRows("385",
+            ClubPlayer("1", "Active A", "385", retired: null),
+            ClubPlayer("2", "Active B", "385", retired: false),
+            ClubPlayer("3", "Retired C", "385", retired: true));
+
+        var result = await CreateSut().ListByClubAsync("385", default);
+
+        Assert.Equal(new[] { "1", "2" }, result.Select(p => p.PlayerId).OrderBy(x => x).ToArray());
+    }
+
+    [Fact]
+    public async Task ListByClubAsync_MapsFieldsIncludingAge()
+    {
+        SetupClubRows("385", new PlayerEntity
+        {
+            PartitionKey = "385-karlar", RowKey = "12", Name = "Aron",
+            JerseyNumber = "23", Position = "VS", Gender = "karlar", ClubId = "385",
+            ClubName = "KR", DateOfBirth = new DateTimeOffset(1990, 7, 19, 0, 0, 0, TimeSpan.Zero)
+        });
+
+        var result = await CreateSut(today: new DateOnly(2026, 5, 22)).ListByClubAsync("385", default);
+
+        var p = Assert.Single(result);
+        Assert.Equal("12", p.PlayerId);
+        Assert.Equal("Aron", p.Name);
+        Assert.Equal("23", p.JerseyNumber);
+        Assert.Equal("VS", p.Position);
+        Assert.Equal(35, p.Age);
+        Assert.Equal("385", p.ClubId);
+    }
+
+    [Fact]
+    public async Task ListByClubAsync_NoRows_ReturnsEmpty()
+    {
+        SetupClubRows("999");
+
+        Assert.Empty(await CreateSut().ListByClubAsync("999", default));
+    }
+
     [Fact]
     public async Task GetByIdAsync_NoMatch_ReturnsNull()
     {
