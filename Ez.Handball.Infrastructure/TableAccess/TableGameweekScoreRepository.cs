@@ -45,4 +45,55 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
         }
         return result;
     }
+
+    private static readonly string[] SummaryColumns = { "PartitionKey", "RowKey", "Points" };
+
+    private const int TeamFilterBatchSize = 15;
+
+    // Builds one "PartitionKey eq '…' or …" filter per batch of teamIds, so no single
+    // OData filter approaches Azure Table Storage's URL/length limit on large team sets.
+    internal static IReadOnlyList<string> BuildTeamPartitionFilters(
+        IReadOnlyCollection<string> teamIds, int batchSize)
+    {
+        var filters = new List<string>();
+        foreach (var batch in teamIds.Chunk(batchSize))
+        {
+            filters.Add(string.Join(" or ", batch.Select(id => $"PartitionKey eq '{ODataFilter.Escape(id)}'")));
+        }
+        return filters;
+    }
+
+    public async Task<IReadOnlyList<GameweekScoreSummary>> ListAllSummariesAsync(CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameweekScores);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        var result = new List<GameweekScoreSummary>();
+        await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
+                           filter: (string?)null, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+        {
+            result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+        }
+        return result;
+    }
+
+    public async Task<IReadOnlyList<GameweekScoreSummary>> ListSummariesByTeamsAsync(
+        IReadOnlyCollection<string> teamIds, CancellationToken ct)
+    {
+        if (teamIds.Count == 0) return Array.Empty<GameweekScoreSummary>();
+
+        var table = _client.GetTableClient(Tables.GameweekScores);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        var result = new List<GameweekScoreSummary>();
+        foreach (var filter in BuildTeamPartitionFilters(teamIds, TeamFilterBatchSize))
+        {
+            await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
+                               filter: filter, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+            {
+                result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+            }
+        }
+        return result;
+    }
 }

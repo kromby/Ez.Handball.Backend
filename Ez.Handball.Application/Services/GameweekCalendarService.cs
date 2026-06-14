@@ -34,8 +34,7 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
 
         var ordered = data.Matches
             .GroupBy(m => m.Round)
-            .OrderBy(g => RoundSortKey(g.Key).Bucket)
-            .ThenBy(g => RoundSortKey(g.Key).Value)
+            .OrderBy(g => RoundOrder.Key(g.Key))
             .ThenBy(g => g.Key, StringComparer.Ordinal)
             .ToList();
 
@@ -76,8 +75,4 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
         if (finalCount < members.Count) return GameweekStatus.InPlay;
         return GameweekStatus.Settled;
     }
-
-    // Numeric rounds first (ascending), text rounds (playoffs/finals) last — mirrors GetRoundsUseCase.
-    private static (int Bucket, int Value) RoundSortKey(string round)
-        => int.TryParse(round, out var n) ? (0, n) : (1, 0);
 }

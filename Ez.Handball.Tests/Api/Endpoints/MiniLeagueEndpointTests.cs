@@ -22,6 +22,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
     {
         public Mock<ICreateMiniLeagueUseCase> Create { get; } = new();
         public Mock<IGetMiniLeagueUseCase> Get { get; } = new();
+        public Mock<IGetMiniLeagueStandingsUseCase> Standings { get; } = new();
 
         static Factory()
         {
@@ -46,6 +47,8 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetMiniLeagueUseCase)));
                 services.AddSingleton(Create.Object);
                 services.AddSingleton(Get.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetMiniLeagueStandingsUseCase)));
+                services.AddSingleton(Standings.Object);
             });
             return base.CreateHost(builder);
         }
@@ -61,6 +64,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         _factory = factory;
         _factory.Create.Reset();
         _factory.Get.Reset();
+        _factory.Standings.Reset();
         _client = factory.CreateClient();
     }
 
@@ -192,5 +196,59 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("league_not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Standings_WithoutToken_Returns401()
+    {
+        var resp = await _client.GetAsync("/api/mini-leagues/lg-1/standings");
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Standings_MissingLeague_Returns404()
+    {
+        _factory.Standings
+            .Setup(u => u.ExecuteAsync("missing", It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetMiniLeagueStandingsResult.NotFound.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/missing/standings", token));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("league_not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Standings_HappyPath_ReturnsRankedBody()
+    {
+        _factory.Standings
+            .Setup(u => u.ExecuteAsync("lg-1", 0, 50, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetMiniLeagueStandingsResult.Found(new ManagerStandings(
+                1, 0, 50, "1", new[]
+                {
+                    new ManagerStanding(1, null, null, "a:fantasy", "Alpha", "#abcdef", 70, 70),
+                })));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1/standings", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, body.GetProperty("total").GetInt32());
+        Assert.Equal("Alpha", body.GetProperty("entries")[0].GetProperty("teamName").GetString());
+    }
+
+    [Fact]
+    public async Task Standings_NegativeOffset_Returns400()
+    {
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1/standings?offset=-1", token));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_pagination", body.GetProperty("error").GetString());
     }
 }

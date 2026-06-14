@@ -173,6 +173,8 @@ builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase
 builder.Services.AddScoped<IGameweekScoringService, GameweekScoringService>();
 builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCase>();
+builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
+builder.Services.AddScoped<IGetMiniLeagueStandingsUseCase, GetMiniLeagueStandingsUseCase>();
 builder.Services.AddScoped<IGameweekSnapshotGuard, GameweekSnapshotGuard>();
 
 var app = builder.Build();
@@ -366,6 +368,21 @@ app.MapGet("/api/leaderboard", async Task<IResult> (
     var request = new LeaderboardRequest(
         parsedMetric, season, tournamentId, competitionId, parsedType, parsedGender);
     var result = await uc.ExecuteAsync(request, off, lim, ct);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/managers/leaderboard", async Task<IResult> (
+    int? offset,
+    int? limit,
+    IGetManagerStandingsUseCase uc,
+    CancellationToken ct) =>
+{
+    var off = offset ?? 0;
+    var lim = limit ?? 50;
+    if (off < 0 || lim < 1 || lim > 200)
+        return Results.BadRequest(new { error = "invalid_pagination" });
+
+    var result = await uc.ExecuteAsync(off, lim, ct);
     return Results.Ok(result);
 });
 

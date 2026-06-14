@@ -46,5 +46,22 @@ public static class MiniLeagueEndpoints
                 _                              => Results.Problem()
             };
         });
+
+        group.MapGet("/{id}/standings", async (
+            string id, int? offset, int? limit, IGetMiniLeagueStandingsUseCase uc, CancellationToken ct) =>
+        {
+            var off = offset ?? 0;
+            var lim = limit ?? 50;
+            if (off < 0 || lim < 1 || lim > 200)
+                return Results.BadRequest(new { error = "invalid_pagination" });
+
+            var result = await uc.ExecuteAsync(id, off, lim, ct);
+            return result switch
+            {
+                GetMiniLeagueStandingsResult.Found f  => Results.Ok(f.Standings),
+                GetMiniLeagueStandingsResult.NotFound => Results.NotFound(new { error = "league_not_found" }),
+                _                                     => Results.Problem()
+            };
+        });
     }
 }
