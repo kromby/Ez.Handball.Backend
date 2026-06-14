@@ -19,6 +19,12 @@ public class TableClubRepositoryTests
                 Ez.Handball.Infrastructure.Tables.Clubs, "PartitionKey eq 'club'", default))
               .Returns(ToAsync(rows));
 
+    private void SetupClubById(string clubId, params ClubEntity[] rows) =>
+        _query.Setup(q => q.QueryAsync<ClubEntity>(
+                Ez.Handball.Infrastructure.Tables.Clubs,
+                $"PartitionKey eq 'club' and RowKey eq '{clubId}'", default))
+              .Returns(ToAsync(rows));
+
     private static ClubEntity Club(string clubId, string name, string? logoSrc = null) =>
         new() { PartitionKey = "club", RowKey = clubId, Name = name, LogoSrc = logoSrc };
 
@@ -92,5 +98,37 @@ public class TableClubRepositoryTests
         SetupClubs();
 
         Assert.Empty(await CreateSut().ListAsync(default));
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Exists_MapsFields()
+    {
+        SetupClubById("385", Club("385", "KR", "https://logo/kr.png"));
+
+        var club = await CreateSut().GetByIdAsync("385", default);
+
+        Assert.NotNull(club);
+        Assert.Equal("385", club!.ClubId);
+        Assert.Equal("KR", club.Name);
+        Assert.Equal("https://logo/kr.png", club.LogoUrl);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_MissingLogo_LogoUrlIsNull()
+    {
+        SetupClubById("1", Club("1", "Fram", logoSrc: ""));
+
+        var club = await CreateSut().GetByIdAsync("1", default);
+
+        Assert.NotNull(club);
+        Assert.Null(club!.LogoUrl);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NoRow_ReturnsNull()
+    {
+        SetupClubById("999");
+
+        Assert.Null(await CreateSut().GetByIdAsync("999", default));
     }
 }
