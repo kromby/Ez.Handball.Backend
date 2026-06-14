@@ -13,7 +13,7 @@ public interface IGameweekScoreRepository
     Task<IReadOnlyList<GameweekScoreSummary>> ListAllSummariesAsync(CancellationToken ct);
 
     // Settled scores for a known set of teams (slim projection). Empty set → empty result.
-    // Used by the mini-league-scoped standings.
+    // Used by the mini-league-scoped standings. Intended for bounded team sets (not unbounded scans).
     Task<IReadOnlyList<GameweekScoreSummary>> ListSummariesByTeamsAsync(
         IReadOnlyCollection<string> teamIds, CancellationToken ct);
 }

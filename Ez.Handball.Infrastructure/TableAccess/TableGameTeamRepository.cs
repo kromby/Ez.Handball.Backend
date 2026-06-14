@@ -57,7 +57,7 @@ internal sealed class TableGameTeamRepository : IGameTeamRepository
 
         var result = new List<GameTeam>();
         await foreach (var e in table.QueryAsync<GameTeamEntity>(
-                           filter: $"RowKey eq '{Flavor(flavor)}'", cancellationToken: ct))
+                           filter: $"RowKey eq '{ODataFilter.Escape(Flavor(flavor))}'", cancellationToken: ct))
         {
             result.Add(new GameTeam(e.TeamId, e.Name, e.Color, e.CreatedAt));
         }
