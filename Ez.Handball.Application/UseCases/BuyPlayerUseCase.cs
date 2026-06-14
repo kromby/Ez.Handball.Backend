@@ -31,11 +31,12 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
     private readonly IGameBudgetRepository _budget;
     private readonly Func<DateTimeOffset> _now;
     private readonly IGameweekSnapshotGuard _guard;
+    private readonly ITransferLedgerRecorder _ledger;
 
     public BuyPlayerUseCase(
         IGetBuyDecisionUseCase decision, IGetSquadUseCase squadView, IPlayerRepository players,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger)
     {
         _decision = decision;
         _squadView = squadView;
@@ -45,6 +46,7 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         _budget = budget;
         _now = now;
         _guard = guard;
+        _ledger = ledger;
     }
 
     public async Task<BuyPlayerResult> ExecuteAsync(
@@ -95,6 +97,9 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
             await _budget.TryCreditAsync(teamId, cost, now, ct); // compensate the deduction
             return BuyPlayerResult.Duplicate.Instance;
         }
+
+        await _ledger.RecordAsync(
+            new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Buy, cost, context.Season, now), ct);
 
         var view = await _squadView.ExecuteAsync(userId, context.Season, context.TournamentId, context.RuleSetVersion, ct);
         return view is GetSquadResult.Found f

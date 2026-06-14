@@ -15,6 +15,7 @@ public class BuyPlayerUseCaseTests
     private readonly Mock<IGameRosterRepository> _roster = new();
     private readonly Mock<IGameBudgetRepository> _budget = new();
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
+    private readonly Mock<ITransferLedgerRecorder> _ledger = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public BuyPlayerUseCaseTests()
@@ -25,7 +26,7 @@ public class BuyPlayerUseCaseTests
 
     private BuyPlayerUseCase Sut() => new(
         _decision.Object, _squadView.Object, _players.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object);
 
     private static Player AnyPlayer(string id, string position) =>
         new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
@@ -64,6 +65,34 @@ public class BuyPlayerUseCaseTests
         Assert.IsType<BuyPlayerResult.Committed>(result);
         _budget.Verify(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
         _roster.Verify(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Allowed_RecordsBuyInLedger()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); DecisionReturns(Allowed("p-1", 42_000_000)); SquadViewReturns();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+        _budget.Setup(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.Added);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _ledger.Verify(l => l.RecordAsync(
+            It.Is<TransferEntry>(e => e.UserId == "u-1" && e.PlayerId == "p-1"
+                && e.Type == TransferType.Buy && e.Cost == 42_000_000 && e.CreatedAt == Now),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectedByRule_DoesNotRecordInLedger()
+    {
+        TeamExists(); PlayerExists("p-1", "VS");
+        DecisionReturns(Rejected("p-1", 42_000_000, new BuyRuleViolation("squad_full", "Squad is full")));
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _ledger.Verify(l => l.RecordAsync(It.IsAny<TransferEntry>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

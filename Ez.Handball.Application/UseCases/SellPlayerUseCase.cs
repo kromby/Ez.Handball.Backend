@@ -29,11 +29,12 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
     private readonly IGameBudgetRepository _budget;
     private readonly Func<DateTimeOffset> _now;
     private readonly IGameweekSnapshotGuard _guard;
+    private readonly ITransferLedgerRecorder _ledger;
 
     public SellPlayerUseCase(
         IGetSquadUseCase squadView, IPlayerPriceService price, ISquadConstraintsRepository constraints,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger)
     {
         _squadView = squadView;
         _price = price;
@@ -43,6 +44,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         _budget = budget;
         _now = now;
         _guard = guard;
+        _ledger = ledger;
     }
 
     public async Task<SellPlayerResult> ExecuteAsync(
@@ -71,6 +73,9 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         var now = _now();
         await _roster.SoftDeleteAsync(teamId, playerId, now, ct);
         await _budget.TryCreditAsync(teamId, credit, now, ct);
+
+        await _ledger.RecordAsync(
+            new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Sell, credit, context.Season, now), ct);
 
         var view = await _squadView.ExecuteAsync(userId, context.Season, context.TournamentId, context.RuleSetVersion, ct);
         return view is GetSquadResult.Found f
