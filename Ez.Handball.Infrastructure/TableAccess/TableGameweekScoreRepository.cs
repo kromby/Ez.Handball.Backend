@@ -45,4 +45,38 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
         }
         return result;
     }
+
+    private static readonly string[] SummaryColumns = { "PartitionKey", "RowKey", "Points" };
+
+    public async Task<IReadOnlyList<GameweekScoreSummary>> ListAllSummariesAsync(CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameweekScores);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        var result = new List<GameweekScoreSummary>();
+        await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
+                           filter: (string?)null, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+        {
+            result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+        }
+        return result;
+    }
+
+    public async Task<IReadOnlyList<GameweekScoreSummary>> ListSummariesByTeamsAsync(
+        IReadOnlyCollection<string> teamIds, CancellationToken ct)
+    {
+        if (teamIds.Count == 0) return Array.Empty<GameweekScoreSummary>();
+
+        var table = _client.GetTableClient(Tables.GameweekScores);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        var filter = string.Join(" or ", teamIds.Select(id => $"PartitionKey eq '{ODataFilter.Escape(id)}'"));
+        var result = new List<GameweekScoreSummary>();
+        await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
+                           filter: filter, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+        {
+            result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+        }
+        return result;
+    }
 }

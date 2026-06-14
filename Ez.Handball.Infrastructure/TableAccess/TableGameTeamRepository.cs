@@ -50,6 +50,20 @@ internal sealed class TableGameTeamRepository : IGameTeamRepository
         await table.UpsertEntityAsync(row, TableUpdateMode.Replace, ct);
     }
 
+    public async Task<IReadOnlyList<GameTeam>> ListByFlavorAsync(GameFlavor flavor, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameTeams);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        var result = new List<GameTeam>();
+        await foreach (var e in table.QueryAsync<GameTeamEntity>(
+                           filter: $"RowKey eq '{Flavor(flavor)}'", cancellationToken: ct))
+        {
+            result.Add(new GameTeam(e.TeamId, e.Name, e.Color, e.CreatedAt));
+        }
+        return result;
+    }
+
     private async Task<GameTeamEntity?> ReadAsync(string userId, GameFlavor flavor, CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.GameTeams);

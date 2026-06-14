@@ -17,4 +17,8 @@ public interface IGameTeamRepository
 
     // Update only the team name (preserves color + createdAt).
     Task RenameAsync(string userId, GameFlavor flavor, string newName, CancellationToken ct);
+
+    // All team headers for a flavor (one row per manager). Used to resolve manager
+    // names/colors for the standings without N point reads.
+    Task<IReadOnlyList<GameTeam>> ListByFlavorAsync(GameFlavor flavor, CancellationToken ct);
 }
