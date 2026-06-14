@@ -15,6 +15,7 @@ public class SellPlayerUseCaseTests
     private readonly Mock<IGameRosterRepository> _roster = new();
     private readonly Mock<IGameBudgetRepository> _budget = new();
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
+    private readonly Mock<ITransferLedgerRecorder> _ledger = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public SellPlayerUseCaseTests()
@@ -25,7 +26,7 @@ public class SellPlayerUseCaseTests
 
     private SellPlayerUseCase Sut() => new(
         _squadView.Object, _price.Object, _constraints.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
@@ -53,6 +54,31 @@ public class SellPlayerUseCaseTests
         _roster.Verify(r => r.SoftDeleteAsync("u-1:fantasy", "p-1", Now, It.IsAny<CancellationToken>()), Times.Once);
         // 40M + floor(10M * 0.5) = 45M
         _budget.Verify(b => b.TryCreditAsync("u-1:fantasy", 45_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sold_RecordsSellInLedger()
+    {
+        TeamExists(); Owns("p-1", 40_000_000); Constraints(0.5); ViewReturns();
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 50_000_000));
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _ledger.Verify(l => l.RecordAsync(
+            It.Is<TransferEntry>(e => e.UserId == "u-1" && e.PlayerId == "p-1"
+                && e.Type == TransferType.Sell && e.Cost == 45_000_000 && e.CreatedAt == Now),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task NotInSquad_DoesNotRecordInLedger()
+    {
+        TeamExists();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _ledger.Verify(l => l.RecordAsync(It.IsAny<TransferEntry>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
