@@ -48,6 +48,21 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
 
     private static readonly string[] SummaryColumns = { "PartitionKey", "RowKey", "Points" };
 
+    private const int TeamFilterBatchSize = 15;
+
+    // Builds one "PartitionKey eq '…' or …" filter per batch of teamIds, so no single
+    // OData filter approaches Azure Table Storage's URL/length limit on large team sets.
+    internal static IReadOnlyList<string> BuildTeamPartitionFilters(
+        IReadOnlyCollection<string> teamIds, int batchSize)
+    {
+        var filters = new List<string>();
+        foreach (var batch in teamIds.Chunk(batchSize))
+        {
+            filters.Add(string.Join(" or ", batch.Select(id => $"PartitionKey eq '{ODataFilter.Escape(id)}'")));
+        }
+        return filters;
+    }
+
     public async Task<IReadOnlyList<GameweekScoreSummary>> ListAllSummariesAsync(CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.GameweekScores);
@@ -70,12 +85,14 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
         var table = _client.GetTableClient(Tables.GameweekScores);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
 
-        var filter = string.Join(" or ", teamIds.Select(id => $"PartitionKey eq '{ODataFilter.Escape(id)}'"));
         var result = new List<GameweekScoreSummary>();
-        await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
-                           filter: filter, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+        foreach (var filter in BuildTeamPartitionFilters(teamIds, TeamFilterBatchSize))
         {
-            result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+            await foreach (var e in table.QueryAsync<GameweekScoreEntity>(
+                               filter: filter, maxPerPage: null, select: SummaryColumns, cancellationToken: ct))
+            {
+                result.Add(new GameweekScoreSummary(e.PartitionKey, e.RowKey, e.Points));
+            }
         }
         return result;
     }

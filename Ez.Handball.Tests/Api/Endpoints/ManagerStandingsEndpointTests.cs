@@ -71,6 +71,8 @@ public class ManagerStandingsEndpointTests : IClassFixture<ManagerStandingsEndpo
     {
         var resp = await _client.GetAsync("/api/managers/leaderboard?limit=201");
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_pagination", body.GetProperty("error").GetString());
     }
 
     [Fact]
