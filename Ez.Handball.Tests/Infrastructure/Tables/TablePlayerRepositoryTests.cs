@@ -93,6 +93,18 @@ public class TablePlayerRepositoryTests
         Assert.Empty(await CreateSut().ListByClubAsync("999", default));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ListByClubAsync_BlankClubId_ReturnsEmptyWithoutQuerying(string clubId)
+    {
+        var result = await CreateSut().ListByClubAsync(clubId, default);
+
+        Assert.Empty(result);
+        _query.Verify(q => q.QueryAsync<PlayerEntity>(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task GetByIdAsync_NoMatch_ReturnsNull()
     {
