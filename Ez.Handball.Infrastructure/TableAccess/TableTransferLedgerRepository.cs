@@ -71,7 +71,7 @@ internal sealed class TableTransferLedgerRepository : ITransferLedgerRepository
     private static string RowKey(TransferEntry entry)
     {
         var reverse = (DateTimeOffset.MaxValue.Ticks - entry.CreatedAt.UtcDateTime.Ticks).ToString("D19", CultureInfo.InvariantCulture);
-        return $"{reverse}-{entry.PlayerId}-{entry.UserId}";
+        return $"{reverse}-{TypeString(entry.Type)}-{entry.PlayerId}-{entry.UserId}";
     }
 
     private static string FlavorString(GameFlavor f) => f.ToString().ToLowerInvariant();
