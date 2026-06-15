@@ -93,9 +93,10 @@ public sealed class GetClubMatchesUseCase : IGetClubMatchesUseCase
         MatchListItem m, string tournamentId, string? tournamentName, bool isHome)
     {
         var played = m.Status == "S";
+        var self = isHome ? m.Home : m.Away;
         var opponent = isHome ? m.Away : m.Home;
-        int? clubScore = played ? (isHome ? m.Home.Score : m.Away.Score) : null;
-        int? oppScore = played ? (isHome ? m.Away.Score : m.Home.Score) : null;
+        int? clubScore = played ? self.Score : null;
+        int? oppScore = played ? opponent.Score : null;
 
         return new ClubMatch(
             MatchId: m.MatchId,
