@@ -72,5 +72,17 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
         var response = await _client.GetAsync("/api/clubs/999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("club_not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task GetClub_BlankId_Returns400()
+    {
+        var response = await _client.GetAsync("/api/clubs/%20");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_club_id", body.GetProperty("error").GetString());
     }
 }
