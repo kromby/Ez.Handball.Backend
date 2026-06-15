@@ -68,21 +68,26 @@ public sealed class GetClubMatchesUseCase : IGetClubMatchesUseCase
             }
         }
 
-        var filtered = status switch
-        {
-            ClubMatchStatusFilter.Played   => clubMatches.Where(m => m.Status == "played"),
-            ClubMatchStatusFilter.Upcoming => clubMatches.Where(m => m.Status == "upcoming"),
-            _                              => clubMatches
-        };
-
         // Played newest-first, upcoming soonest-first; unfiltered => played block then upcoming.
-        var ordered = filtered
-            .OrderBy(m => m.Status == "played" ? 0 : 1)
-            .ThenBy(m => m.Status == "played" ? -m.Date.UtcTicks : m.Date.UtcTicks)
-            .ToList();
+        var played = clubMatches
+            .Where(IsPlayed)
+            .OrderByDescending(m => m.Date);
+
+        var upcoming = clubMatches
+            .Where(m => !IsPlayed(m))
+            .OrderBy(m => m.Date);
+
+        var ordered = status switch
+        {
+            ClubMatchStatusFilter.Played   => played.ToList(),
+            ClubMatchStatusFilter.Upcoming => upcoming.ToList(),
+            _                              => played.Concat(upcoming).ToList()
+        };
 
         return new GetClubMatchesResult.Found(new ClubMatchListing(clubId, season, ordered));
     }
+
+    private static bool IsPlayed(ClubMatch m) => m.Status == "played";
 
     private static ClubMatch ToClubMatch(
         MatchListItem m, string tournamentId, string? tournamentName, bool isHome)
