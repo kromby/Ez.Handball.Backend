@@ -124,6 +124,7 @@ builder.Services.AddScoped<IGetPlayerPoolUseCase, GetPlayerPoolUseCase>();
 builder.Services.AddScoped<IGetMatchUseCase, GetMatchUseCase>();
 builder.Services.AddScoped<IGetRoundsUseCase, GetRoundsUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
+builder.Services.AddScoped<IGetClubUseCase, GetClubUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
 builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
@@ -474,6 +475,30 @@ app.MapGet("/api/clubs", async (
 {
     var clubs = await uc.ExecuteAsync(ct);
     return Results.Ok(clubs);
+});
+
+app.MapGet("/api/clubs/{clubId}", async Task<IResult> (
+    string clubId,
+    IGetClubUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(clubId))
+        return Results.BadRequest(new { error = "invalid_club_id" });
+
+    var result = await uc.ExecuteAsync(clubId, ct);
+    return result switch
+    {
+        GetClubResult.NotFound => Results.NotFound(new { error = "club_not_found" }),
+        GetClubResult.Found f  => Results.Ok(new
+        {
+            clubId      = f.Club.ClubId,
+            name        = f.Club.Name,
+            logoUrl     = f.Club.LogoUrl,
+            venue       = (string?)null,   // placeholder — no data source yet
+            foundedYear = (int?)null       // placeholder — no data source yet
+        }),
+        _ => Results.Problem()
+    };
 });
 
 app.MapGet("/api/seasons", async (
