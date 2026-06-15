@@ -33,6 +33,20 @@ internal sealed class TableClubRepository : IClubRepository
         }
     }
 
+    public async Task<Club?> GetByIdAsync(string clubId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(clubId)) return null;
+
+        var filter = $"PartitionKey eq 'club' and RowKey eq '{ODataFilter.Escape(clubId)}'";
+        await foreach (var c in _query.QueryAsync<ClubEntity>(Tables.Clubs, filter, ct))
+        {
+            var logoUrl = string.IsNullOrEmpty(c.LogoSrc) ? null : c.LogoSrc;
+            return new Club(c.RowKey, c.Name, logoUrl);
+        }
+
+        return null;
+    }
+
     public async Task<IReadOnlyList<Club>> ListAsync(CancellationToken ct)
     {
         var clubs = new List<Club>();

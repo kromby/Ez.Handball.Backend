@@ -31,12 +31,31 @@ internal sealed class TablePlayerRepository : IPlayerRepository
             break;
         }
 
-        if (row is null) return null;
+        return row is null ? null : ToPlayer(row, _today());
+    }
 
+    public async Task<IReadOnlyList<Player>> ListByClubAsync(string clubId, CancellationToken ct)
+    {
+        var players = new List<Player>();
+        if (string.IsNullOrWhiteSpace(clubId)) return players;
+
+        var today = _today();
+        await foreach (var r in _query.QueryAsync<PlayerEntity>(
+                           Tables.Players, $"ClubId eq '{ODataFilter.Escape(clubId)}'", ct))
+        {
+            if (r.Retired == true) continue;
+            players.Add(ToPlayer(r, today));
+        }
+
+        return players;
+    }
+
+    private static Player ToPlayer(PlayerEntity row, DateOnly today)
+    {
         DateOnly? dob = row.DateOfBirth is null
             ? null
             : DateOnly.FromDateTime(row.DateOfBirth.Value.UtcDateTime);
-        int? age = dob is null ? null : ComputeAge(dob.Value, _today());
+        int? age = dob is null ? null : ComputeAge(dob.Value, today);
 
         return new Player(
             PlayerId: row.RowKey,
