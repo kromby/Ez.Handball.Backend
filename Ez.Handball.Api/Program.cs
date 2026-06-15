@@ -126,6 +126,7 @@ builder.Services.AddScoped<IGetRoundsUseCase, GetRoundsUseCase>();
 builder.Services.AddScoped<IGetClubsUseCase, GetClubsUseCase>();
 builder.Services.AddScoped<IGetClubUseCase, GetClubUseCase>();
 builder.Services.AddScoped<IGetClubRosterUseCase, GetClubRosterUseCase>();
+builder.Services.AddScoped<IGetClubMatchesUseCase, GetClubMatchesUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
 builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
@@ -519,6 +520,27 @@ app.MapGet("/api/clubs/{clubId}/roster", async Task<IResult> (
     };
 });
 
+app.MapGet("/api/clubs/{clubId}/matches", async Task<IResult> (
+    string clubId,
+    string? status,
+    IGetClubMatchesUseCase uc,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(clubId))
+        return Results.BadRequest(new { error = "invalid_club_id" });
+
+    if (!TryParseClubMatchStatus(status, out var parsedStatus))
+        return Results.BadRequest(new { error = "invalid_status" });
+
+    var result = await uc.ExecuteAsync(clubId, parsedStatus, ct);
+    return result switch
+    {
+        GetClubMatchesResult.NotFound => Results.NotFound(new { error = "club_not_found" }),
+        GetClubMatchesResult.Found f  => Results.Ok(f.Listing),
+        _ => Results.Problem()
+    };
+});
+
 app.MapGet("/api/seasons", async (
     IGetSeasonsUseCase uc,
     CancellationToken ct) =>
@@ -586,6 +608,18 @@ static bool TryParseMetric(string? value, out LeaderboardMetric metric)
         return true;
     }
     return Enum.TryParse(value, ignoreCase: true, out metric) && Enum.IsDefined(metric);
+}
+
+static bool TryParseClubMatchStatus(string? value, out ClubMatchStatusFilter? status)
+{
+    status = null;
+    if (string.IsNullOrWhiteSpace(value)) return true;   // absent => both
+    switch (value.Trim().ToLowerInvariant())
+    {
+        case "played":   status = ClubMatchStatusFilter.Played;   return true;
+        case "upcoming": status = ClubMatchStatusFilter.Upcoming; return true;
+        default:         return false;
+    }
 }
 
 static bool TryParsePoolSort(string? value, out PlayerPoolSort sort)

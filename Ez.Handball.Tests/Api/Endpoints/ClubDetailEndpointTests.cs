@@ -16,6 +16,7 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
     {
         public Mock<IGetClubUseCase> Club { get; } = new();
         public Mock<IGetClubRosterUseCase> Roster { get; } = new();
+        public Mock<IGetClubMatchesUseCase> Matches { get; } = new();
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
@@ -24,6 +25,7 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
             {
                 Replace(services, Club.Object);
                 Replace(services, Roster.Object);
+                Replace(services, Matches.Object);
             });
             return base.CreateHost(builder);
         }
@@ -44,6 +46,7 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
         _factory = factory;
         _factory.Club.Reset();
         _factory.Roster.Reset();
+        _factory.Matches.Reset();
         _client = _factory.CreateClient();
     }
 
@@ -119,6 +122,68 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
             .ReturnsAsync(new GetClubRosterResult.NotFound());
 
         var response = await _client.GetAsync("/api/clubs/999/roster");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMatches_Found_Returns200WithClubPerspective()
+    {
+        _factory.Matches
+            .Setup(s => s.ExecuteAsync("385", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetClubMatchesResult.Found(new ClubMatchListing("385", "2025-2026",
+                new List<ClubMatch>
+                {
+                    new("m1", "8444", "Olís deild karla", "1",
+                        new DateTimeOffset(2025, 9, 3, 19, 0, 0, TimeSpan.Zero), "Höllin",
+                        "played", true, "390", "Breidablik", "logo-a", 28, 24)
+                })));
+
+        var response = await _client.GetAsync("/api/clubs/385/matches");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("385", body.GetProperty("clubId").GetString());
+        var matches = body.GetProperty("matches");
+        Assert.Equal(1, matches.GetArrayLength());
+        var m = matches[0];
+        Assert.Equal("played", m.GetProperty("status").GetString());
+        Assert.True(m.GetProperty("isHome").GetBoolean());
+        Assert.Equal("390", m.GetProperty("opponentClubId").GetString());
+        Assert.Equal(28, m.GetProperty("clubScore").GetInt32());
+        Assert.Equal(24, m.GetProperty("opponentScore").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetMatches_StatusFilter_PassedToUseCase()
+    {
+        _factory.Matches
+            .Setup(s => s.ExecuteAsync("385", ClubMatchStatusFilter.Upcoming, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetClubMatchesResult.Found(new ClubMatchListing("385", "2025-2026", new List<ClubMatch>())));
+
+        var response = await _client.GetAsync("/api/clubs/385/matches?status=upcoming");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        _factory.Matches.Verify(
+            s => s.ExecuteAsync("385", ClubMatchStatusFilter.Upcoming, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMatches_InvalidStatus_Returns400()
+    {
+        var response = await _client.GetAsync("/api/clubs/385/matches?status=bogus");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMatches_UnknownClub_Returns404()
+    {
+        _factory.Matches
+            .Setup(s => s.ExecuteAsync("999", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetClubMatchesResult.NotFound());
+
+        var response = await _client.GetAsync("/api/clubs/999/matches");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
