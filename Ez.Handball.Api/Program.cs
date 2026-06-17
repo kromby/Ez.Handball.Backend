@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using Ez.Handball.Api;
 using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
@@ -50,6 +51,17 @@ var storageConnection = builder.Configuration["Storage:ConnectionString"]
 builder.Services.AddTableStorageInfrastructure(storageConnection);
 
 builder.Services.AddAuthInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
+
+// Domain/game clock for the time-shift replay harness (#94). Off by default (production):
+// resolves to the real wall clock. Auth keeps its own Func<DateTimeOffset>, and — crucially — we do
+// NOT register this as the framework's TimeProvider: ASP.NET's rate limiter resolves TimeProvider
+// from DI, and the epic guardrail keeps rate limiting (and auth/log timestamps) on the wall clock.
+// Only the two game-time readers below receive the GameClock, wired explicitly. Registered as a
+// singleton constructed lazily on first game request, so it never resolves TableServiceClient at
+// host-build time (when the storage connection string may be unconfigured).
+builder.Services.AddSingleton<GameClock>(sp => new GameClock(
+    builder.Configuration.GetValue("Debug:GameClock:OverrideEnabled", false),
+    sp.GetRequiredService<TableServiceClient>()));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -172,7 +184,13 @@ builder.Services.AddScoped<IRenameTeamUseCase, RenameTeamUseCase>();
 builder.Services.AddScoped<IGetLineupUseCase, GetLineupUseCase>();
 builder.Services.AddScoped<ISetLineupUseCase, SetLineupUseCase>();
 builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
-builder.Services.AddScoped<IGameweekCalendarService, GameweekCalendarService>();
+// Game-time services receive the GameClock explicitly (it is registered as its concrete type, not as
+// the framework TimeProvider — see the GameClock registration above). Any NEW service that needs game
+// time must be wired here the same way; a plain AddScoped<IFoo, Foo>() would get no TimeProvider (#94).
+builder.Services.AddScoped<IGameweekCalendarService>(sp => new GameweekCalendarService(
+    sp.GetRequiredService<IMatchRepository>(),
+    sp.GetRequiredService<IGameweekLockRepository>(),
+    sp.GetRequiredService<GameClock>()));
 builder.Services.AddScoped<IGetGameweeksUseCase, GetGameweeksUseCase>();
 builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase>();
 builder.Services.AddScoped<IGameweekScoringService, GameweekScoringService>();
@@ -180,7 +198,13 @@ builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCase>();
 builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueStandingsUseCase, GetMiniLeagueStandingsUseCase>();
-builder.Services.AddScoped<IGameweekSnapshotGuard, GameweekSnapshotGuard>();
+builder.Services.AddScoped<IGameweekSnapshotGuard>(sp => new GameweekSnapshotGuard(
+    sp.GetRequiredService<IGameweekConfigRepository>(),
+    sp.GetRequiredService<IGameweekCalendarService>(),
+    sp.GetRequiredService<IGameweekLockRepository>(),
+    sp.GetRequiredService<IGameweekLineupRepository>(),
+    sp.GetRequiredService<ILineupRepository>(),
+    sp.GetRequiredService<GameClock>()));
 
 var app = builder.Build();
 

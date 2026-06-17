@@ -1,6 +1,7 @@
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Domain;
+using Ez.Handball.Tests.TestSupport;
 using Moq;
 
 namespace Ez.Handball.Tests.Application.Services;
@@ -11,7 +12,7 @@ public class GameweekCalendarServiceTests
     private readonly Mock<IGameweekLockRepository> _locks = new();
     private DateTimeOffset _now = new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private GameweekCalendarService CreateSut() => new(_matches.Object, _locks.Object, () => _now);
+    private GameweekCalendarService CreateSut() => new(_matches.Object, _locks.Object, new StubTimeProvider(_now));
 
     private static readonly GameweekConfig Config = new(
         Version: 1, TournamentId: "8444", LockOffsetHours: 1,

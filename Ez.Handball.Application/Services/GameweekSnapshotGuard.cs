@@ -21,18 +21,18 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
     private readonly IGameweekLockRepository _locks;
     private readonly IGameweekLineupRepository _snapshots;
     private readonly ILineupRepository _liveLineup;
-    private readonly Func<DateTimeOffset> _now;
+    private readonly TimeProvider _clock;
 
     public GameweekSnapshotGuard(
         IGameweekConfigRepository config, IGameweekCalendarService calendar, IGameweekLockRepository locks,
-        IGameweekLineupRepository snapshots, ILineupRepository liveLineup, Func<DateTimeOffset> now)
+        IGameweekLineupRepository snapshots, ILineupRepository liveLineup, TimeProvider clock)
     {
         _config = config;
         _calendar = calendar;
         _locks = locks;
         _snapshots = snapshots;
         _liveLineup = liveLineup;
-        _now = now;
+        _clock = clock;
     }
 
     public async Task<SnapshotGuardResult> EnsureSnapshotsAsync(string teamId, int? configVersion, CancellationToken ct)
@@ -43,7 +43,7 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
         var calendar = await _calendar.GetCalendarAsync(config, ct);
         if (calendar is null) return new SnapshotGuardResult(null, false);
 
-        var now = _now();
+        var now = _clock.GetUtcNow();
         var anyLocked = false;
         Lineup? live = null;
         var liveLoaded = false;
