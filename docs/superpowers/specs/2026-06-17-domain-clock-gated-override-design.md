@@ -68,10 +68,20 @@ runtime-settable via the Config row.
 
 ### 3. DI registration (`Ez.Handball.Api/Program.cs`)
 
-Register `GameClock` as the singleton `TimeProvider`. No other code in the repo injects
-`TimeProvider`, so the registration is unambiguous and cannot accidentally hijack a
-framework consumer. The auth `Func<DateTimeOffset>` registration is **left untouched** —
-`JwtTokenService` and the auth/timestamp use cases keep the wall clock.
+Register `GameClock` as its **concrete type** (`AddSingleton<GameClock>`) and hand it to the
+two game-time readers via explicit factory wiring — do **not** register it as the framework
+`TimeProvider`. ASP.NET's rate limiter resolves `TimeProvider` from DI, so registering
+`GameClock` as the framework `TimeProvider` would leak virtual game time into rate limiting
+(and is also resolved eagerly at host build, before storage is configured). Registering it
+as its own type leaves the framework default `TimeProvider` (the wall clock) in place for
+the rate limiter, auth, and log timestamps, satisfying the epic guardrail. The singleton is
+constructed lazily on first game request, so `TableServiceClient` is never resolved at
+host-build time.
+
+The two services still declare a base `TimeProvider` constructor parameter (so tests can
+substitute a fake); the production wiring passes the concrete `GameClock`. The auth
+`Func<DateTimeOffset>` registration is **left untouched** — `JwtTokenService` and the
+auth/timestamp use cases keep the wall clock.
 
 Only the API host needs the registration: the two game-time readers are registered solely
 in `Ez.Handball.Api/Program.cs`. Ingestion does not consume them.
