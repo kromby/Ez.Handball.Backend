@@ -18,7 +18,7 @@ public class GameweekSnapshotGuardTests
     private GameweekSnapshotGuard CreateSut() => new(
         _config.Object, _calendar.Object, _locks.Object, _snapshots.Object, _liveLineup.Object, new StubTimeProvider(_now));
 
-    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1);
+    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1, 3);
 
     private static Gameweek GW(int n, string round, DateTimeOffset deadline, GameweekStatus status) =>
         new(n, round, "8444", deadline, status, Array.Empty<GameweekMatch>());

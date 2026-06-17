@@ -16,7 +16,7 @@ public class GameweekCalendarServiceTests
 
     private static readonly GameweekConfig Config = new(
         Version: 1, TournamentId: "8444", LockOffsetHours: 1,
-        ScoringRuleSetVersion: 1, LineupConstraintsVersion: 1);
+        ScoringRuleSetVersion: 1, LineupConstraintsVersion: 1, MatchFinalBufferHours: 3);
 
     private static MatchListItem M(string id, string round, DateTimeOffset date, string status) =>
         new(id, round, date, Venue: null, status,
