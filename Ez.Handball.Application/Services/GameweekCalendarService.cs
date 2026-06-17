@@ -14,14 +14,14 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
 {
     private readonly IMatchRepository _matches;
     private readonly IGameweekLockRepository _locks;
-    private readonly Func<DateTimeOffset> _now;
+    private readonly TimeProvider _clock;
 
     public GameweekCalendarService(
-        IMatchRepository matches, IGameweekLockRepository locks, Func<DateTimeOffset> now)
+        IMatchRepository matches, IGameweekLockRepository locks, TimeProvider clock)
     {
         _matches = matches;
         _locks = locks;
-        _now = now;
+        _clock = clock;
     }
 
     public async Task<IReadOnlyList<Gameweek>?> GetCalendarAsync(GameweekConfig config, CancellationToken ct)
@@ -29,7 +29,7 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
         var data = await _matches.ListByTournamentAsync(config.TournamentId, ct);
         if (data is null) return null;
 
-        var now = _now();
+        var now = _clock.GetUtcNow();
         var offset = TimeSpan.FromHours(config.LockOffsetHours);
 
         var ordered = data.Matches
