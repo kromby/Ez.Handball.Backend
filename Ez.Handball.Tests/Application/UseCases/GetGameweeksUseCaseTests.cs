@@ -14,7 +14,7 @@ public class GetGameweeksUseCaseTests
     private GetGameweeksUseCase CreateSut() => new(_config.Object, _calendar.Object);
     private GetCurrentGameweekUseCase CreateCurrentSut() => new(_config.Object, _calendar.Object);
 
-    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1);
+    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1, 3);
 
     private static Gameweek GW(int n, GameweekStatus status, DateTimeOffset deadline) =>
         new(n, n.ToString(), "8444", deadline, status, Array.Empty<GameweekMatch>());

@@ -23,7 +23,7 @@ public class SettleGameweekUseCaseTests
     // be the real composite for "user".
     private static readonly string Team = GameTeamId.For("user", GameFlavor.Fantasy);
 
-    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1);
+    private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1, 3);
     private static readonly ScoringRuleSet Rules =
         new(GameFlavor.Fantasy, 1, 1, 0, 0, 0, 1);
     private static readonly LineupConstraints Constraints = new(

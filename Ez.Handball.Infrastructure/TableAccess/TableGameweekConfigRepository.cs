@@ -27,8 +27,10 @@ internal sealed class TableGameweekConfigRepository : IGameweekConfigRepository
         var lockOffsetHours = GetDouble(values, "lockOffsetHours", 1);
         var scoringVersion = GetInt(values, "scoringRuleSetVersion", 1);
         var lineupVersion = GetInt(values, "lineupConstraintsVersion", 1);
+        var matchFinalBufferHours = GetDouble(values, "matchFinalBufferHours", 3);
 
-        return new GameweekConfig(version, tournamentId, lockOffsetHours, scoringVersion, lineupVersion);
+        return new GameweekConfig(
+            version, tournamentId, lockOffsetHours, scoringVersion, lineupVersion, matchFinalBufferHours);
     }
 
     private static double GetDouble(IReadOnlyDictionary<string, string> values, string key, double fallback)

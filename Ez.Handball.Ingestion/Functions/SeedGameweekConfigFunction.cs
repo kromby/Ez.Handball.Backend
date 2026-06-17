@@ -11,12 +11,14 @@ public class SeedGameweekConfigFunction
 {
     // The fantasy calendar config. tournamentId names the tournament whose HSÍ rounds become
     // gameweeks; lockOffsetHours is how far before first throw-off a gameweek locks (owner-tunable);
+    // matchFinalBufferHours is how long after throw-off a fixture counts as final (#95, owner-tunable);
     // the version keys point at which scoring rule set (#27) and lineup constraints (#61) the rollup uses.
     // PLACEHOLDER tournamentId 8444 (Olís deild karla) — owner must confirm per season/environment.
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> ConfigDefinitions =
     [
         ("fantasy-gameweek-v1", "tournamentId",             "8444"),
         ("fantasy-gameweek-v1", "lockOffsetHours",          "1"),
+        ("fantasy-gameweek-v1", "matchFinalBufferHours",    "3"),
         ("fantasy-gameweek-v1", "scoringRuleSetVersion",    "1"),
         ("fantasy-gameweek-v1", "lineupConstraintsVersion", "1"),
     ];

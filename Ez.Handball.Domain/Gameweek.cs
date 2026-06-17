@@ -11,7 +11,8 @@ public enum GameweekStatus
     Settled          // all member matches final
 }
 
-// One fixture inside a gameweek. IsFinal mirrors MatchEntity.Status == "S".
+// One fixture inside a gameweek. IsFinal is effective finality (#95): stored as final
+// (MatchEntity.Status == "S") AND the domain clock's now is past Date + MatchFinalBufferHours.
 public sealed record GameweekMatch(
     string MatchId,
     DateTimeOffset Date,
