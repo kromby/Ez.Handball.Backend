@@ -1,6 +1,7 @@
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Domain;
+using Ez.Handball.Tests.TestSupport;
 using Moq;
 
 namespace Ez.Handball.Tests.Application.Services;
@@ -15,7 +16,7 @@ public class GameweekSnapshotGuardTests
     private DateTimeOffset _now = new(2026, 2, 1, 12, 0, 0, TimeSpan.Zero);
 
     private GameweekSnapshotGuard CreateSut() => new(
-        _config.Object, _calendar.Object, _locks.Object, _snapshots.Object, _liveLineup.Object, () => _now);
+        _config.Object, _calendar.Object, _locks.Object, _snapshots.Object, _liveLineup.Object, new StubTimeProvider(_now));
 
     private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1);
 
