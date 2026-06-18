@@ -62,4 +62,12 @@ internal sealed class TableLineupRepository : ILineupRepository
         if (actions.Count > 0)
             await table.SubmitTransactionAsync(actions, ct);
     }
+
+    public async Task<IReadOnlyList<string>> ListTeamIdsAsync(CancellationToken ct)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        await foreach (var e in _query.QueryAsync<GameLineupEntity>(Tables.GameLineups, null, ct))
+            ids.Add(e.PartitionKey);
+        return ids.ToList();
+    }
 }
