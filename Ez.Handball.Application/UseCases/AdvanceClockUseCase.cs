@@ -87,6 +87,9 @@ public sealed class AdvanceClockUseCase : IAdvanceClockUseCase
         // Target = its last fixture + the finality buffer, which exactly trips the
         // `date + buffer <= now` finality gate so the whole round reads ready.
         var buffer = TimeSpan.FromHours(config.MatchFinalBufferHours);
+        // The Matches.Count > 0 guard is defensive: GameweekCalendarService builds every gameweek
+        // from a non-empty round group, so a zero-match gameweek never occurs — the guard only keeps
+        // the Max below from ever seeing an empty sequence.
         var round = calendar.FirstOrDefault(g => g.Matches.Count > 0 && !g.Matches.All(m => m.IsFinal));
         if (round is null) return AdvanceClockResult.NothingToAdvance.Instance;
         var target = round.Matches.Max(m => m.Date) + buffer;
