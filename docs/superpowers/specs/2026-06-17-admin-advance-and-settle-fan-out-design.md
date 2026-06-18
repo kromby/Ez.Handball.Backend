@@ -106,9 +106,10 @@ outcome.
   (robust even if a userId itself contains `:`).
 - For each team, call the existing
   `ISettleGameweekUseCase.ExecuteAsync(userId, teamId, round, version, ct)`.
-- Short-circuit the whole round if the round itself is unresolvable or not ready: a probe (or the
-  first team's result) of `ConfigMissing` / `NotFound` / `NotReady` is reported once for the round
-  rather than per team.
+- Short-circuit the whole round on a team-independent failure: the first team's result of
+  `ConfigMissing` / `NotFound` / `RuleSetMissing` (same for every team) is reported once for the
+  round and stops the loop. `NotReady` is **not** a short-circuit — it is per-team (a postponed
+  fixture could leave one team's round not ready) and tallied in the report's `notReady` count.
 - Aggregate the per-team outcomes into a report:
   - `round` (label)
   - `teamsConsidered`
@@ -164,9 +165,9 @@ same value. Moving the clock back recomputes scores idempotently; it does not un
 ## Testing
 
 - **`SettleRoundForAllTeamsUseCaseTests`**: fan-out over multiple teams (mixed `Settled` /
-  `NotReady`); a not-ready round short-circuits and settles none; idempotent re-run yields
-  identical scores; empty team set; non-fantasy teams filtered out; `skipped` counts a
-  no-lineup/no-squad team.
+  `NotReady` tallied per team); a team-independent failure (`ConfigMissing` / `NotFound`)
+  surfaces once and stops the loop; idempotent re-run yields identical scores; empty team set;
+  non-fantasy teams filtered out; `skipped` counts a no-lineup/no-squad team.
 - **`AdvanceClockUseCaseTests`** (fake `TimeProvider` + in-memory calendar): next-deadline picks
   the earliest deadline strictly after now; next-round sets now to last-fixture + buffer and the
   round then reads ready; clear removes the row; set-absolute round-trips; flag-off refuses;
