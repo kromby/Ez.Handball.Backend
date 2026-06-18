@@ -198,6 +198,13 @@ builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCase>();
 builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueStandingsUseCase, GetMiniLeagueStandingsUseCase>();
+builder.Services.AddScoped<ISettleRoundForAllTeamsUseCase, SettleRoundForAllTeamsUseCase>();
+builder.Services.AddScoped<IAdvanceClockUseCase>(sp => new AdvanceClockUseCase(
+    sp.GetRequiredService<IClockOverrideStore>(),
+    sp.GetRequiredService<IGameweekConfigRepository>(),
+    sp.GetRequiredService<IGameweekCalendarService>(),
+    sp.GetRequiredService<GameClock>(),
+    builder.Configuration.GetValue("Debug:GameClock:OverrideEnabled", false)));
 builder.Services.AddScoped<IGameweekSnapshotGuard>(sp => new GameweekSnapshotGuard(
     sp.GetRequiredService<IGameweekConfigRepository>(),
     sp.GetRequiredService<IGameweekCalendarService>(),
@@ -621,6 +628,11 @@ app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
 app.MapMiniLeagueInviteEndpoints();
 app.MapGameweekEndpoints();
+
+// Debug-only replay harness (#96): only exists when the master override flag is on (off in
+// production → routes return 404). Behind an X-Debug-Key shared secret (see DebugKeyFilter).
+if (builder.Configuration.GetValue("Debug:GameClock:OverrideEnabled", false))
+    app.MapDebugReplayEndpoints(builder.Configuration["Debug:AdminKey"]);
 
 app.Run();
 
