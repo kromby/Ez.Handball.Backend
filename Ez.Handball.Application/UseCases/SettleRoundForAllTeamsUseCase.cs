@@ -36,8 +36,10 @@ public sealed class SettleRoundForAllTeamsUseCase : ISettleRoundForAllTeamsUseCa
     public async Task<SettleRoundForAllTeamsResult> ExecuteAsync(
         string roundLabel, int? configVersion, CancellationToken ct)
     {
+        // Length guard before the EndsWith so a malformed bare ":fantasy" id (which would slice to an
+        // empty userId) is excluded rather than settled — validate at the boundary.
         var teamIds = (await _lineups.ListTeamIdsAsync(ct))
-            .Where(t => t.EndsWith(FantasySuffix, StringComparison.Ordinal))
+            .Where(t => t.Length > FantasySuffix.Length && t.EndsWith(FantasySuffix, StringComparison.Ordinal))
             .ToList();
 
         int settled = 0, notReady = 0, skipped = 0;
@@ -64,6 +66,11 @@ public sealed class SettleRoundForAllTeamsUseCase : ISettleRoundForAllTeamsUseCa
                     return SettleRoundForAllTeamsResult.RoundNotFound.Instance;
                 case SettleGameweekResult.RuleSetMissing:
                     return SettleRoundForAllTeamsResult.RuleSetMissing.Instance;
+                // SettleGameweekResult is a sealed hierarchy, so the cases above are exhaustive today.
+                // Fail loud if a new variant is added without being tallied here, rather than silently
+                // counting it in TeamsConsidered but none of settled/notReady/skipped.
+                default:
+                    throw new InvalidOperationException($"Unhandled settle result: {r.GetType().Name}");
             }
         }
 

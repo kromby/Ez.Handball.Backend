@@ -119,6 +119,38 @@ public class AdvanceClockUseCaseTests
     }
 
     [Fact]
+    public async Task AdvanceRound_NeverRewinds_SkipsPastNotFinalRoundToNextFutureBoundary()
+    {
+        // Round 1's fixtures are in the past but never went final (e.g. postponed, status never "S"),
+        // so target r1 = -48h + 3h = -45h, which is BEFORE now. Round 2 is the next genuine future
+        // boundary. AdvanceRound must skip round 1 and advance to round 2, never rewinding the clock.
+        var r2Last = Now.AddHours(10);
+        SetupCalendar(
+            GW(1, "1", Now.AddHours(-50), Match("a", Now.AddHours(-48), final: false)),
+            GW(2, "2", Now.AddHours(8),   Match("b", r2Last,           final: false)));
+
+        var result = await Sut().ExecuteAsync(ClockMode.AdvanceRound, null, null, default);
+
+        var moved = Assert.IsType<AdvanceClockResult.Moved>(result);
+        Assert.Equal(r2Last.AddHours(3), moved.VirtualNow);
+        Assert.Equal("2", moved.RoundLabel);
+        Assert.True(moved.VirtualNow > Now, "AdvanceRound must not move the clock backwards");
+    }
+
+    [Fact]
+    public async Task AdvanceRound_OnlyPastNotFinalRounds_ReturnsNothingToAdvance()
+    {
+        // The only not-all-final round is entirely in the past; there is no future boundary to advance
+        // to, so the clock stays put rather than rewinding.
+        SetupCalendar(GW(1, "1", Now.AddHours(-50), Match("a", Now.AddHours(-48), final: false)));
+
+        var result = await Sut().ExecuteAsync(ClockMode.AdvanceRound, null, null, default);
+
+        Assert.IsType<AdvanceClockResult.NothingToAdvance>(result);
+        _store.Verify(s => s.SetAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Advance_ConfigMissing_ReturnsConfigMissing()
     {
         _config.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((GameweekConfig?)null);

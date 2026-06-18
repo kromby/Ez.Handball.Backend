@@ -43,6 +43,22 @@ public class SettleRoundForAllTeamsUseCaseTests
     }
 
     [Fact]
+    public async Task IgnoresMalformedBareSuffixTeamId()
+    {
+        // A bare ":fantasy" id would slice to an empty userId; it must be filtered out, not settled.
+        SetupTeams(":fantasy", "u1:fantasy");
+        SetupSettle("u1", "u1:fantasy", Settled());
+
+        var result = await Sut().ExecuteAsync("1", null, default);
+
+        var report = Assert.IsType<SettleRoundForAllTeamsResult.Completed>(result).Report;
+        Assert.Equal(1, report.TeamsConsidered);
+        Assert.Equal(1, report.Settled);
+        _settle.Verify(s => s.ExecuteAsync("", It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task IgnoresNonFantasyTeams()
     {
         SetupTeams("u1:fantasy", "u2:manager");

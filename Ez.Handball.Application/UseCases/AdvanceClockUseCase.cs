@@ -83,17 +83,23 @@ public sealed class AdvanceClockUseCase : IAdvanceClockUseCase
             return new AdvanceClockResult.Moved(next.Deadline, next.RoundLabel);
         }
 
-        // AdvanceRound: the first round (calendar order) not yet all-final at the current clock.
-        // Target = its last fixture + the finality buffer, which exactly trips the
-        // `date + buffer <= now` finality gate so the whole round reads ready.
+        // AdvanceRound: advance to the next round boundary that lies in the future. Target =
+        // a round's last fixture + the finality buffer, which exactly trips the `date + buffer <= now`
+        // finality gate so the whole round reads ready. Only consider rounds whose target is strictly
+        // after now and take the earliest such target: a past-but-never-final round (e.g. a postponed
+        // fixture whose status never becomes "S") must not rewind the virtual clock.
         var buffer = TimeSpan.FromHours(config.MatchFinalBufferHours);
         // The Matches.Count > 0 guard is defensive: GameweekCalendarService builds every gameweek
         // from a non-empty round group, so a zero-match gameweek never occurs — the guard only keeps
         // the Max below from ever seeing an empty sequence.
-        var round = calendar.FirstOrDefault(g => g.Matches.Count > 0 && !g.Matches.All(m => m.IsFinal));
-        if (round is null) return AdvanceClockResult.NothingToAdvance.Instance;
-        var target = round.Matches.Max(m => m.Date) + buffer;
-        await _store.SetAsync(target, ct);
-        return new AdvanceClockResult.Moved(target, round.RoundLabel);
+        var nextRound = calendar
+            .Where(g => g.Matches.Count > 0 && !g.Matches.All(m => m.IsFinal))
+            .Select(g => new { Round = g, Target = g.Matches.Max(m => m.Date) + buffer })
+            .Where(x => x.Target > now)
+            .OrderBy(x => x.Target)
+            .FirstOrDefault();
+        if (nextRound is null) return AdvanceClockResult.NothingToAdvance.Instance;
+        await _store.SetAsync(nextRound.Target, ct);
+        return new AdvanceClockResult.Moved(nextRound.Target, nextRound.Round.RoundLabel);
     }
 }
