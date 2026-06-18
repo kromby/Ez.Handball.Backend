@@ -42,6 +42,8 @@ public static class InfrastructureRegistration
         services.AddScoped<IGameweekLockRepository, TableGameweekLockRepository>();
         services.AddScoped<IGameweekLineupRepository, TableGameweekLineupRepository>();
         services.AddScoped<IGameweekScoreRepository, TableGameweekScoreRepository>();
+        services.AddScoped<IClockOverrideStore>(sp =>
+            new TableClockOverrideStore(sp.GetRequiredService<TableServiceClient>()));
         return services;
     }
 }

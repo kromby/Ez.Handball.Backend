@@ -1,6 +1,7 @@
 using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Domain;
+using Ez.Handball.Infrastructure;
 using Ez.Handball.Infrastructure.TableAccess;
 
 namespace Ez.Handball.Tests.Infrastructure.Tables;
@@ -75,4 +76,5 @@ public class TableLineupRepositoryTests : IAsyncLifetime
         var got = await Sut().GetAsync(Team, default);
         Assert.Equal(5, got!.Slots.Count);
     }
+
 }

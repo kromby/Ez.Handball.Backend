@@ -62,4 +62,15 @@ internal sealed class TableLineupRepository : ILineupRepository
         if (actions.Count > 0)
             await table.SubmitTransactionAsync(actions, ct);
     }
+
+    // Full-partition scan to collect the distinct team ids. This is intentional: it backs the
+    // debug-only admin settle fan-out (#96), which runs over the handful of registered teams in a
+    // replay session, not a hot read path — a dedicated team-id index would be unwarranted machinery.
+    public async Task<IReadOnlyList<string>> ListTeamIdsAsync(CancellationToken ct)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        await foreach (var e in _query.QueryAsync<GameLineupEntity>(Tables.GameLineups, null, ct))
+            ids.Add(e.PartitionKey);
+        return ids.ToList();
+    }
 }
