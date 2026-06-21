@@ -9,6 +9,10 @@ Spike for [Backend #7]. Target: Olís deild karla outfield + goalkeeper stats.
 - Goalkeepers (`OlisDeildKarlaTolfraedi2.php`): wrapper page with no inline table; the real GK
   table lives in an `<iframe src="https://hbstatz.is/test22.php">`. The client fetches the
   wrapper, follows the iframe src, and parses the inner page.
+  - Caveat for a production build: the wrapper carries **two** iframes (`test22.php` and
+    `test23.php`), both rendering a `table#statz1`. The spike selects the first iframe (in DOM
+    order) that parses to a non-empty table, which is `test22.php` (the GK stats). A real
+    integration should pin the correct inner page explicitly rather than rely on iframe order.
 - A plain `HttpClient` GET with a descriptive User-Agent (`EzHandball-spike/0.1 (+…/issues/7)`)
   was sufficient for both pages. **No headless browser or Playwright fallback was needed.** No
   bot-protection or JS challenge was encountered.
