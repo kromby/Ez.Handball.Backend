@@ -7,17 +7,17 @@ public sealed class HbStatzClient(HttpClient http)
 
     public async Task<IReadOnlyList<string>> GetTableHtmlsAsync(string pageUrl, CancellationToken ct = default)
     {
-        var html = await GetAsync(pageUrl, ct);
+        var html = await GetHtmlAsync(pageUrl, ct);
         if (IframeResolver.HasInlineStatsTable(html))
             return new[] { html };
 
         var results = new List<string>();
         foreach (var src in IframeResolver.ExtractSources(html, pageUrl))
-            results.Add(await GetAsync(src, ct));
+            results.Add(await GetHtmlAsync(src, ct));
         return results;
     }
 
-    private async Task<string> GetAsync(string url, CancellationToken ct)
+    public async Task<string> GetHtmlAsync(string url, CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
