@@ -25,6 +25,28 @@ public static class StatsTableParser
         return new ParsedTable(columns, rows);
     }
 
+    public static IReadOnlyList<ParsedTable> ParseAll(string html)
+    {
+        var doc = new HtmlParser().ParseDocument(html);
+
+        return doc.QuerySelectorAll("table")
+            .Where(t => t.QuerySelector("thead") != null)
+            .Select(table =>
+            {
+                var columns = table.QuerySelectorAll("thead th, thead td")
+                    .Select(CellText)
+                    .ToList();
+
+                var rows = table.QuerySelectorAll("tbody tr")
+                    .Select(tr => (IReadOnlyList<string>)tr.QuerySelectorAll("td").Select(CellText).ToList())
+                    .Where(r => r.Count > 0)
+                    .ToList();
+
+                return new ParsedTable(columns, rows);
+            })
+            .ToList();
+    }
+
     private static string CellText(IElement cell)
     {
         var text = cell.TextContent.Trim();
