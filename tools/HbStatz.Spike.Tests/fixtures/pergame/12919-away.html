@@ -1,0 +1,715 @@
+
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/fixedcolumns/4.1.0/js/dataTables.fixedColumns.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/4.1.0/css/fixedColumns.dataTables.min.css">
+
+<script>  
+
+
+$(document).ready(function() {
+    var table = $('#home1').DataTable( {
+		"aaSorting": [[ 1, "desc" ]],
+		"bFilter": false,
+		"paging": false,
+		"bInfo": false,
+		"language": {
+			"emptyTable": "Engir leikir í gangi",
+			"sInfoEmpty": ""
+		},
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 1,
+            right: 0
+        }
+    } );
+} );
+
+
+$(document).ready(function() {
+    var table = $('#home2').DataTable( {
+		"aaSorting": [[ 1, "desc" ]],
+		"bFilter": false,
+		"paging": false,
+		"bInfo": false,
+		"language": {
+			"emptyTable": "Engir leikir í gangi",
+			"sInfoEmpty": ""
+		},
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 1,
+            right: 0
+        }
+    } );
+} );
+
+
+$(document).ready(function() {
+    var table = $('#home3').DataTable( {
+		"aaSorting": [[ 1, "desc" ]],
+		"bFilter": false,
+		"paging": false,
+		"bInfo": false,
+		"language": {
+			"emptyTable": "Engir leikir í gangi",
+			"sInfoEmpty": ""
+		},
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 1,
+            right: 0
+        }
+    } );
+} );
+
+
+$(document).ready(function() {
+    var table = $('#home4').DataTable( {
+		"aaSorting": [[ 2, "desc" ]],
+		"bFilter": false,
+		"paging": false,
+		"bInfo": false,
+		"language": {
+			"emptyTable": "Engir sendingar",
+			"sInfoEmpty": ""
+		},
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 1,
+            right: 0
+        }
+    } );
+} );
+
+
+$(document).ready(function() {
+    var table = $('#home5').DataTable( {
+		"aaSorting": [[ 2, "desc" ]],
+		"bFilter": false,
+		"paging": false,
+		"bInfo": false,
+		"language": {
+			"emptyTable": "Engir sendingar",
+			"sInfoEmpty": ""
+		},
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 1,
+            right: 0
+        }
+    } );
+} );
+
+
+</script> 
+
+<style> 
+ .div-1 {
+        background-color: #32336b;
+		font-size: 20px;
+		font-family: "Serif";
+		
+    }
+ haus {
+     color: white;
+}
+ gogn {
+     color: #555586;
+	 font-size: 50px;
+}
+
+ gogn2 {
+     color: #555586;
+	 font-size: 15px;
+}
+</style> 	
+<html>
+
+
+
+<head>
+<title>Tölfræði</title>
+</head>
+
+<body>   
+
+
+    <haus>
+<div class="div-1"> &nbsp; Markmenn </div>
+ </haus>
+ 
+<table id="home1" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+            <th>Nafn</th>
+            <th>Varin</th>
+			<th>Skot &aacute;</th>
+            <th>%</th>
+			<th>xS</th>	
+			<th>+/-</th>	
+            <th>Víti Varin</th>
+            <th>Vi%</th>
+            <th>Stl</th>
+            <th>M&ouml;rk</th>
+            <th>Skot%</th>
+            <th>Sk&ouml;pu&eth; f&aelig;ri (Sto&eth;)</th>
+            <th>V&iacute;ta send.</th>
+            <th>TB (TB/ S.Brot)</th>
+            <th>Gul</th>
+            <th>2M&iacute;n</th>
+            <th>Rau</th>
+        </tr>
+    </thead>
+
+
+
+<tbody>
+        <tr>
+            <td>12. Jón Þórarinn Þorsteinsson</td>
+            <td>9</td>
+            <td>33</td>
+            <td>27.3</td>
+			<td>11.2</td>
+				<td>-2.2</td>
+            <td>1/2</td>
+            <td>50.0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (0)</td>
+            <td>0</td>
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>       
+        </tr>
+
+ <tbody>
+        <tr>
+            <td>1. Daníel Freyr Andrésson</td>
+            <td>2</td>
+            <td>10</td>
+            <td>20.0</td>
+			<td>3.6</td>
+				<td>-1.6</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (1)</td>
+            <td>0</td>
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>       
+        </tr>
+
+  </tbody>
+</table>
+
+<br>
+ <haus>
+<div class="div-1"> &nbsp; Útileikmenn sókn </div>
+ </haus>
+
+
+
+<table id="home2" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+			<th>Nafn</th>
+		   <th>M&ouml;rk</th>
+		   <th>Skot</th>
+            <th>Skot%</th>
+			<th>xG</th>
+			<th>+/-</th>
+			<th>V&iacute;ta M&ouml;rk</th>
+            <th>V&iacute;ta%</th>
+            <th>Hra&eth;a.Uph.</th>
+            <th>Hra&eth;aU%</th>          
+            <th>Sk&ouml;pu&eth; f&aelig;ri (Sto&eth;)</th>
+            <th>V&iacute;ta send.</th>
+            <th>Fi.V.</th>
+            <th>TB (TB/S.Brot)</th>
+        </tr>
+    </thead>
+<tbody>
+
+        <tr>
+            <td>25. Ómar Darri Sigurgeirsson</td>
+            <td>9</td>
+            <td>13</td>
+            <td>69.2</td>
+			<td>6.9</td>
+			<td>+2.1</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>4 (3/1)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>26. Birgir Már Birgisson</td>
+            <td>4</td>
+            <td>7</td>
+            <td>57.1</td>
+			<td>4.7</td>
+			<td>-0.7</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0.0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>20. Birkir Benediktsson</td>
+            <td>3</td>
+            <td>6</td>
+            <td>50.0</td>
+			<td>3.7</td>
+			<td>-0.7</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>2 (1)</td>
+            <td>1</td>
+            <td>1</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>34. Garðar Ingi Sindrason</td>
+            <td>3</td>
+            <td>6</td>
+            <td>50.0</td>
+			<td>3.1</td>
+			<td>-0.1</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>8 (7)</td>
+            <td>1</td>
+            <td>0</td>
+            <td>1 (1/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>42. Kristófer Máni Jónasson</td>
+            <td>3</td>
+            <td>3</td>
+            <td>100.0</td>
+			<td>1.8</td>
+			<td>+1.2</td>
+            <td>2/2</td>
+            <td>100.0</td>
+            <td>1</td>
+            <td>100.0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (0/1)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>9. Leonharð Þorgeir Harðarson</td>
+            <td>2</td>
+            <td>2</td>
+            <td>100.0</td>
+			<td>1.4</td>
+			<td>+0.6</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>1</td>
+            <td>100.0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>48. Símon Michael Guðjónsson</td>
+            <td>1</td>
+            <td>3</td>
+            <td>33.3</td>
+			<td>2.0</td>
+			<td>-1.0</td>
+            <td>0/1</td>
+            <td>0.0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>15. Jakob Martin Ásgeirsson</td>
+            <td>1</td>
+            <td>1</td>
+            <td>100.0</td>
+			<td>0.6</td>
+			<td>+0.4</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (1/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>7. Ingvar Dagur Gunnarsson</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>24. Einar Örn Sindrason</td>
+            <td>0</td>
+            <td>1</td>
+            <td>0.0</td>
+			<td>0.5</td>
+			<td>-0.5</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>2 (2)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (1/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>10. Brynjar Narfi Arndal</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>2. Ágúst Birgisson</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 (0/0)</td> 
+
+        </tr>
+ 
+        <tr>
+            <td>22. Gunnar Kári Bragason</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0/0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+             <td>0 (0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>1 (0/1)</td> 
+
+        </tr>
+  </tbody>
+</table>
+
+<br>
+ <haus>
+<div class="div-1"> &nbsp; Útileikmenn vörn </div>
+ </haus>
+
+
+<table id="home3" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+
+            <th>Nafn</th>
+			 <th>L&ouml;gleg Stopp</th>
+            <th>Stolinn</th>
+            <th>Blokk</th>
+           
+            <th>Frk (S&oacute;kn/V&ouml;rn)</th>
+			<th>V&iacute;ti &aacute;</th>
+            <th>Gul</th>
+            <th>2M&iacute;n</th>
+            <th>Rau</th>
+
+            
+			
+        </tr>
+    </thead>
+
+<tbody>
+
+        <tr>
+            <td>7. Ingvar Dagur Gunnarsson</td>
+			<td>7</td>
+            <td>0</td>
+            <td>1</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>26. Birgir Már Birgisson</td>
+			<td>5</td>
+            <td>1</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>25. Ómar Darri Sigurgeirsson</td>
+			<td>3</td>
+            <td>2</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>20. Birkir Benediktsson</td>
+			<td>2</td>
+            <td>1</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>1</td>
+            <td>0</td>
+            <td>1</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>22. Gunnar Kári Bragason</td>
+			<td>2</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>1 (0/1)</td>
+            <td>1</td>
+            <td>1</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>42. Kristófer Máni Jónasson</td>
+			<td>1</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>2</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>10. Brynjar Narfi Arndal</td>
+			<td>0</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>9. Leonharð Þorgeir Harðarson</td>
+			<td>0</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>48. Símon Michael Guðjónsson</td>
+			<td>0</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>34. Garðar Ingi Sindrason</td>
+			<td>0</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>24. Einar Örn Sindrason</td>
+			<td>0</td>
+            <td>0</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>15. Jakob Martin Ásgeirsson</td>
+			<td>0</td>
+            <td>1</td>
+            <td>0</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+ 
+        <tr>
+            <td>2. Ágúst Birgisson</td>
+			<td>0</td>
+            <td>0</td>
+            <td>1</td>          
+            <td>0 (0/0)</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td> 
+        </tr>
+  </tbody>
+</table>
+
+<br>
+ <haus>
+<div class="div-1"> &nbsp; Sendingar tölfræði </div>
+ </haus>
+
+<table id="home4" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+
+            <th>Sendingar maður</th>
+			 <th>Skotmaður</th>
+            <th>Sendingar</th>
+            <th>Stoðsendingar</th>         
+            <th>Nýting</th>
+        </tr>
+    </thead>
+
+<tbody>
+ </tbody>
+</table>
+
+
+<br>
+ <haus>
+<div class="div-1"> &nbsp; Markvarsla </div>
+ </haus>
+
+<table id="home5" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+
+            <th>Markmaður</th>
+			 <th>Skotmaður</th>
+            <th>Varin</th>
+            <th>% Varin</th> 
+			<th>Mörk</th> 
+        </tr>
+    </thead>
+
+<tbody>
+ </tbody>
+</table>

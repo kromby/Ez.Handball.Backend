@@ -1,0 +1,7409 @@
+<script>  
+
+$(document).ready(function() {
+  var checkBoxes = $("input[name='toggle']");
+  toggle();
+  $("#toggle").click(function() {
+    toggle();
+  });
+
+  function toggle() {
+    if (checkBoxes.prop("checked")) {
+      $('#heildar).show('slow');
+      $('#medal).hide('slow');
+
+    } else {
+      $('#heildar).hide('slow');
+      $('#medal).show('slow');
+    }
+  }
+});
+</script>  
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/fixedcolumns/4.1.0/js/dataTables.fixedColumns.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/4.1.0/css/fixedColumns.dataTables.min.css">
+
+<script>  
+
+
+$(document).ready(function() {
+    var table = $('#statz1').DataTable( {
+		"aaSorting": [[ 4, "desc" ]],
+ 		"iDisplayLength": 20,
+        scrollX:        true,
+        scrollCollapse: true,
+        fixedColumns:   {
+            left: 2,
+            right: 0
+        },
+		"columnDefs": [
+            {
+                "targets": [ 0 ],
+                "visible": false,
+                "searchable": true
+            }
+        ]
+    } );
+} );
+
+
+</script> 
+
+	
+<html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+<link href="headercss.css" rel="stylesheet">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N646HZ4LD5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-N646HZ4LD5');
+</script>
+</head> 
+<body>
+<nav class="navbar navbar-expand-xl navbar-dark bg-dark">
+	<a href="/" class="navbar-brand"><img src="hringur_transparent.png" ><b>HB</b>Statz</a>  		
+	<button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+		<span class="navbar-toggler-icon"></span>
+	</button>
+	<!-- Collection of nav links, forms, and other content for toggling -->
+	<div id="navbarCollapse" class="collapse navbar-collapse justify-content-start">		
+		
+		<div class="navbar-nav ml-auto">			
+				
+          <div class="nav-item dropdown">
+				<a href="#" data-toggle="dropdown" class="nav-item nav-link dropdown-toggle user-action"><i class="fa fa-list"></i> Deildir <b class="caret"></b></a>
+				<div class="dropdown-menu">
+					<a href="OlisDeildKarlaLeikir.php" class="dropdown-item"><i class="fa fa-male"></i> Olís karlar</a>
+					<a href="OlisDeildKvennaLeikir.php" class="dropdown-item"><i class="fa fa-female"></i> Olís konur</a>
+					<a href="LeikirGrill.php?k=M&f=1&d=2" class="dropdown-item"><i class="fa fa-male"></i> Grill karlar</a>
+					<a href="LeikirGrill.php?k=F&f=1&d=2" class="dropdown-item"><i class="fa fa-female"></i> Grill konur</a>
+					<a href="Leikir2deild.php" class="dropdown-item"><i class="fa fa-female"></i> 2 deild karla</a>
+					<div class="divider dropdown-divider"></div>
+					<a href="LeikirYngriFlokkar.php?k=M&f=2&d=3" class="dropdown-item"><i class="fa fa-users"></i> Yngri flokkar</a>
+					<div class="divider dropdown-divider"></div>
+					<a href="LandsleikirKarla.php" class="dropdown-item"><i class="fa fa-map"></i> Landslið</a>
+				</div>
+			</div>
+           <div class="nav-item dropdown">
+				<a href="#" data-toggle="dropdown" class="nav-item nav-link dropdown-toggle user-action"><i class="fa fa-line-chart"></i> Tölfræði <b class="caret"></b></a>
+				<div class="dropdown-menu">
+					<a href="OlisDeildKarlaTolfraedi.php" class="dropdown-item"><i class="fa fa-user"></i> Leikmenn</a>
+					<a href="OlisDeildKarlaTolfraedi5.php" class="dropdown-item"><i class="fas fa-flag"></i> Skot Tölfræði</a>
+						<a href="OlisDeildKarlaSendingar.php" class="dropdown-item"><i class="fas fa-handshake"></i> Sendingar Tölfræði</a>
+					<div class="divider dropdown-divider"></div>
+					<a href="OlisDeildKarlaTolfraedi2.php" class="dropdown-item"><i class="fa fa-child"></i> Markmenn</a>			
+					<div class="divider dropdown-divider"></div>
+					<a href="OlisDeildKarlaTolfraedi3.php" class="dropdown-item"><i class="fa fa-users"></i> Lið</a>
+					<div class="divider dropdown-divider"></div>
+					<a href="OlisDeildKarlaTolfraedi6.php" class="dropdown-item"><i class="fas fa-bolt"></i> Power Ranking</a>
+					<a href="MoM.php" class="dropdown-item"><i class="fa fa-bullhorn"></i> Bestu leikmenn</a>
+					<a href="OlisDeildKarlaTolfraedi4.php" class="dropdown-item"><i class="fa fa-history"></i> Tölfræði Saga</a>									
+					
+				</div>
+			</div>
+          <div class="nav-item dropdown">
+				<a href="#" data-toggle="dropdown" class="nav-item nav-link dropdown-toggle user-action"><i class="fa fa-files-o"></i> Deildin <b class="caret"></b></a>
+				<div class="dropdown-menu">
+					<a href="OlisDeildKarlaStada.php" class="dropdown-item"><i class="fa fa-table"></i> Stöðutafla</a>
+					<div class="divider dropdown-divider"></div>
+					<a href="OlisDeildKarlaLeikir.php" class="dropdown-item"><i class="fa fa-file"></i> Leikskýrslur</a>
+					<a href="OlisdeildKarlaFramundan.php" class="dropdown-item"><i class="fa fa-arrow-circle-right"></i> Næstu Leikir</a>
+				</div>
+			</div>
+          <div class="nav-item dropdown">
+				<a href="OlisdeildKarlaLiveScore.php"  class="nav-item nav-link"><i class="fa fa-tv"></i> Í beinni <b class="caret"></b></a>
+			</div>
+		</div>
+      
+	</div>
+</nav>
+</body>
+</html>
+<head>
+<title>Tölfræði</title>
+</head>
+
+<body>
+<br>
+
+  <div align="center" >
+<button type="submit" class="btn btn-secondary btn-m" onclick="window.location.href='https://hbstatz.is/OlisDeildKarlaTolfraedib.php';" >Heildar</button>
+  </div >
+  
+  <table id="statz1" class="display" width="100%">
+
+<thead align="center">
+        <tr>
+			<th>Li&eth;</th>
+            <th>Nafn</th>
+            <th>Li&eth;</th>
+            <th>Leikir</th>
+            <th>M&ouml;rk</th>
+            <th><div title="Skotn&yacute;ting">%</div></th>	
+			 <th>xG</th>
+            <th>+/-</th>
+			<th><div title="M&ouml;rk &uacute;r v&iacute;ti">V&iacute;ti</div></th>
+			<th><div title="V&iacute;ta n&yacute;ting">V%</div></th>
+			<th><div title="Fisku&eth; v&iacute;ti">FiV</div></th>
+            <th><div title="Sto&eth;sendingar">Sto</div></th> 
+			<th><div title="Sköpuð færi">Sk.F</div></th> 
+            <th><div title="Mörk úr sendingum">P%</div></th> 
+			<th><div title="Sending í fiskað víti">S7m</div></th> 
+            <th><div title="Tapa&eth;ir boltar">TB</div></th>
+			<th><div title="">Sto/TB</div></th>
+			<th><div title="">Sk.F/TB</div></th>	
+			  <th><div title="Aðkoma marka">G/A</div></th>
+            <th><div title="Fr&aacute;k&ouml;st">Frk</div></th>
+            <th><div title="Stolnir boltar">Stl</div></th>
+            <th><div title="Blokku&eth; skot">Blk</div></th>
+            <th><div title="L&ouml;glegar st&ouml;&eth;vanir">Stp</div></th>
+            <th><div title="Gul spj&ouml;ld">Gul</div></th>
+            <th><div title="2 m&iacute;n&uacute;tur">2m</div></th>
+            <th><div title="Rau&eth; spj&ouml;ld">Rau</div></th>
+        </tr>
+    </thead>
+
+<tbody>
+
+        <tr>
+			<td> IBV</td>
+             <td> Róbert Sigurðarson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>16</td>
+            <td>0.4</td>
+            <td>100.0</td>
+			<td>0.26</td>
+			<td>+0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>0.5</td>
+            <td>0.4</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>2.8</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Einar Rafn Eiðsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>20</td>
+            <td>3.5</td>
+            <td>67.6</td>
+			<td>3.32</td>
+			<td>+0.13</td>
+			<td>2.1</td>
+			<td>84.0</td>
+            <td>0.3</td>
+            <td>1.5</td>
+			<td>2.5</td>
+			<td>61.2</td>
+              <td>0.4</td>
+            <td>1.2</td>
+			 <td>1.30</td>
+			  <td>2.13</td>
+			   <td>5</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Jón Bjarni Ólafsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>30</td>
+            <td>3.5</td>
+            <td>77.4</td>
+			<td>3.25</td>
+			<td>+0.28</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.8</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>71.4</td>
+              <td>0.0</td>
+            <td>1.3</td>
+			 <td>0.13</td>
+			  <td>0.18</td>
+			   <td>3.7</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>1.3</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Daníel Matthíasson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.1</td>
+            <td>100.0</td>
+			<td>0.07</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.1</td>
+            <td>0.5</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>5.3</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Ísak Rafnsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>14</td>
+            <td>0.1</td>
+            <td>100.0</td>
+			<td>0.05</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>1.4</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Ólafur Ægir Ólafsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>29</td>
+            <td>2.0</td>
+            <td>59.0</td>
+			<td>2.07</td>
+			<td>-0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.7</td>
+            <td>1.9</td>
+			<td>2.7</td>
+			<td>70.9</td>
+              <td>0.2</td>
+            <td>1.2</td>
+			 <td>1.56</td>
+			  <td>2.19</td>
+			   <td>3.9</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Arnar Snær Magnússon </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>23</td>
+            <td>0.9</td>
+            <td>75.0</td>
+			<td>0.88</td>
+			<td>+0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.33</td>
+			  <td>0.33</td>
+			   <td>1</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Leonharð Þorgeir Harðarson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>23</td>
+            <td>0.8</td>
+            <td>46.2</td>
+			<td>0.91</td>
+			<td>-0.13</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>0.6</td>
+			<td>0.8</td>
+			<td>73.7</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>1.40</td>
+			  <td>1.90</td>
+			   <td>1.4</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Brynjólfur Snær Brynjólfsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>26</td>
+            <td>1.3</td>
+            <td>65.4</td>
+			<td>1.39</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>2.00</td>
+			  <td>3.00</td>
+			   <td>1.5</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Sveinn Andri Sveinsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>3</td>
+            <td>0.7</td>
+            <td>66.7</td>
+			<td>0.76</td>
+			<td>-0.09</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.3</td>
+            <td>1.3</td>
+			<td>2.3</td>
+			<td>57.1</td>
+              <td>2.0</td>
+            <td>1.3</td>
+			 <td>1.00</td>
+			  <td>1.75</td>
+			   <td>2</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>1.3</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Árni Bragi Eyjólfsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>25</td>
+            <td>5.1</td>
+            <td>65.0</td>
+			<td>5.37</td>
+			<td>-0.25</td>
+			<td>1.4</td>
+			<td>69.4</td>
+            <td>0.5</td>
+            <td>4.0</td>
+			<td>5.4</td>
+			<td>73.5</td>
+              <td>0.7</td>
+            <td>1.4</td>
+			 <td>2.86</td>
+			  <td>3.89</td>
+			   <td>9.1</td>
+            <td>0.8</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>1.8</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Dagur Arnarsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>22</td>
+            <td>3.5</td>
+            <td>55.7</td>
+			<td>3.93</td>
+			<td>-0.39</td>
+			<td>1.5</td>
+			<td>73.9</td>
+            <td>0.7</td>
+            <td>2.9</td>
+			<td>4.1</td>
+			<td>70.3</td>
+              <td>0.9</td>
+            <td>1.7</td>
+			 <td>1.73</td>
+			  <td>2.46</td>
+			   <td>6.4</td>
+            <td>0.2</td>
+            <td>0.5</td>
+            <td>0.1</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Kári Kristján Kristjánsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>19</td>
+            <td>2.3</td>
+            <td>67.7</td>
+			<td>2.39</td>
+			<td>-0.08</td>
+			<td>0.5</td>
+			<td>64.3</td>
+            <td>0.4</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.6</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>2.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Daníel Þór Ingason </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>20</td>
+            <td>3.3</td>
+            <td>49.3</td>
+			<td>3.56</td>
+			<td>-0.26</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.4</td>
+            <td>2.3</td>
+			<td>3.1</td>
+			<td>75.0</td>
+              <td>0.2</td>
+            <td>1.3</td>
+			 <td>1.80</td>
+			  <td>2.40</td>
+			   <td>5.6</td>
+            <td>0.3</td>
+            <td>0.6</td>
+            <td>0.5</td>
+            <td>4.0</td>
+            <td>0.2</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Birkir Benediktsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>31</td>
+            <td>2.7</td>
+            <td>60.4</td>
+			<td>2.66</td>
+			<td>+0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>2.2</td>
+			<td>3.1</td>
+			<td>71.1</td>
+              <td>0.3</td>
+            <td>1.6</td>
+			 <td>1.38</td>
+			  <td>1.94</td>
+			   <td>4.9</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>0.2</td>
+            <td>3.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Jóhann Birgir Ingvarsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>18</td>
+            <td>0.9</td>
+            <td>44.7</td>
+			<td>1.12</td>
+			<td>-0.17</td>
+			<td>0.1</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.6</td>
+			<td>0.9</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>1.43</td>
+			  <td>2.14</td>
+			   <td>1.5</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Halldór Ingi Jónasson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>7</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Adam Haukur Baumruk </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>25</td>
+            <td>1.0</td>
+            <td>61.5</td>
+			<td>0.88</td>
+			<td>+0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.73</td>
+			  <td>0.91</td>
+			   <td>1.3</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>2.8</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Þorsteinn Gauti Hjálmarsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>9</td>
+            <td>2.1</td>
+            <td>40.4</td>
+			<td>2.59</td>
+			<td>-0.48</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.9</td>
+			<td>1.0</td>
+			<td>88.9</td>
+              <td>0.1</td>
+            <td>1.0</td>
+			 <td>0.89</td>
+			  <td>1.00</td>
+			   <td>3</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Lúðvík Thorberg B Arnkelsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>9</td>
+            <td>1.2</td>
+            <td>57.9</td>
+			<td>1.02</td>
+			<td>+0.20</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>1.3</td>
+			<td>1.7</td>
+			<td>75.0</td>
+              <td>0.1</td>
+            <td>0.7</td>
+			 <td>2.00</td>
+			  <td>2.67</td>
+			   <td>2.5</td>
+            <td>0.7</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>1.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Þorgils Jón Svölu Baldursson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>2.4</td>
+            <td>71.6</td>
+			<td>2.44</td>
+			<td>-0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>81.8</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.56</td>
+			  <td>0.69</td>
+			   <td>2.7</td>
+            <td>0.5</td>
+            <td>0.8</td>
+            <td>0.5</td>
+            <td>5.1</td>
+            <td>0.2</td>
+            <td>0.9</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Darri Aronsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>23</td>
+            <td>0.0</td>
+            <td>100.0</td>
+			<td>0.03</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>2.0</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Róbert Aron Hostert </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>17</td>
+            <td>0.1</td>
+            <td>100.0</td>
+			<td>0.03</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>1.4</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Agnar Smári Jónsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>25</td>
+            <td>0.5</td>
+            <td>48.1</td>
+			<td>0.48</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.3</td>
+			<td>33.3</td>
+              <td>0.1</td>
+            <td>0.5</td>
+			 <td>0.23</td>
+			  <td>0.69</td>
+			   <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Starri Friðriksson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.9</td>
+            <td>63.1</td>
+			<td>2.15</td>
+			<td>-0.29</td>
+			<td>0.2</td>
+			<td>38.5</td>
+            <td>0.2</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>4.00</td>
+			  <td>4.00</td>
+			   <td>2.1</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Birgir Már Birgisson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>30</td>
+            <td>2.9</td>
+            <td>76.1</td>
+			<td>2.75</td>
+			<td>+0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>70.6</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>1.33</td>
+			  <td>1.89</td>
+			   <td>3.3</td>
+            <td>0.7</td>
+            <td>0.9</td>
+            <td>0.1</td>
+            <td>2.9</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Ágúst Birgisson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>30</td>
+            <td>0.3</td>
+            <td>69.2</td>
+			<td>0.28</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.33</td>
+			  <td>0.33</td>
+			   <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>2.2</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Hákon Daði Styrmisson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>7</td>
+            <td>6.6</td>
+            <td>67.6</td>
+			<td>6.95</td>
+			<td>-0.38</td>
+			<td>2.1</td>
+			<td>75.0</td>
+            <td>0.9</td>
+            <td>0.9</td>
+			<td>0.9</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>1.1</td>
+			 <td>0.75</td>
+			  <td>0.75</td>
+			   <td>7.5</td>
+            <td>1.4</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Andri Þór Helgason </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>4.1</td>
+            <td>65.8</td>
+			<td>4.23</td>
+			<td>-0.15</td>
+			<td>1.5</td>
+			<td>77.1</td>
+            <td>0.0</td>
+            <td>0.8</td>
+			<td>1.0</td>
+			<td>81.8</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>1.50</td>
+			  <td>1.83</td>
+			   <td>4.9</td>
+            <td>0.5</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Pétur Árni Hauksson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>15</td>
+            <td>2.3</td>
+            <td>47.9</td>
+			<td>2.61</td>
+			<td>-0.28</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>3.0</td>
+			<td>4.7</td>
+			<td>63.4</td>
+              <td>0.6</td>
+            <td>2.7</td>
+			 <td>1.13</td>
+			  <td>1.78</td>
+			   <td>5.3</td>
+            <td>0.5</td>
+            <td>0.9</td>
+            <td>0.1</td>
+            <td>2.8</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Hergeir Grímsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>28</td>
+            <td>2.9</td>
+            <td>62.1</td>
+			<td>3.07</td>
+			<td>-0.14</td>
+			<td>1.2</td>
+			<td>70.2</td>
+            <td>0.8</td>
+            <td>1.6</td>
+			<td>2.4</td>
+			<td>66.7</td>
+              <td>0.2</td>
+            <td>1.1</td>
+			 <td>1.53</td>
+			  <td>2.30</td>
+			   <td>4.5</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>1.9</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Magnús Öder Einarsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>8</td>
+            <td>0.5</td>
+            <td>44.4</td>
+			<td>0.68</td>
+			<td>-0.18</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+			<td>0.8</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.75</td>
+			  <td>1.50</td>
+			   <td>0.9</td>
+            <td>0.6</td>
+            <td>0.9</td>
+            <td>1.1</td>
+            <td>3.8</td>
+            <td>0.1</td>
+            <td>0.9</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Sverrir Pálsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>16</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.6</td>
+            <td>1.7</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Jakob Martin Ásgeirsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>32</td>
+            <td>1.3</td>
+            <td>67.8</td>
+			<td>1.19</td>
+			<td>+0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>1.4</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Bjarni Ófeigur Valdimarsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>24</td>
+            <td>7.2</td>
+            <td>60.9</td>
+			<td>7.30</td>
+			<td>-0.09</td>
+			<td>1.4</td>
+			<td>77.3</td>
+            <td>0.4</td>
+            <td>6.3</td>
+			<td>8.7</td>
+			<td>72.7</td>
+              <td>1.8</td>
+            <td>3.5</td>
+			 <td>1.79</td>
+			  <td>2.46</td>
+			   <td>13.5</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>2.0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Sveinn Brynjar Agnarsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>21</td>
+            <td>2.7</td>
+            <td>66.7</td>
+			<td>2.62</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>100.0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.75</td>
+			  <td>0.75</td>
+			   <td>2.8</td>
+            <td>0.9</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Arnór Snær Óskarsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>24</td>
+            <td>8.4</td>
+            <td>70.9</td>
+			<td>8.68</td>
+			<td>-0.26</td>
+			<td>3.3</td>
+			<td>77.7</td>
+            <td>0.8</td>
+            <td>4.8</td>
+			<td>6.6</td>
+			<td>73.1</td>
+              <td>0.7</td>
+            <td>2.1</td>
+			 <td>2.28</td>
+			  <td>3.12</td>
+			   <td>13.2</td>
+            <td>0.5</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Magnús Óli Magnússon </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>26</td>
+            <td>3.2</td>
+            <td>57.3</td>
+			<td>3.19</td>
+			<td>-0.03</td>
+			<td>0.2</td>
+			<td>75.0</td>
+            <td>0.5</td>
+            <td>2.3</td>
+			<td>3.3</td>
+			<td>69.3</td>
+              <td>0.3</td>
+            <td>1.5</td>
+			 <td>1.53</td>
+			  <td>2.20</td>
+			   <td>5.5</td>
+            <td>0.2</td>
+            <td>0.8</td>
+            <td>0.1</td>
+            <td>1.5</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Guðjón Baldur Ómarsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>10</td>
+            <td>1.4</td>
+            <td>53.8</td>
+			<td>1.67</td>
+			<td>-0.27</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>1.6</td>
+            <td>0.5</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Leó Snær Pétursson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>19</td>
+            <td>2.9</td>
+            <td>62.5</td>
+			<td>3.04</td>
+			<td>-0.14</td>
+			<td>0.7</td>
+			<td>81.3</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.4</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.75</td>
+			  <td>1.50</td>
+			   <td>3.1</td>
+            <td>0.9</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Bjarki Steinn Þórisson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>12</td>
+            <td>0.3</td>
+            <td>37.5</td>
+			<td>0.47</td>
+			<td>-0.22</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.50</td>
+			  <td>0.50</td>
+			   <td>0.4</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Einar Örn Sindrason </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>28</td>
+            <td>1.9</td>
+            <td>57.8</td>
+			<td>1.90</td>
+			<td>-0.04</td>
+			<td>0.2</td>
+			<td>83.3</td>
+            <td>0.3</td>
+            <td>1.7</td>
+			<td>2.4</td>
+			<td>70.6</td>
+              <td>0.1</td>
+            <td>1.2</td>
+			 <td>1.45</td>
+			  <td>2.06</td>
+			   <td>3.6</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Sveinn José Rivera </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>24</td>
+            <td>3.5</td>
+            <td>81.6</td>
+			<td>3.04</td>
+			<td>+0.46</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.13</td>
+			  <td>0.25</td>
+			   <td>3.5</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Hannes Höskuldsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>21</td>
+            <td>7.3</td>
+            <td>66.7</td>
+			<td>7.26</td>
+			<td>+0.08</td>
+			<td>2.4</td>
+			<td>73.5</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.8</td>
+			 <td>0.13</td>
+			  <td>0.13</td>
+			   <td>7.4</td>
+            <td>0.5</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>1.4</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Arnór Ísak Haddsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>23</td>
+            <td>2.3</td>
+            <td>62.7</td>
+			<td>2.34</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.8</td>
+            <td>1.7</td>
+			<td>2.4</td>
+			<td>72.2</td>
+              <td>0.2</td>
+            <td>1.0</td>
+			 <td>1.77</td>
+			  <td>2.45</td>
+			   <td>4</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>2.4</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Daði Jónsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>21</td>
+            <td>0.3</td>
+            <td>60.0</td>
+			<td>0.27</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>69.2</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>1.50</td>
+			  <td>2.17</td>
+			   <td>0.7</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>4.6</td>
+            <td>0.1</td>
+            <td>0.9</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Dagur Gautason </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>11</td>
+            <td>3.6</td>
+            <td>76.9</td>
+			<td>3.32</td>
+			<td>+0.31</td>
+			<td>0.2</td>
+			<td>100.0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.3</td>
+			<td>33.3</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.25</td>
+			  <td>0.75</td>
+			   <td>3.7</td>
+            <td>0.6</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Hjörtur Ingi Halldórsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>2.3</td>
+            <td>51.4</td>
+			<td>2.20</td>
+			<td>+0.13</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>2.5</td>
+			<td>3.7</td>
+			<td>67.0</td>
+              <td>0.4</td>
+            <td>1.9</td>
+			 <td>1.28</td>
+			  <td>1.91</td>
+			   <td>4.8</td>
+            <td>0.4</td>
+            <td>0.9</td>
+            <td>0.8</td>
+            <td>2.8</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Arnór Þorri Þorsteinsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.5</td>
+            <td>51.5</td>
+			<td>1.55</td>
+			<td>-0.01</td>
+			<td>0.1</td>
+			<td>66.7</td>
+            <td>0.1</td>
+            <td>0.5</td>
+			<td>1.0</td>
+			<td>52.2</td>
+              <td>0.1</td>
+            <td>0.8</td>
+			 <td>0.67</td>
+			  <td>1.28</td>
+			   <td>2</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Patrekur Stefánsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>18</td>
+            <td>1.1</td>
+            <td>52.8</td>
+			<td>1.18</td>
+			<td>-0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>66.7</td>
+              <td>0.1</td>
+            <td>0.3</td>
+			 <td>1.33</td>
+			  <td>2.00</td>
+			   <td>1.5</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Brynjar Hólm Grétarsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>5.5</td>
+            <td>57.3</td>
+			<td>5.38</td>
+			<td>+0.16</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.9</td>
+            <td>3.7</td>
+			<td>5.7</td>
+			<td>64.8</td>
+              <td>0.8</td>
+            <td>2.8</td>
+			 <td>1.31</td>
+			  <td>2.02</td>
+			   <td>9.2</td>
+            <td>0.7</td>
+            <td>1.0</td>
+            <td>0.8</td>
+            <td>4.3</td>
+            <td>0.2</td>
+            <td>0.9</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Hafþór Már Vignisson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>16</td>
+            <td>4.4</td>
+            <td>56.0</td>
+			<td>3.92</td>
+			<td>+0.46</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.3</td>
+            <td>5.6</td>
+			<td>8.1</td>
+			<td>69.0</td>
+              <td>0.6</td>
+            <td>2.4</td>
+			 <td>2.34</td>
+			  <td>3.39</td>
+			   <td>10</td>
+            <td>0.8</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>1.5</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Þórður Tandri Ágústsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>21</td>
+            <td>3.3</td>
+            <td>66.7</td>
+			<td>3.69</td>
+			<td>-0.36</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+			<td>0.2</td>
+			<td>0.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.00</td>
+			  <td>0.36</td>
+			   <td>3.3</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.5</td>
+            <td>3.9</td>
+            <td>0.1</td>
+            <td>1.2</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Ívar Logi Styrmisson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>23</td>
+            <td>5.3</td>
+            <td>68.0</td>
+			<td>5.26</td>
+			<td>0.00</td>
+			<td>2.3</td>
+			<td>83.1</td>
+            <td>0.6</td>
+            <td>1.0</td>
+			<td>1.6</td>
+			<td>62.9</td>
+              <td>0.2</td>
+            <td>1.0</td>
+			 <td>0.96</td>
+			  <td>1.52</td>
+			   <td>6.3</td>
+            <td>0.4</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Gabríel Martinez Róbertsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>4</td>
+            <td>2.5</td>
+            <td>76.9</td>
+			<td>2.07</td>
+			<td>+0.43</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>2.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Viktor Sigurðsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>18</td>
+            <td>3.7</td>
+            <td>53.2</td>
+			<td>3.70</td>
+			<td>-0.03</td>
+			<td>0.2</td>
+			<td>50.0</td>
+            <td>0.5</td>
+            <td>3.9</td>
+			<td>5.5</td>
+			<td>71.4</td>
+              <td>0.5</td>
+            <td>1.6</td>
+			 <td>2.41</td>
+			  <td>3.38</td>
+			   <td>7.6</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Gunnar Dan Hlynsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>14</td>
+            <td>0.2</td>
+            <td>75.0</td>
+			<td>0.22</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Elvar Otri Hjálmarsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.0</td>
+            <td>49.4</td>
+			<td>1.84</td>
+			<td>+0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>2.2</td>
+			<td>3.4</td>
+			<td>65.3</td>
+              <td>0.3</td>
+            <td>1.1</td>
+			 <td>1.96</td>
+			  <td>3.00</td>
+			   <td>4.2</td>
+            <td>0.4</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>2.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Þorvaldur Tryggvason </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>24</td>
+            <td>0.8</td>
+            <td>81.8</td>
+			<td>0.66</td>
+			<td>+0.09</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.3</td>
+			<td>0.5</td>
+			<td>60.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>3.00</td>
+			  <td>5.00</td>
+			   <td>1.1</td>
+            <td>0.2</td>
+            <td>0.5</td>
+            <td>0.5</td>
+            <td>4.2</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Jakob Ingi Stefánsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>8</td>
+            <td>2.8</td>
+            <td>68.8</td>
+			<td>2.74</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>2.9</td>
+            <td>0.5</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Tandri Már Konráðsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>3</td>
+            <td>0.3</td>
+            <td>14.3</td>
+			<td>1.33</td>
+			<td>-1.00</td>
+			<td>0.3</td>
+			<td>50.0</td>
+            <td>0.0</td>
+            <td>0.7</td>
+			<td>1.0</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>2.00</td>
+			  <td>3.00</td>
+			   <td>1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.3</td>
+            <td>0.7</td>
+            <td>0.3</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Ágúst Ingi Óskarsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.1</td>
+            <td>56.0</td>
+			<td>2.20</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.9</td>
+            <td>1.1</td>
+			<td>2.0</td>
+			<td>55.6</td>
+              <td>0.2</td>
+            <td>1.5</td>
+			 <td>0.76</td>
+			  <td>1.36</td>
+			   <td>3.2</td>
+            <td>0.3</td>
+            <td>0.7</td>
+            <td>0.1</td>
+            <td>3.0</td>
+            <td>0.2</td>
+            <td>0.8</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Kristján Pétur Barðason </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>5</td>
+            <td>0.4</td>
+            <td>40.0</td>
+			<td>0.68</td>
+			<td>-0.28</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.4</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Símon Michael Guðjónsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>31</td>
+            <td>4.6</td>
+            <td>72.4</td>
+			<td>4.54</td>
+			<td>+0.11</td>
+			<td>1.9</td>
+			<td>70.7</td>
+            <td>0.2</td>
+            <td>0.3</td>
+			<td>0.3</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.57</td>
+			  <td>0.57</td>
+			   <td>4.9</td>
+            <td>0.8</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Kristján Ottó Hjálmsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>25</td>
+            <td>3.3</td>
+            <td>71.6</td>
+			<td>3.49</td>
+			<td>-0.17</td>
+			<td>0.0</td>
+			<td>100.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.8</td>
+			 <td>0.05</td>
+			  <td>0.10</td>
+			   <td>3.3</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Jón Karl Einarsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>5</td>
+            <td>0.6</td>
+            <td>60.0</td>
+			<td>0.60</td>
+			<td>0.00</td>
+			<td>0.2</td>
+			<td>50.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Sigurður Jefferson Guarino </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>4.6</td>
+            <td>76.6</td>
+			<td>4.60</td>
+			<td>+0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.0</td>
+            <td>0.2</td>
+			<td>0.4</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.31</td>
+			  <td>0.62</td>
+			   <td>4.8</td>
+            <td>0.5</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>4.7</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Styrmir Máni Arnarsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>23</td>
+            <td>0.0</td>
+            <td>50.0</td>
+			<td>0.07</td>
+			<td>-0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.1</td>
+            <td>0.7</td>
+            <td>0.7</td>
+            <td>4.3</td>
+            <td>0.1</td>
+            <td>0.9</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Daníel Karl Gunnarsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>19</td>
+            <td>2.2</td>
+            <td>71.9</td>
+			<td>2.16</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.4</td>
+            <td>0.3</td>
+			<td>0.3</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>5.00</td>
+			  <td>5.00</td>
+			   <td>2.5</td>
+            <td>0.3</td>
+            <td>0.5</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Gauti Gunnarsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>16</td>
+            <td>3.1</td>
+            <td>63.6</td>
+			<td>3.43</td>
+			<td>-0.37</td>
+			<td>0.4</td>
+			<td>46.2</td>
+            <td>0.3</td>
+            <td>0.4</td>
+			<td>0.4</td>
+			<td>100.0</td>
+              <td>0.1</td>
+            <td>0.9</td>
+			 <td>0.47</td>
+			  <td>0.47</td>
+			   <td>3.5</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Kristófer Máni Jónasson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>33</td>
+            <td>2.0</td>
+            <td>64.4</td>
+			<td>1.92</td>
+			<td>+0.05</td>
+			<td>0.5</td>
+			<td>80.0</td>
+            <td>0.2</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>70.6</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>1.20</td>
+			  <td>1.70</td>
+			   <td>2.4</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Jóel Bernburg </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>21</td>
+            <td>2.6</td>
+            <td>75.0</td>
+			<td>2.39</td>
+			<td>+0.18</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>1.0</td>
+			 <td>0.05</td>
+			  <td>0.10</td>
+			   <td>2.6</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Sölvi Svavarsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>19</td>
+            <td>2.7</td>
+            <td>58.4</td>
+			<td>2.51</td>
+			<td>+0.22</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>3.5</td>
+			<td>5.6</td>
+			<td>62.3</td>
+              <td>0.2</td>
+            <td>2.2</td>
+			 <td>1.57</td>
+			  <td>2.52</td>
+			   <td>6.2</td>
+            <td>0.3</td>
+            <td>0.5</td>
+            <td>0.1</td>
+            <td>1.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Elvar Elí Hallgrímsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>21</td>
+            <td>1.6</td>
+            <td>78.6</td>
+			<td>1.64</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.3</td>
+			<td>42.9</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.50</td>
+			  <td>1.17</td>
+			   <td>1.7</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>2.9</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Sigtryggur Daði Rúnarsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>16</td>
+            <td>2.6</td>
+            <td>55.4</td>
+			<td>2.89</td>
+			<td>-0.33</td>
+			<td>0.5</td>
+			<td>72.7</td>
+            <td>0.4</td>
+            <td>1.1</td>
+			<td>1.9</td>
+			<td>58.6</td>
+              <td>0.2</td>
+            <td>0.9</td>
+			 <td>1.21</td>
+			  <td>2.07</td>
+			   <td>3.7</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.9</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Ólafur Brim Stefánsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>14</td>
+            <td>0.9</td>
+            <td>66.7</td>
+			<td>0.67</td>
+			<td>+0.19</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.6</td>
+			<td>37.5</td>
+              <td>0.1</td>
+            <td>0.4</td>
+			 <td>0.50</td>
+			  <td>1.33</td>
+			   <td>1.1</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>1.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Aron Hólm Kristjánsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>17</td>
+            <td>1.6</td>
+            <td>52.9</td>
+			<td>2.01</td>
+			<td>-0.43</td>
+			<td>0.1</td>
+			<td>33.3</td>
+            <td>0.3</td>
+            <td>1.2</td>
+			<td>2.0</td>
+			<td>60.6</td>
+              <td>0.1</td>
+            <td>2.1</td>
+			 <td>0.57</td>
+			  <td>0.94</td>
+			   <td>2.8</td>
+            <td>0.7</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Þráinn Orri Jónsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>29</td>
+            <td>1.2</td>
+            <td>68.6</td>
+			<td>1.34</td>
+			<td>-0.13</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>77.8</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.58</td>
+			  <td>0.75</td>
+			   <td>1.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>1.5</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Bergþór Róbertsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>12</td>
+            <td>0.3</td>
+            <td>75.0</td>
+			<td>0.22</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.1</td>
+			<td>0.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>1.00</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Oddur Grétarsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>4.5</td>
+            <td>63.6</td>
+			<td>4.20</td>
+			<td>+0.26</td>
+			<td>1.8</td>
+			<td>65.0</td>
+            <td>0.7</td>
+            <td>2.1</td>
+			<td>3.1</td>
+			<td>67.1</td>
+              <td>0.4</td>
+            <td>1.4</td>
+			 <td>1.57</td>
+			  <td>2.33</td>
+			   <td>6.6</td>
+            <td>0.8</td>
+            <td>0.8</td>
+            <td>0.1</td>
+            <td>2.4</td>
+            <td>0.1</td>
+            <td>0.7</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Tindur Ingólfsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>10</td>
+            <td>0.8</td>
+            <td>57.1</td>
+			<td>0.79</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.3</td>
+			<td>0.5</td>
+			<td>60.0</td>
+              <td>0.2</td>
+            <td>0.3</td>
+			 <td>1.00</td>
+			  <td>1.67</td>
+			   <td>1.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Nökkvi Snær Óðinsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.8</td>
+            <td>55.2</td>
+			<td>0.87</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.9</td>
+            <td>0.4</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Hafþór Ingi Halldórsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>8</td>
+            <td>0.1</td>
+            <td>33.3</td>
+			<td>0.21</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>1.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Andri Finnsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>3.6</td>
+            <td>70.6</td>
+			<td>3.59</td>
+			<td>+0.01</td>
+			<td>0.1</td>
+			<td>66.7</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.50</td>
+			   <td>3.7</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Tómas Sigurðarson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.1</td>
+            <td>69.4</td>
+			<td>1.19</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0.00</td>
+			  <td>1.00</td>
+			   <td>1.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Loftur Ásmundsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.6</td>
+            <td>93.3</td>
+			<td>0.51</td>
+			<td>+0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+			<td>0.4</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>2.00</td>
+			  <td>2.00</td>
+			   <td>1</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>2.7</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Róbert Snær Örvarsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.7</td>
+            <td>53.6</td>
+			<td>2.56</td>
+			<td>+0.16</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>1.1</td>
+			<td>1.5</td>
+			<td>73.5</td>
+              <td>0.2</td>
+            <td>0.7</td>
+			 <td>1.56</td>
+			  <td>2.13</td>
+			   <td>3.8</td>
+            <td>0.8</td>
+            <td>0.9</td>
+            <td>0.4</td>
+            <td>3.3</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Arnór Róbertsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>19</td>
+            <td>0.4</td>
+            <td>63.6</td>
+			<td>0.42</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.4</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Hákon Ingi Halldórsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>21</td>
+            <td>2.9</td>
+            <td>63.5</td>
+			<td>2.89</td>
+			<td>+0.01</td>
+			<td>0.3</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>2.00</td>
+			  <td>2.50</td>
+			   <td>3.1</td>
+            <td>0.9</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>1.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Haraldur Björn Hjörleifsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.1</td>
+            <td>50.0</td>
+			<td>0.08</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Dagur Logi Sigurðsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>4</td>
+            <td>0.5</td>
+            <td>33.3</td>
+			<td>0.69</td>
+			<td>-0.19</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+			<td>0.3</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.50</td>
+			  <td>0.50</td>
+			   <td>0.8</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Jón Ásgeir Eyjólfsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>15</td>
+            <td>1.7</td>
+            <td>74.3</td>
+			<td>1.53</td>
+			<td>+0.21</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.4</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>1.00</td>
+			  <td>1.25</td>
+			   <td>2</td>
+            <td>0.5</td>
+            <td>0.5</td>
+            <td>0.4</td>
+            <td>4.5</td>
+            <td>0.2</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Hans Jörgen Ólafsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>21</td>
+            <td>5.2</td>
+            <td>53.7</td>
+			<td>5.11</td>
+			<td>+0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>3.0</td>
+			<td>4.0</td>
+			<td>75.3</td>
+              <td>0.3</td>
+            <td>1.7</td>
+			 <td>1.78</td>
+			  <td>2.36</td>
+			   <td>8.2</td>
+            <td>0.4</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>3.4</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Óðinn Freyr Heiðmarsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>13</td>
+            <td>0.6</td>
+            <td>47.1</td>
+			<td>0.91</td>
+			<td>-0.29</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.17</td>
+			  <td>0.17</td>
+			   <td>0.7</td>
+            <td>0.2</td>
+            <td>0.5</td>
+            <td>0.2</td>
+            <td>1.5</td>
+            <td>0.2</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Kjartan Þór Júlíusson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>21</td>
+            <td>2.6</td>
+            <td>55.1</td>
+			<td>2.59</td>
+			<td>-0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>1.8</td>
+			<td>2.7</td>
+			<td>66.7</td>
+              <td>0.1</td>
+            <td>1.2</td>
+			 <td>1.52</td>
+			  <td>2.28</td>
+			   <td>4.4</td>
+            <td>0.3</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Andri Fannar Elísson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>28</td>
+            <td>2.5</td>
+            <td>65.1</td>
+			<td>2.69</td>
+			<td>-0.16</td>
+			<td>0.5</td>
+			<td>72.2</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>2.6</td>
+            <td>0.5</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Össur Haraldsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>28</td>
+            <td>3.6</td>
+            <td>76.3</td>
+			<td>3.29</td>
+			<td>+0.28</td>
+			<td>0.1</td>
+			<td>50.0</td>
+            <td>0.4</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>72.7</td>
+              <td>0.1</td>
+            <td>0.4</td>
+			 <td>0.73</td>
+			  <td>1.00</td>
+			   <td>3.9</td>
+            <td>0.3</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Kristófer Ísak Bárðarson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.9</td>
+            <td>48.3</td>
+			<td>1.74</td>
+			<td>+0.17</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.4</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>64.3</td>
+              <td>0.1</td>
+            <td>0.8</td>
+			 <td>0.53</td>
+			  <td>0.82</td>
+			   <td>2.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>1.8</td>
+            <td>0.1</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Haukur Ingi Hauksson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>5.4</td>
+            <td>50.2</td>
+			<td>5.37</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>50.0</td>
+            <td>0.7</td>
+            <td>2.5</td>
+			<td>3.7</td>
+			<td>67.4</td>
+              <td>0.5</td>
+            <td>2.6</td>
+			 <td>0.97</td>
+			  <td>1.44</td>
+			   <td>7.9</td>
+            <td>0.3</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>2.3</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Jón Ómar Gíslason </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>29</td>
+            <td>1.0</td>
+            <td>65.9</td>
+			<td>1.16</td>
+			<td>-0.16</td>
+			<td>0.1</td>
+			<td>40.0</td>
+            <td>0.3</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>100.0</td>
+              <td>0.1</td>
+            <td>0.4</td>
+			 <td>0.58</td>
+			  <td>0.58</td>
+			   <td>1.2</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Hinrik Hugi Heiðarsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>19</td>
+            <td>0.7</td>
+            <td>81.3</td>
+			<td>0.54</td>
+			<td>+0.15</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.7</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Eyþór Ari Waage </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.2</td>
+            <td>71.0</td>
+			<td>2.08</td>
+			<td>+0.15</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>2.2</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Haukur Páll Hallgrímsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>19</td>
+            <td>1.7</td>
+            <td>60.0</td>
+			<td>1.71</td>
+			<td>+0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>1.8</td>
+			<td>2.6</td>
+			<td>69.4</td>
+              <td>0.1</td>
+            <td>1.5</td>
+			 <td>1.17</td>
+			  <td>1.69</td>
+			   <td>3.5</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Tryggvi Sigurberg Traustason </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>22</td>
+            <td>3.8</td>
+            <td>62.4</td>
+			<td>3.52</td>
+			<td>+0.25</td>
+			<td>0.6</td>
+			<td>87.5</td>
+            <td>0.7</td>
+            <td>4.6</td>
+			<td>6.7</td>
+			<td>68.5</td>
+              <td>0.5</td>
+            <td>3.5</td>
+			 <td>1.34</td>
+			  <td>1.96</td>
+			   <td>8.4</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>1.7</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Sigurður Snær Sigurjónsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>29</td>
+            <td>1.8</td>
+            <td>72.9</td>
+			<td>1.70</td>
+			<td>+0.06</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.2</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>2.00</td>
+			   <td>1.9</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Árni Ísleifsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.5</td>
+            <td>58.8</td>
+			<td>0.57</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.50</td>
+			  <td>0.50</td>
+			   <td>0.6</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Valdimar Örn Ingvarsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.8</td>
+            <td>69.6</td>
+			<td>1.90</td>
+			<td>-0.13</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.33</td>
+			  <td>0.33</td>
+			   <td>1.9</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>3.7</td>
+            <td>0.1</td>
+            <td>1.0</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Gunnar Kári Bragason </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>33</td>
+            <td>2.1</td>
+            <td>80.2</td>
+			<td>1.93</td>
+			<td>+0.16</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.08</td>
+			  <td>0.17</td>
+			   <td>2.1</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>2.0</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Halldór Kristinn Harðarson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.1</td>
+            <td>59.5</td>
+			<td>1.25</td>
+			<td>-0.11</td>
+			<td>0.0</td>
+			<td>33.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.25</td>
+			  <td>0.25</td>
+			   <td>1.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Jón Ólafur Þorsteinsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.2</td>
+            <td>40.0</td>
+			<td>0.28</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.4</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.33</td>
+			  <td>0.67</td>
+			   <td>0.4</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Erlendur Guðmundsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>24</td>
+            <td>1.9</td>
+            <td>71.9</td>
+			<td>1.84</td>
+			<td>+0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.4</td>
+			<td>0.4</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>2.3</td>
+            <td>0.4</td>
+            <td>0.7</td>
+            <td>0.8</td>
+            <td>1.6</td>
+            <td>0.2</td>
+            <td>0.5</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Dagur Fannar Möller </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>24</td>
+            <td>1.9</td>
+            <td>76.3</td>
+			<td>1.77</td>
+			<td>+0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>0.1</td>
+			<td>0.2</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.33</td>
+			  <td>0.67</td>
+			   <td>2</td>
+            <td>0.5</td>
+            <td>0.6</td>
+            <td>0.5</td>
+            <td>5.5</td>
+            <td>0.2</td>
+            <td>0.9</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Ísak Logi Einarsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>16</td>
+            <td>3.8</td>
+            <td>50.4</td>
+			<td>3.77</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.3</td>
+            <td>1.9</td>
+			<td>2.7</td>
+			<td>72.1</td>
+              <td>0.4</td>
+            <td>1.5</td>
+			 <td>1.29</td>
+			  <td>1.79</td>
+			   <td>5.7</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Þorvaldur Örn Þorvaldsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>30</td>
+            <td>1.5</td>
+            <td>70.3</td>
+			<td>1.56</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>85.7</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.43</td>
+			  <td>0.50</td>
+			   <td>1.7</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>2.8</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Garðar Benedikt Sigurjónsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>7</td>
+            <td>0.3</td>
+            <td>50.0</td>
+			<td>0.38</td>
+			<td>-0.09</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>1.6</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Dagur Leó Fannarsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>0.8</td>
+            <td>50.9</td>
+			<td>0.91</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>1.2</td>
+			<td>1.4</td>
+			<td>84.8</td>
+              <td>0.1</td>
+            <td>0.6</td>
+			 <td>2.05</td>
+			  <td>2.42</td>
+			   <td>2</td>
+            <td>0.3</td>
+            <td>0.6</td>
+            <td>0.2</td>
+            <td>2.3</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Rúnar Kárason </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>18</td>
+            <td>3.9</td>
+            <td>51.8</td>
+			<td>3.87</td>
+			<td>+0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>1.3</td>
+			<td>2.0</td>
+			<td>66.7</td>
+              <td>0.2</td>
+            <td>1.3</td>
+			 <td>1.00</td>
+			  <td>1.50</td>
+			   <td>5.2</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Benedikt Marinó Herdísarson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>21</td>
+            <td>4.2</td>
+            <td>61.1</td>
+			<td>4.38</td>
+			<td>-0.19</td>
+			<td>1.6</td>
+			<td>73.9</td>
+            <td>0.8</td>
+            <td>2.7</td>
+			<td>3.8</td>
+			<td>70.9</td>
+              <td>0.2</td>
+            <td>2.4</td>
+			 <td>1.12</td>
+			  <td>1.58</td>
+			   <td>6.9</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>2.2</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Jóhann Geir Sævarsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>21</td>
+            <td>0.3</td>
+            <td>50.0</td>
+			<td>0.35</td>
+			<td>-0.02</td>
+			<td>0.0</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0.00</td>
+			  <td>1.00</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Einar Birgir Stefánsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>26</td>
+            <td>3.0</td>
+            <td>67.8</td>
+			<td>3.21</td>
+			<td>-0.21</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.2</td>
+            <td>0.4</td>
+			<td>0.6</td>
+			<td>68.8</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.85</td>
+			  <td>1.23</td>
+			   <td>3.4</td>
+            <td>0.6</td>
+            <td>0.5</td>
+            <td>0.8</td>
+            <td>3.7</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Atli Hrafn Bernburg </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>6</td>
+            <td>1.2</td>
+            <td>63.6</td>
+			<td>1.06</td>
+			<td>+0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.3</td>
+			<td>0.3</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>1.5</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Örn Alexandersson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>23</td>
+            <td>1.7</td>
+            <td>51.9</td>
+			<td>1.69</td>
+			<td>+0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.6</td>
+			<td>0.9</td>
+			<td>66.7</td>
+              <td>0.0</td>
+            <td>0.6</td>
+			 <td>1.00</td>
+			  <td>1.50</td>
+			   <td>2.3</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>2.3</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Ingibert Snær Erlingsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>0.1</td>
+            <td>40.0</td>
+			<td>0.15</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Skarphéðinn Ívar Einarsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>27</td>
+            <td>4.8</td>
+            <td>57.5</td>
+			<td>5.05</td>
+			<td>-0.23</td>
+			<td>0.6</td>
+			<td>80.0</td>
+            <td>0.7</td>
+            <td>2.3</td>
+			<td>3.0</td>
+			<td>75.6</td>
+              <td>0.6</td>
+            <td>1.3</td>
+			 <td>1.77</td>
+			  <td>2.34</td>
+			   <td>7.1</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>4.0</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Andrés Marel Sigurðsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>4</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Birkir Snær Steinsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>29</td>
+            <td>3.1</td>
+            <td>59.5</td>
+			<td>2.96</td>
+			<td>+0.17</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>1.3</td>
+			<td>1.9</td>
+			<td>67.3</td>
+              <td>0.1</td>
+            <td>1.0</td>
+			 <td>1.32</td>
+			  <td>1.96</td>
+			   <td>4.4</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>1.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Daníel Örn Guðmundsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>0.9</td>
+            <td>66.7</td>
+			<td>0.97</td>
+			<td>-0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>1</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Logi Gautason </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>27</td>
+            <td>2.0</td>
+            <td>62.5</td>
+			<td>2.05</td>
+			<td>-0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.33</td>
+			  <td>0.42</td>
+			   <td>2.1</td>
+            <td>0.7</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Dagur Árni Heimisson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>16</td>
+            <td>3.4</td>
+            <td>56.8</td>
+			<td>3.36</td>
+			<td>+0.02</td>
+			<td>0.6</td>
+			<td>64.3</td>
+            <td>0.7</td>
+            <td>2.0</td>
+			<td>3.1</td>
+			<td>65.3</td>
+              <td>0.3</td>
+            <td>1.3</td>
+			 <td>1.60</td>
+			  <td>2.45</td>
+			   <td>5.4</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Jason Dagur Þórisson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.1</td>
+            <td>52.3</td>
+			<td>2.17</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.2</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.33</td>
+			  <td>0.67</td>
+			   <td>2.2</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Patrekur Þór Guðmundsson Öfjörð </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.8</td>
+            <td>56.3</td>
+			<td>0.85</td>
+			<td>-0.03</td>
+			<td>0.0</td>
+			<td>50.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.8</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Daníel Stefán Reynisson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.2</td>
+            <td>40.0</td>
+			<td>0.33</td>
+			<td>-0.15</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>66.7</td>
+              <td>0.1</td>
+            <td>0.1</td>
+			 <td>2.00</td>
+			  <td>3.00</td>
+			   <td>0.4</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Theodór Sigurðsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>20</td>
+            <td>1.5</td>
+            <td>73.2</td>
+			<td>1.37</td>
+			<td>+0.13</td>
+			<td>0.4</td>
+			<td>70.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.33</td>
+			  <td>1.67</td>
+			   <td>1.7</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Arnþór Sævarsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>20</td>
+            <td>1.2</td>
+            <td>56.1</td>
+			<td>1.13</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.9</td>
+			<td>1.4</td>
+			<td>66.7</td>
+              <td>0.1</td>
+            <td>1.2</td>
+			 <td>0.75</td>
+			  <td>1.13</td>
+			   <td>2.1</td>
+            <td>0.6</td>
+            <td>0.8</td>
+            <td>0.0</td>
+            <td>1.5</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Eiður Rafn Valsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>24</td>
+            <td>2.6</td>
+            <td>65.6</td>
+			<td>2.68</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.57</td>
+			  <td>0.71</td>
+			   <td>2.8</td>
+            <td>0.7</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Arnviður Bragi Pálmason </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.0</td>
+            <td>25.0</td>
+			<td>0.12</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>1.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Matthías Ingi Magnússon </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>15</td>
+            <td>0.2</td>
+            <td>100.0</td>
+			<td>0.13</td>
+			<td>+0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.2</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.25</td>
+			  <td>0.50</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Sigurður Ringsted Sigurðsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.3</td>
+            <td>60.0</td>
+			<td>0.32</td>
+			<td>-0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>0.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>1.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Róbert Dagur Davíðsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>4</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Anton Breki Hjaltason </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>21</td>
+            <td>2.7</td>
+            <td>55.4</td>
+			<td>3.04</td>
+			<td>-0.37</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>1.1</td>
+			<td>1.7</td>
+			<td>66.7</td>
+              <td>0.2</td>
+            <td>1.0</td>
+			 <td>1.14</td>
+			  <td>1.71</td>
+			   <td>3.8</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Ihor Kopyshynskyi </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>24</td>
+            <td>4.9</td>
+            <td>71.5</td>
+			<td>5.07</td>
+			<td>-0.15</td>
+			<td>1.3</td>
+			<td>77.5</td>
+            <td>0.3</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>83.3</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.56</td>
+			  <td>0.67</td>
+			   <td>5.1</td>
+            <td>1.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Húgó Máni Ólafsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Ívar Bessi Viðarsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>21</td>
+            <td>1.2</td>
+            <td>58.1</td>
+			<td>1.26</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+			<td>0.4</td>
+			<td>88.9</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.73</td>
+			  <td>0.82</td>
+			   <td>1.6</td>
+            <td>0.3</td>
+            <td>0.8</td>
+            <td>0.2</td>
+            <td>2.0</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Ari Valur Atlason </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>14</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.03</td>
+			<td>-0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Magnús Dagur Jónatansson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>27</td>
+            <td>2.2</td>
+            <td>53.6</td>
+			<td>2.42</td>
+			<td>-0.23</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>2.0</td>
+			<td>3.1</td>
+			<td>64.0</td>
+              <td>0.4</td>
+            <td>1.9</td>
+			 <td>1.10</td>
+			  <td>1.72</td>
+			   <td>4.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Jens Bragi Bergþórsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>27</td>
+            <td>2.7</td>
+            <td>77.9</td>
+			<td>2.54</td>
+			<td>+0.21</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>0.1</td>
+			<td>0.2</td>
+			<td>42.9</td>
+              <td>0.0</td>
+            <td>0.9</td>
+			 <td>0.13</td>
+			  <td>0.30</td>
+			   <td>2.8</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>1.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Ásgeir Bragi Bryde Þórðarson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>9</td>
+            <td>0.2</td>
+            <td>100.0</td>
+			<td>0.12</td>
+			<td>+0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Sigurður Bjarki Jónsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>7</td>
+            <td>0.4</td>
+            <td>75.0</td>
+			<td>0.42</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Ágúst Guðmundsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>24</td>
+            <td>5.3</td>
+            <td>51.8</td>
+			<td>5.38</td>
+			<td>-0.09</td>
+			<td>0.3</td>
+			<td>63.6</td>
+            <td>0.5</td>
+            <td>3.7</td>
+			<td>5.3</td>
+			<td>70.1</td>
+              <td>0.7</td>
+            <td>2.0</td>
+			 <td>1.89</td>
+			  <td>2.70</td>
+			   <td>9</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.8</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Jónas Karl Gunnlaugsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>20</td>
+            <td>1.3</td>
+            <td>57.8</td>
+			<td>1.26</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.6</td>
+            <td>1.7</td>
+			<td>2.6</td>
+			<td>64.7</td>
+              <td>0.3</td>
+            <td>1.5</td>
+			 <td>1.14</td>
+			  <td>1.76</td>
+			   <td>3</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Daníel Bæring Grétarsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>25</td>
+            <td>0.1</td>
+            <td>40.0</td>
+			<td>0.14</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.50</td>
+			  <td>0.50</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>1.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Haukur Guðmundsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>15</td>
+            <td>0.6</td>
+            <td>52.9</td>
+			<td>0.70</td>
+			<td>-0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.6</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Stefán Magni Hjartarson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>17</td>
+            <td>1.7</td>
+            <td>63.0</td>
+			<td>1.65</td>
+			<td>+0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>1.7</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Aron Dagur Pálsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>9</td>
+            <td>0.6</td>
+            <td>45.5</td>
+			<td>0.44</td>
+			<td>+0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>1.2</td>
+			<td>2.0</td>
+			<td>61.1</td>
+              <td>0.0</td>
+            <td>1.2</td>
+			 <td>1.00</td>
+			  <td>1.64</td>
+			   <td>1.8</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Þórir Ingi Þorsteinsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>7</td>
+            <td>2.3</td>
+            <td>64.0</td>
+			<td>2.23</td>
+			<td>+0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.3</td>
+            <td>1.0</td>
+			 <td>0.14</td>
+			  <td>0.14</td>
+			   <td>2.4</td>
+            <td>0.7</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Andri Erlingsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>20</td>
+            <td>5.5</td>
+            <td>63.6</td>
+			<td>5.17</td>
+			<td>+0.33</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.6</td>
+            <td>4.0</td>
+			<td>5.3</td>
+			<td>75.2</td>
+              <td>1.1</td>
+            <td>2.2</td>
+			 <td>1.84</td>
+			  <td>2.44</td>
+			   <td>9.5</td>
+            <td>0.5</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>1.3</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Guðjón Óli Ósvaldsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.6</td>
+            <td>63.6</td>
+			<td>0.60</td>
+			<td>+0.04</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Skarphéðinn Steinn Sveinsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Dagur Rafn Gíslason </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>5</td>
+            <td>0.2</td>
+            <td>100.0</td>
+			<td>0.09</td>
+			<td>+0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.2</td>
+			<td>0.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.00</td>
+			  <td>0.50</td>
+			   <td>0.2</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Hákon Garri Gestsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>19</td>
+            <td>2.7</td>
+            <td>52.6</td>
+			<td>2.75</td>
+			<td>-0.07</td>
+			<td>0.2</td>
+			<td>75.0</td>
+            <td>0.2</td>
+            <td>1.1</td>
+			<td>1.5</td>
+			<td>72.4</td>
+              <td>0.0</td>
+            <td>0.8</td>
+			 <td>1.31</td>
+			  <td>1.81</td>
+			   <td>3.8</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Dagbjartur Máni Björnsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Egill Oddgeir Stefánsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>17</td>
+            <td>0.6</td>
+            <td>71.4</td>
+			<td>0.51</td>
+			<td>+0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+			<td>0.7</td>
+			<td>72.7</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.89</td>
+			  <td>1.22</td>
+			   <td>1.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Andri Magnússon </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>6</td>
+            <td>1.0</td>
+            <td>54.5</td>
+			<td>1.17</td>
+			<td>-0.17</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>1</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Elís Þór Aðalsteinsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>17</td>
+            <td>6.5</td>
+            <td>65.7</td>
+			<td>5.98</td>
+			<td>+0.55</td>
+			<td>1.6</td>
+			<td>79.4</td>
+            <td>1.5</td>
+            <td>4.1</td>
+			<td>5.5</td>
+			<td>74.2</td>
+              <td>0.6</td>
+            <td>2.2</td>
+			 <td>1.86</td>
+			  <td>2.51</td>
+			   <td>10.6</td>
+            <td>0.4</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>2.1</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Haukur Leó Magnússon </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>18</td>
+            <td>0.7</td>
+            <td>59.1</td>
+			<td>0.79</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.7</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>1.7</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Dánjal Ragnarsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>19</td>
+            <td>4.1</td>
+            <td>52.3</td>
+			<td>4.29</td>
+			<td>-0.19</td>
+			<td>0.2</td>
+			<td>75.0</td>
+            <td>0.4</td>
+            <td>2.1</td>
+			<td>2.8</td>
+			<td>73.6</td>
+              <td>0.4</td>
+            <td>1.5</td>
+			 <td>1.34</td>
+			  <td>1.83</td>
+			   <td>6.2</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>1.2</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Anton Frans Sigurðsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>23</td>
+            <td>2.0</td>
+            <td>63.4</td>
+			<td>1.94</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>2</td>
+            <td>0.7</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Heimir Halldór Sigurjónsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>5</td>
+            <td>0.4</td>
+            <td>100.0</td>
+			<td>0.28</td>
+			<td>+0.12</td>
+			<td>0.2</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+			<td>0.4</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>2.00</td>
+			  <td>2.00</td>
+			   <td>0.8</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Tómas Runi Gunnarsson </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Ragnar Hilmarsson </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Daníel Montoro </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>1.9</td>
+            <td>73.8</td>
+			<td>1.81</td>
+			<td>+0.13</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>75.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.38</td>
+			  <td>0.50</td>
+			   <td>2</td>
+            <td>0.1</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Daníel Máni Sigurgeirsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Egill Jónsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>5</td>
+            <td>0.2</td>
+            <td>33.3</td>
+			<td>0.40</td>
+			<td>-0.20</td>
+			<td>0.2</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.2</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Freyr Aronsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>28</td>
+            <td>6.4</td>
+            <td>66.2</td>
+			<td>6.37</td>
+			<td>+0.06</td>
+			<td>1.4</td>
+			<td>71.7</td>
+            <td>1.6</td>
+            <td>3.8</td>
+			<td>5.6</td>
+			<td>68.4</td>
+              <td>0.5</td>
+            <td>2.3</td>
+			 <td>1.66</td>
+			  <td>2.42</td>
+			   <td>10.2</td>
+            <td>0.3</td>
+            <td>0.7</td>
+            <td>0.1</td>
+            <td>4.1</td>
+            <td>0.1</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Helgi Marinó Kristófersson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.23</td>
+			<td>-0.23</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Sigurður Bjarmi Árnason </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Max Emil Stenlund </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.6</td>
+            <td>55.2</td>
+			<td>2.42</td>
+			<td>+0.22</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.9</td>
+			<td>1.2</td>
+			<td>76.0</td>
+              <td>0.1</td>
+            <td>0.4</td>
+			 <td>2.11</td>
+			  <td>2.78</td>
+			   <td>3.5</td>
+            <td>0.2</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Marel Baldvinsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>2</td>
+            <td>3.5</td>
+            <td>43.8</td>
+			<td>4.90</td>
+			<td>-1.40</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>4.0</td>
+			<td>5.5</td>
+			<td>72.7</td>
+              <td>1.0</td>
+            <td>2.5</td>
+			 <td>1.60</td>
+			  <td>2.20</td>
+			   <td>7.5</td>
+            <td>0.0</td>
+            <td>1.0</td>
+            <td>0.0</td>
+            <td>4.0</td>
+            <td>0.0</td>
+            <td>1.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Elmar Franz Ólafsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Atli Róbert Haddsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Eyþór Nói Tryggvason </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Gunnar Dagur Bjarnason </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Viktor Breki Róbertsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Dagur Máni Siggeirsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>8</td>
+            <td>0.1</td>
+            <td>25.0</td>
+			<td>0.23</td>
+			<td>-0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Matthías Dagur Þorsteinsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>15</td>
+            <td>0.1</td>
+            <td>12.5</td>
+			<td>0.29</td>
+			<td>-0.23</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Patrekur Jónas Tómasson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Bjarki Freyr Sindrason </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Leó Halldórsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.5</td>
+            <td>66.7</td>
+			<td>0.57</td>
+			<td>-0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0.5</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Ævar Smári Gunnarsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>22</td>
+            <td>2.7</td>
+            <td>48.0</td>
+			<td>2.81</td>
+			<td>-0.12</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>1.2</td>
+			<td>1.6</td>
+			<td>75.0</td>
+              <td>0.1</td>
+            <td>1.7</td>
+			 <td>0.73</td>
+			  <td>0.97</td>
+			   <td>3.9</td>
+            <td>0.3</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Sölvi Þór Daníelsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>3</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Andri Freyr Friðriksson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>9</td>
+            <td>1.1</td>
+            <td>83.3</td>
+			<td>0.85</td>
+			<td>+0.26</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.1</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>1.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Harri Halldórsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>25</td>
+            <td>3.8</td>
+            <td>53.0</td>
+			<td>3.95</td>
+			<td>-0.11</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>1.0</td>
+            <td>3.0</td>
+			<td>4.7</td>
+			<td>64.4</td>
+              <td>0.3</td>
+            <td>1.8</td>
+			 <td>1.73</td>
+			  <td>2.68</td>
+			   <td>6.8</td>
+            <td>0.4</td>
+            <td>0.4</td>
+            <td>0.1</td>
+            <td>2.8</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Bjarki Snorrason </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>25</td>
+            <td>0.1</td>
+            <td>40.0</td>
+			<td>0.12</td>
+			<td>-0.04</td>
+			<td>0.0</td>
+			<td>100.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>0.00</td>
+			  <td>0.50</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Gunnar Róbertsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>29</td>
+            <td>5.3</td>
+            <td>62.6</td>
+			<td>5.36</td>
+			<td>-0.05</td>
+			<td>0.7</td>
+			<td>73.1</td>
+            <td>1.2</td>
+            <td>3.1</td>
+			<td>4.4</td>
+			<td>70.5</td>
+              <td>0.4</td>
+            <td>1.8</td>
+			 <td>1.75</td>
+			  <td>2.48</td>
+			   <td>8.4</td>
+            <td>0.3</td>
+            <td>1.2</td>
+            <td>0.2</td>
+            <td>1.4</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Örn Kolur Kjartansson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>18</td>
+            <td>0.3</td>
+            <td>83.3</td>
+			<td>0.21</td>
+			<td>+0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.33</td>
+			  <td>0.33</td>
+			   <td>0.4</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Brynjar Narfi Arndal </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>32</td>
+            <td>0.7</td>
+            <td>57.9</td>
+			<td>0.77</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>76.9</td>
+              <td>0.1</td>
+            <td>0.2</td>
+			 <td>1.67</td>
+			  <td>2.17</td>
+			   <td>1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Ómar Darri Sigurgeirsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>32</td>
+            <td>4.9</td>
+            <td>58.6</td>
+			<td>4.62</td>
+			<td>+0.29</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.5</td>
+            <td>2.1</td>
+			<td>2.8</td>
+			<td>74.7</td>
+              <td>0.2</td>
+            <td>1.7</td>
+			 <td>1.24</td>
+			  <td>1.65</td>
+			   <td>7</td>
+            <td>0.5</td>
+            <td>0.4</td>
+            <td>0.2</td>
+            <td>1.4</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Kristófer Tómas Gíslason </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>13</td>
+            <td>0.4</td>
+            <td>100.0</td>
+			<td>0.27</td>
+			<td>+0.11</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>1.3</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Nathan Doku Helgi Asare </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.8</td>
+            <td>62.1</td>
+			<td>0.91</td>
+			<td>-0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.50</td>
+			  <td>0.50</td>
+			   <td>0.9</td>
+            <td>0.2</td>
+            <td>0.4</td>
+            <td>0.2</td>
+            <td>3.3</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Nökkvi Blær Hafþórsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>9</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.07</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Hjálmtýr Daníel S. Björnsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Ísar Tumi Gíslason </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>12</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.05</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Dagur Ármannsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Garðar Ingi Sindrason </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>33</td>
+            <td>5.1</td>
+            <td>59.4</td>
+			<td>5.03</td>
+			<td>+0.06</td>
+			<td>0.7</td>
+			<td>72.7</td>
+            <td>1.0</td>
+            <td>5.1</td>
+			<td>6.8</td>
+			<td>75.3</td>
+              <td>0.8</td>
+            <td>2.4</td>
+			 <td>2.15</td>
+			  <td>2.86</td>
+			   <td>10.2</td>
+            <td>0.6</td>
+            <td>0.5</td>
+            <td>0.1</td>
+            <td>1.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Ingvar Dagur Gunnarsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>33</td>
+            <td>0.4</td>
+            <td>80.0</td>
+			<td>0.33</td>
+			<td>+0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.2</td>
+			<td>88.9</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.14</td>
+			  <td>1.29</td>
+			   <td>0.6</td>
+            <td>0.4</td>
+            <td>1.0</td>
+            <td>1.0</td>
+            <td>6.4</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Axel Þór Sigurþórsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Bernard Kristján Owusu Darkoh </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>6.5</td>
+            <td>58.0</td>
+			<td>6.87</td>
+			<td>-0.42</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.7</td>
+            <td>1.6</td>
+			<td>2.3</td>
+			<td>68.6</td>
+              <td>0.2</td>
+            <td>2.5</td>
+			 <td>0.63</td>
+			  <td>0.91</td>
+			   <td>8.1</td>
+            <td>0.3</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Patrekur Smári Arnarsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>22</td>
+            <td>0.7</td>
+            <td>83.3</td>
+			<td>0.54</td>
+			<td>+0.14</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.4</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.5</td>
+			 <td>0.17</td>
+			  <td>0.17</td>
+			   <td>0.8</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>1.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Róbert Orri Arason </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.5</td>
+            <td>42.9</td>
+			<td>0.74</td>
+			<td>-0.19</td>
+			<td>0.2</td>
+			<td>100.0</td>
+            <td>0.2</td>
+            <td>0.2</td>
+			<td>0.5</td>
+			<td>40.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.00</td>
+			  <td>2.50</td>
+			   <td>0.7</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Aron Daði Stefánsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>26</td>
+            <td>0.3</td>
+            <td>47.4</td>
+			<td>0.42</td>
+			<td>-0.07</td>
+			<td>0.0</td>
+			<td>100.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>57.1</td>
+              <td>0.2</td>
+            <td>0.2</td>
+			 <td>1.00</td>
+			  <td>1.75</td>
+			   <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Leó Friðriksson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.08</td>
+			<td>-0.08</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Guðmundur Hlífar Jóhannesson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.1</td>
+            <td>33.3</td>
+			<td>0.18</td>
+			<td>-0.09</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Haukar</td>
+             <td> Gústaf Logi Gunnarsson </td>
+            <td> <img src="player_images/haukar.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Logi Finnsson </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.4</td>
+            <td>63.6</td>
+			<td>0.39</td>
+			<td>-0.04</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.1</td>
+			<td>0.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.00</td>
+			  <td>0.33</td>
+			   <td>0.4</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IBV</td>
+             <td> Einar Bent Bjarnason </td>
+            <td> <img src="player_images/ibv.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Mikael Máni Weisshappel Jónsson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>16</td>
+            <td>0.1</td>
+            <td>100.0</td>
+			<td>0.04</td>
+			<td>+0.02</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Styrmir Hugi Sigurðarson </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>20</td>
+            <td>0.3</td>
+            <td>55.6</td>
+			<td>0.30</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+			<td>0.3</td>
+			<td>75.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>3.00</td>
+			  <td>4.00</td>
+			   <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Þormar Sigurðsson </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>22</td>
+            <td>1.1</td>
+            <td>54.5</td>
+			<td>1.24</td>
+			<td>-0.15</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>1.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Daníel Breki Þorsteinsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Aron Valur Gunnlaugsson </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>12</td>
+            <td>0.2</td>
+            <td>66.7</td>
+			<td>0.16</td>
+			<td>+0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+			<td>0.3</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.50</td>
+			  <td>1.50</td>
+			   <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Brynjar Búi Davíðsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>21</td>
+            <td>0.2</td>
+            <td>62.5</td>
+			<td>0.24</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>3.00</td>
+			  <td>3.00</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> HK</td>
+             <td> Orfeus Andreou </td>
+            <td> <img src="player_images/hk.png"  height="20px" "></td>
+            <td>9</td>
+            <td>2.4</td>
+            <td>61.1</td>
+			<td>2.41</td>
+			<td>+0.03</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.2</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.3</td>
+			 <td>0.33</td>
+			  <td>0.33</td>
+			   <td>2.5</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.6</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Jökull Blöndal Björnsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>21</td>
+            <td>5.8</td>
+            <td>52.4</td>
+			<td>5.55</td>
+			<td>+0.26</td>
+			<td>0.7</td>
+			<td>93.8</td>
+            <td>0.4</td>
+            <td>1.7</td>
+			<td>2.4</td>
+			<td>72.0</td>
+              <td>0.1</td>
+            <td>1.2</td>
+			 <td>1.38</td>
+			  <td>1.92</td>
+			   <td>7.5</td>
+            <td>0.4</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>3.8</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Baldur Fritz Bjarnason </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>19</td>
+            <td>8.5</td>
+            <td>60.9</td>
+			<td>8.39</td>
+			<td>+0.13</td>
+			<td>3.2</td>
+			<td>84.7</td>
+            <td>0.3</td>
+            <td>3.5</td>
+			<td>5.7</td>
+			<td>61.1</td>
+              <td>1.1</td>
+            <td>3.9</td>
+			 <td>0.88</td>
+			  <td>1.44</td>
+			   <td>12</td>
+            <td>0.5</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Bjartur Fritz Bjarnason </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>3</td>
+            <td>0.3</td>
+            <td>50.0</td>
+			<td>0.47</td>
+			<td>-0.14</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.3</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Alex Unnar Hallgrímsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>2</td>
+            <td>0.5</td>
+            <td>33.3</td>
+			<td>1.00</td>
+			<td>-0.50</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.5</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Sveinn Rúnar Sveinsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Smári Steinn Ágústsson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>7</td>
+            <td>0.1</td>
+            <td>50.0</td>
+			<td>0.20</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Allan Norðberg </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>32</td>
+            <td>2.1</td>
+            <td>65.4</td>
+			<td>2.14</td>
+			<td>-0.01</td>
+			<td>0.0</td>
+			<td>50.0</td>
+            <td>0.3</td>
+            <td>0.7</td>
+			<td>0.9</td>
+			<td>82.1</td>
+              <td>0.1</td>
+            <td>0.5</td>
+			 <td>1.44</td>
+			  <td>1.75</td>
+			   <td>2.8</td>
+            <td>0.3</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>3.4</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Selfoss</td>
+             <td> Alvaro Mallols Fernandez </td>
+            <td> <img src="player_images/selfoss.png"  height="20px" "></td>
+            <td>15</td>
+            <td>0.4</td>
+            <td>27.3</td>
+			<td>0.74</td>
+			<td>-0.34</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.3</td>
+			<td>0.4</td>
+			<td>83.3</td>
+              <td>0.1</td>
+            <td>0.5</td>
+			 <td>0.71</td>
+			  <td>0.86</td>
+			   <td>0.7</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Steinar Már Einarsson Clausen </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>1.0</td>
+			 <td>0.00</td>
+			  <td>0.00</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Jóhannes Bjorgvin </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>9</td>
+            <td>1.8</td>
+            <td>100.0</td>
+			<td>1.21</td>
+			<td>+0.57</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.1</td>
+			<td>100.0</td>
+              <td>0.0</td>
+            <td>0.1</td>
+			 <td>1.00</td>
+			  <td>1.00</td>
+			   <td>1.9</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Bjarni í Selvindi </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>2</td>
+            <td>2.0</td>
+            <td>66.7</td>
+			<td>2.05</td>
+			<td>-0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.5</td>
+            <td>0.0</td>
+			<td>1.0</td>
+			<td>0.0</td>
+              <td>1.0</td>
+            <td>1.0</td>
+			 <td>0.00</td>
+			  <td>1.00</td>
+			   <td>2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Sveinur Olafsson </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>21</td>
+            <td>1.1</td>
+            <td>72.7</td>
+			<td>0.96</td>
+			<td>+0.18</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>1.0</td>
+			<td>1.2</td>
+			<td>80.0</td>
+              <td>0.1</td>
+            <td>0.5</td>
+			 <td>2.00</td>
+			  <td>2.50</td>
+			   <td>2.1</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>1.7</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Bjarki Jóhannsson </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>21</td>
+            <td>0.4</td>
+            <td>60.0</td>
+			<td>0.38</td>
+			<td>+0.05</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.4</td>
+			<td>0.5</td>
+			<td>80.0</td>
+              <td>0.0</td>
+            <td>0.4</td>
+			 <td>0.89</td>
+			  <td>1.11</td>
+			   <td>0.8</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Stjarnan</td>
+             <td> Barnabás Rea </td>
+            <td> <img src="player_images/stjarnan.png"  height="20px" "></td>
+            <td>12</td>
+            <td>1.2</td>
+            <td>40.0</td>
+			<td>1.18</td>
+			<td>-0.01</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.3</td>
+            <td>2.3</td>
+			<td>2.7</td>
+			<td>84.4</td>
+              <td>0.1</td>
+            <td>1.4</td>
+			 <td>1.59</td>
+			  <td>1.88</td>
+			   <td>3.5</td>
+            <td>0.2</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> FH</td>
+             <td> Chaouachi Mohamed Khalil </td>
+            <td> <img src="player_images/fh.png"  height="20px" "></td>
+            <td>10</td>
+            <td>0.2</td>
+            <td>100.0</td>
+			<td>0.14</td>
+			<td>+0.06</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.2</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.7</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> Fram</td>
+             <td> Torfi Geir Halldórsson </td>
+            <td> <img src="player_images/fram.png"  height="20px" "></td>
+            <td>11</td>
+            <td>0.1</td>
+            <td>25.0</td>
+			<td>0.19</td>
+			<td>-0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.1</td>
+            <td>0.2</td>
+            <td>0.3</td>
+            <td>0.2</td>
+            <td>2.0</td>
+            <td>0.1</td>
+            <td>0.5</td>
+            <td>0.1</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Ingvar Heiðmann Birgisson </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0</td>
+			<td>0.00</td>
+			<td>0.00</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Afturelding</td>
+             <td> Oscar Sven Leithoff Lykke </td>
+            <td> <img src="player_images/umfa.png"  height="20px" "></td>
+            <td>23</td>
+            <td>4.1</td>
+            <td>56.0</td>
+			<td>4.29</td>
+			<td>-0.20</td>
+			<td>0.6</td>
+			<td>63.6</td>
+            <td>0.5</td>
+            <td>2.3</td>
+			<td>3.2</td>
+			<td>72.2</td>
+              <td>0.4</td>
+            <td>1.3</td>
+			 <td>1.68</td>
+			  <td>2.32</td>
+			   <td>6.4</td>
+            <td>0.3</td>
+            <td>0.3</td>
+            <td>0.1</td>
+            <td>2.3</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Giorgi Arvelodi Dikhaminjia </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>22</td>
+            <td>5.0</td>
+            <td>60.2</td>
+			<td>5.13</td>
+			<td>-0.18</td>
+			<td>0.0</td>
+			<td>0.0</td>
+            <td>0.0</td>
+            <td>0.1</td>
+			<td>0.3</td>
+			<td>42.9</td>
+              <td>0.1</td>
+            <td>0.4</td>
+			 <td>0.33</td>
+			  <td>0.78</td>
+			   <td>5.1</td>
+            <td>0.8</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.9</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> KA</td>
+             <td> Morten Linder </td>
+            <td> <img src="player_images/ka.png"  height="20px" "></td>
+            <td>22</td>
+            <td>4.3</td>
+            <td>77.0</td>
+			<td>4.04</td>
+			<td>+0.23</td>
+			<td>0.7</td>
+			<td>78.9</td>
+            <td>0.5</td>
+            <td>3.0</td>
+			<td>4.2</td>
+			<td>71.7</td>
+              <td>0.3</td>
+            <td>1.9</td>
+			 <td>1.61</td>
+			  <td>2.24</td>
+			   <td>7.3</td>
+            <td>0.3</td>
+            <td>0.4</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.2</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> IR</td>
+             <td> Atli Kolbeinn Siggeirsson </td>
+            <td> <img src="player_images/ir.png"  height="20px" "></td>
+            <td>4</td>
+            <td>0.3</td>
+            <td>100.0</td>
+			<td>0.15</td>
+			<td>+0.10</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+			<td>0.0</td>
+			<td>0</td>
+              <td>0.0</td>
+            <td>0.0</td>
+			 <td>0</td>
+			  <td>0</td>
+			   <td>0.3</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Thor</td>
+             <td> Igor Chiseliov </td>
+            <td> <img src="player_images\thor.png"  height="20px" "></td>
+            <td>21</td>
+            <td>1.4</td>
+            <td>47.5</td>
+			<td>1.44</td>
+			<td>-0.06</td>
+			<td>0.0</td>
+			<td>50.0</td>
+            <td>0.0</td>
+            <td>0.3</td>
+			<td>0.6</td>
+			<td>50.0</td>
+              <td>0.0</td>
+            <td>0.2</td>
+			 <td>1.20</td>
+			  <td>2.40</td>
+			   <td>1.7</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0.0</td>
+            <td>0.0</td>
+            <td>0.0</td>
+        </tr>
+
+        <tr>
+			<td> Valur</td>
+             <td> Bjarni I Selvindi </td>
+            <td> <img src="player_images/valur.png"  height="20px" "></td>
+            <td>22</td>
+            <td>3.6</td>
+            <td>64.0</td>
+			<td>3.57</td>
+			<td>+0.07</td>
+			<td>0.0</td>
+			<td>0</td>
+            <td>1.1</td>
+            <td>2.0</td>
+			<td>2.5</td>
+			<td>78.6</td>
+              <td>0.2</td>
+            <td>1.3</td>
+			 <td>1.52</td>
+			  <td>1.93</td>
+			   <td>5.6</td>
+            <td>0.1</td>
+            <td>0.1</td>
+            <td>0.0</td>
+            <td>0.5</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.0</td>
+        </tr>
+
+    </tbody>
+
+</table>
+
+    </body>
+	
+ <!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .imgbox {
+            display: grid;
+            height: 100%;
+        }
+        .center-fit {
+            max-width: 100%;
+            max-height: 100vh;
+            margin: auto;
+        }
+    </style>
+
+</script>
+      <meta charset="ISO-8859-1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>HBStatz - Footer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+
+    <!-- Plugin CSS -->
+    <link href="vendor/magnific-popup/magnific-popup.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="css/freelancer.min.css" rel="stylesheet">
+ 
+	
+	 
+	
+  </head>
+ 
+ <!-- Footer -->
+    <footer class="footer text-center">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4 mb-5 mb-lg-0">
+			<h4 class="text-uppercase mb-4">HBStatz er h&yacute;st af</h4>
+            <a href="https://tactica.is/"><img src="tactica_trans.png"  height="100"></a>
+            
+          </div>
+          <div class="col-md-4 mb-5 mb-lg-0">
+            <h4 class="text-uppercase mb-4">Samf&eacute;lagsmi&eth;lar</h4>
+            <ul class="list-inline mb-0">
+              <li class="list-inline-item">
+                <a class="btn btn-outline-light btn-social text-center rounded-circle" href="https://www.facebook.com/HBStatz/" target="_blank">
+                  <i class="fab fa-fw fa-facebook-f"></i>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a class="btn btn-outline-light btn-social text-center rounded-circle" href="https://twitter.com/HBSstatz" target="_blank">
+                  <i class="fab fa-fw fa-twitter"></i>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a class="btn btn-outline-light btn-social text-center rounded-circle" href="https://www.instagram.com/hbstatz/" target="_blank">
+                  <i class="fab fa-fw fa-instagram"></i>
+                </a>
+              </li>
+			  <li class="list-inline-item">
+                <a class="btn btn-outline-light btn-social text-center rounded-circle" href="https://www.linkedin.com/company/hb-tölfræði-ehf/" target="_blank">
+                  <i class="fab fa-fw fa-linkedin"></i>
+                </a>
+              </li>
+            </ul>
+			
+          </div>
+          <div class="col-md-4">
+            <h4 class="text-uppercase mb-4">Samstarfsa&eth;ilar</h4>
+            <a href="https://hsi.is/"><img src="hsi_t.png"  height="50"></a>	
+			<a href="https://open.spotify.com/show/4YsPLJXw207Oy3yWT7V4R9"><img src="handkastid.png"  height="100"></a>			
+          </div>
+		
+        </div>
+      </div>
+    </footer>
+
+    <div class="copyright py-4 text-center text-white">
+      <div class="container">
+         <small>Allur r&eacute;ttur &aacute;skilinn &copy; HBStatz  <script type="text/javascript">var year = new Date();document.write(year.getFullYear());</script> </small>
+      </div>
+    </div>
+	
+	
+<link href="headercss.css" rel="stylesheet">
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowreorder/1.2.8/css/rowReorder.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css">
+
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowreorder/1.2.8/js/dataTables.rowReorder.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
