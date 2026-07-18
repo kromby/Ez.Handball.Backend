@@ -110,4 +110,32 @@ public class TablePlayerStatsRepositoryTests
         Assert.Single(result);
         Assert.Null(result[0].TournamentName);
     }
+
+    [Fact]
+    public async Task GetByPlayerAsync_MapsAdvancedMetrics()
+    {
+        SetupStats("12345", new PlayerStatEntity
+        {
+            PartitionKey = "match-1",
+            RowKey = "12345",
+            Goals = 5,
+            TournamentId = "8444", Season = "2025-26", TeamId = "385-karlar",
+            Assists = 3, Turnovers = 2, Steals = 1, PlusMinus = 1.5, Saves = 12, SaveRate = 34.5
+        });
+        SetupTournaments("2025-26", new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla"
+        });
+
+        var result = await CreateSut().GetByPlayerAsync("12345", default);
+
+        var only = Assert.Single(result);
+        Assert.Equal(3, only.Assists);
+        Assert.Equal(2, only.Turnovers);
+        Assert.Equal(1, only.Steals);
+        Assert.Equal(1.5, only.PlusMinus);
+        Assert.Equal(12, only.Saves);
+        Assert.Equal(34.5, only.SaveRate);
+    }
 }
+

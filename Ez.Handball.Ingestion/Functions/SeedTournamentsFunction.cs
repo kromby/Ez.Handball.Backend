@@ -12,18 +12,18 @@ public class SeedTournamentsFunction
     internal static readonly IReadOnlyList<(
         string Id, string Name, string Gender, string Division,
         string Type, string CompetitionId, string CompetitionName,
-        bool Ingest, bool Active, int Priority)> TournamentDefinitions =
+        bool Ingest, bool Active, int Priority, bool IngestHbStatz)> TournamentDefinitions =
     [
-        ("8444", "Olís deild karla",             "karlar", "1",       "league",   "olis-karla",     "Olís deild karla",      true,  true,  10),
-        ("8434", "Olís deild kvenna",            "kvenna", "1",       "league",   "olis-kvenna",    "Olís deild kvenna",     false, false, 10),
-        ("8427", "Olís deild úrslit karla",      "karlar", "1-final", "playoffs", "olis-karla",     "Olís deild karla",      false, false, 20),
-        ("8430", "Olís deild úrslit kvenna",     "kvenna", "1-final", "playoffs", "olis-kvenna",    "Olís deild kvenna",     false, false, 20),
-        ("8424", "Grill 66 deild karla",         "karlar", "2",       "league",   "grill66-karla",  "Grill 66 deild karla",  false, false, 30),
-        ("8443", "Grill 66 deild kvenna",        "kvenna", "2",       "league",   "grill66-kvenna", "Grill 66 deild kvenna", false, false, 30),
-        ("8441", "Grill 66 deild umspil karla",  "karlar", "2-final", "playoffs", "grill66-karla",  "Grill 66 deild karla",  false, false, 40),
-        ("8422", "Grill 66 deild umspil kvenna", "kvenna", "2-final", "playoffs", "grill66-kvenna", "Grill 66 deild kvenna", false, false, 40),
-        ("8437", "Powerade bikar karla",         "karlar", "cup",     "cup",      "bikar-karla",    "Powerade bikar karla",  false, false, 50),
-        ("8436", "Powerade bikar kvenna",        "kvenna", "cup",     "cup",      "bikar-kvenna",   "Powerade bikar kvenna", false, false, 50),
+        ("8444", "Olís deild karla",             "karlar", "1",       "league",   "olis-karla",     "Olís deild karla",      true,  true,  10, true),
+        ("8434", "Olís deild kvenna",            "kvenna", "1",       "league",   "olis-kvenna",    "Olís deild kvenna",     false, false, 10, true),
+        ("8427", "Olís deild úrslit karla",      "karlar", "1-final", "playoffs", "olis-karla",     "Olís deild karla",      false, false, 20, false),
+        ("8430", "Olís deild úrslit kvenna",     "kvenna", "1-final", "playoffs", "olis-kvenna",    "Olís deild kvenna",     false, false, 20, false),
+        ("8424", "Grill 66 deild karla",         "karlar", "2",       "league",   "grill66-karla",  "Grill 66 deild karla",  false, false, 30, false),
+        ("8443", "Grill 66 deild kvenna",        "kvenna", "2",       "league",   "grill66-kvenna", "Grill 66 deild kvenna", false, false, 30, false),
+        ("8441", "Grill 66 deild umspil karla",  "karlar", "2-final", "playoffs", "grill66-karla",  "Grill 66 deild karla",  false, false, 40, false),
+        ("8422", "Grill 66 deild umspil kvenna", "kvenna", "2-final", "playoffs", "grill66-kvenna", "Grill 66 deild kvenna", false, false, 40, false),
+        ("8437", "Powerade bikar karla",         "karlar", "cup",     "cup",      "bikar-karla",    "Powerade bikar karla",  false, false, 50, false),
+        ("8436", "Powerade bikar kvenna",        "kvenna", "cup",     "cup",      "bikar-kvenna",   "Powerade bikar kvenna", false, false, 50, false),
     ];
 
     private readonly ITableWriter _tableWriter;
@@ -50,7 +50,7 @@ public class SeedTournamentsFunction
         var startYear = int.TryParse(seasonParam, out var parsed) ? parsed : DateTime.UtcNow.Year;
         var season = SeasonLabel.Format(startYear);
 
-        foreach (var (id, name, gender, division, type, competitionId, competitionName, ingest, active, priority) in TournamentDefinitions)
+        foreach (var (id, name, gender, division, type, competitionId, competitionName, ingest, active, priority, ingestHbStatz) in TournamentDefinitions)
         {
             await _tableWriter.UpsertAsync("Tournaments", new TournamentEntity
             {
@@ -64,7 +64,8 @@ public class SeedTournamentsFunction
                 CompetitionName = competitionName,
                 Ingest = ingest,
                 Active = active,
-                Priority = priority
+                Priority = priority,
+                IngestHbStatz = ingestHbStatz
             });
         }
 

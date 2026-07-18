@@ -27,4 +27,6 @@ public class TournamentEntity : ITableEntity
     // Surfaced/selectable in the UI (the /api/tournaments display list).
     public bool Active { get; set; }
     public int Priority { get; set; }
+    // Ingestion pipeline retrieves advanced player stats from HBStatz for this tournament.
+    public bool IngestHbStatz { get; set; }
 }

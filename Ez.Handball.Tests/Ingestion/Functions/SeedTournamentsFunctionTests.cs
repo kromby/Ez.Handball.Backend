@@ -127,7 +127,20 @@ public class SeedTournamentsFunctionTests
                 e.CompetitionId == "olis-karla" &&
                 e.CompetitionName == "Olís deild karla" &&
                 e.Ingest == true &&
-                e.Active == true),
+                e.Active == true &&
+                e.IngestHbStatz == true),
+            default), Times.Once);
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e =>
+                e.RowKey == "8434" &&
+                e.Type == "league" &&
+                e.CompetitionId == "olis-kvenna" &&
+                e.CompetitionName == "Olís deild kvenna" &&
+                e.Ingest == false &&
+                e.Active == false &&
+                e.IngestHbStatz == true),
             default), Times.Once);
     }
 
@@ -143,7 +156,8 @@ public class SeedTournamentsFunctionTests
                 e.Type == "playoffs" &&
                 e.CompetitionId == "olis-karla" &&
                 e.Ingest == false &&
-                e.Active == false),
+                e.Active == false &&
+                e.IngestHbStatz == false),
             default), Times.Once);
     }
 
@@ -157,7 +171,8 @@ public class SeedTournamentsFunctionTests
             It.Is<TournamentEntity>(e =>
                 e.RowKey == "8437" &&
                 e.Type == "cup" &&
-                e.CompetitionId == "bikar-karla"),
+                e.CompetitionId == "bikar-karla" &&
+                e.IngestHbStatz == false),
             default), Times.Once);
     }
 

@@ -63,7 +63,22 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 Goals: s.Goals,
                 YellowCards: s.YellowCards,
                 TwoMinuteSuspensions: s.TwoMinuteSuspensions,
-                RedCards: s.RedCards));
+                RedCards: s.RedCards,
+                Assists: s.Assists,
+                Turnovers: s.Turnovers,
+                Steals: s.Steals,
+                PlusMinus: s.PlusMinus,
+                Shots: s.Shots,
+                Blocks: s.Blocks,
+                Stops: s.Stops,
+                ExpectedGoals: s.ExpectedGoals,
+                PenaltiesEarned: s.PenaltiesEarned,
+                PenaltyGoals: s.PenaltyGoals,
+                Saves: s.Saves,
+                SaveRate: s.SaveRate,
+                ExpectedSaves: s.ExpectedSaves,
+                GoalsAgainst: s.GoalsAgainst,
+                PenaltySaves: s.PenaltySaves));
         }
 
         return result;
@@ -86,7 +101,22 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 Goals: s.Goals,
                 YellowCards: s.YellowCards,
                 TwoMinuteSuspensions: s.TwoMinuteSuspensions,
-                RedCards: s.RedCards));
+                RedCards: s.RedCards,
+                Assists: s.Assists,
+                Turnovers: s.Turnovers,
+                Steals: s.Steals,
+                PlusMinus: s.PlusMinus,
+                Shots: s.Shots,
+                Blocks: s.Blocks,
+                Stops: s.Stops,
+                ExpectedGoals: s.ExpectedGoals,
+                PenaltiesEarned: s.PenaltiesEarned,
+                PenaltyGoals: s.PenaltyGoals,
+                Saves: s.Saves,
+                SaveRate: s.SaveRate,
+                ExpectedSaves: s.ExpectedSaves,
+                GoalsAgainst: s.GoalsAgainst,
+                PenaltySaves: s.PenaltySaves));
         }
         return result;
     }
