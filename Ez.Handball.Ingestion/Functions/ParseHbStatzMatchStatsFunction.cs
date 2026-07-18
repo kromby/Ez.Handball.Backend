@@ -28,7 +28,7 @@ public class ParseHbStatzMatchStatsFunction
     {
         _logger.LogInformation("Parsing HBStatz stats for match {MatchId} ({Side} side)", matchId, side);
 
-        var matches = await _tableWriter.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", context.CancellationToken);
+        var matches = await _tableWriter.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{ODataFilter.Escape(matchId)}'", context.CancellationToken);
         if (matches.Count == 0)
         {
             _logger.LogError("Match {MatchId} not found in database; cannot reconcile HBStatz players.", matchId);
@@ -37,7 +37,11 @@ public class ParseHbStatzMatchStatsFunction
         var match = matches[0];
         var teamId = side == "home" ? match.HomeTeamId : match.AwayTeamId;
 
-        var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{teamId}'", context.CancellationToken);
+        var tournamentId = match.PartitionKey;
+        var tournaments = await _tableWriter.QueryAsync<TournamentEntity>("Tournaments", $"RowKey eq '{ODataFilter.Escape(tournamentId)}'", context.CancellationToken);
+        var season = tournaments.FirstOrDefault()?.PartitionKey ?? string.Empty;
+
+        var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{ODataFilter.Escape(teamId)}'", context.CancellationToken);
         var tables = StatsTableParser.ParseAll(htmlContent);
         var lines = MatchStatLineBuilder.Build(tables, side);
 
@@ -52,26 +56,59 @@ public class ParseHbStatzMatchStatsFunction
                 continue;
             }
 
-            await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
+            var existing = await _tableWriter.GetAsync<PlayerStatEntity>("PlayerStats", matchId, playerId, context.CancellationToken);
+            if (existing is not null)
             {
-                PartitionKey = matchId,
-                RowKey = playerId,
-                Assists = line.Assists,
-                Turnovers = line.Turnovers,
-                Steals = line.Steals,
-                PlusMinus = line.PlusMinus,
-                Shots = line.Shots,
-                Blocks = line.Blocks,
-                Stops = line.Stops,
-                ExpectedGoals = line.ExpectedGoals,
-                PenaltiesEarned = line.PenaltiesEarned,
-                PenaltyGoals = line.PenaltyGoals,
-                Saves = line.Saves,
-                SaveRate = line.SaveRate,
-                ExpectedSaves = line.ExpectedSaves,
-                GoalsAgainst = line.GoalsAgainst,
-                PenaltySaves = line.PenaltySaves
-            }, context.CancellationToken, TableUpdateMode.Merge);
+                existing.Assists = line.Assists;
+                existing.Turnovers = line.Turnovers;
+                existing.Steals = line.Steals;
+                existing.PlusMinus = line.PlusMinus;
+                existing.Shots = line.Shots;
+                existing.Blocks = line.Blocks;
+                existing.Stops = line.Stops;
+                existing.ExpectedGoals = line.ExpectedGoals;
+                existing.PenaltiesEarned = line.PenaltiesEarned;
+                existing.PenaltyGoals = line.PenaltyGoals;
+                existing.Saves = line.Saves;
+                existing.SaveRate = line.SaveRate;
+                existing.ExpectedSaves = line.ExpectedSaves;
+                existing.GoalsAgainst = line.GoalsAgainst;
+                existing.PenaltySaves = line.PenaltySaves;
+
+                await _tableWriter.UpsertAsync("PlayerStats", existing, context.CancellationToken, TableUpdateMode.Replace);
+            }
+            else
+            {
+                var newEntity = new PlayerStatEntity
+                {
+                    PartitionKey = matchId,
+                    RowKey = playerId,
+                    TournamentId = tournamentId,
+                    Season = season,
+                    TeamId = teamId,
+                    Goals = line.Goals,
+                    YellowCards = line.YellowCards,
+                    TwoMinuteSuspensions = line.TwoMinuteSuspensions,
+                    RedCards = line.RedCards,
+                    Assists = line.Assists,
+                    Turnovers = line.Turnovers,
+                    Steals = line.Steals,
+                    PlusMinus = line.PlusMinus,
+                    Shots = line.Shots,
+                    Blocks = line.Blocks,
+                    Stops = line.Stops,
+                    ExpectedGoals = line.ExpectedGoals,
+                    PenaltiesEarned = line.PenaltiesEarned,
+                    PenaltyGoals = line.PenaltyGoals,
+                    Saves = line.Saves,
+                    SaveRate = line.SaveRate,
+                    ExpectedSaves = line.ExpectedSaves,
+                    GoalsAgainst = line.GoalsAgainst,
+                    PenaltySaves = line.PenaltySaves
+                };
+
+                await _tableWriter.UpsertAsync("PlayerStats", newEntity, context.CancellationToken, TableUpdateMode.Replace);
+            }
         }
 
         _logger.LogInformation("Finished merging HBStatz stats for match {MatchId} ({Side} side)", matchId, side);

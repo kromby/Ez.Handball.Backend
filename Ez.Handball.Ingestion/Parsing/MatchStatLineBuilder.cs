@@ -63,7 +63,7 @@ public static class MatchStatLineBuilder
                     Blocks: hasCards ? NullInt(Cell(disciplineTable!, cardRow!, "Blokk")) : null,
                     Stops: hasCards ? Double(Cell(disciplineTable!, cardRow!, "Lögleg Stopp")) : null,
                     ExpectedGoals: Double(Cell(offensiveTable, row, "xG")),
-                    PenaltiesEarned: NullInt(Cell(offensiveTable, row, "Víta send.")),
+                    PenaltiesEarned: NullInt(Cell(offensiveTable, row, "Fi.V.")),
                     PenaltyGoals: NullInt(Cell(offensiveTable, row, "Víta Mörk"))
                 ));
             }
