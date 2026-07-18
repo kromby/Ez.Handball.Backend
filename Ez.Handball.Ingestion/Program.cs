@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Microsoft.Azure.Functions.Worker;
@@ -38,6 +39,14 @@ internal static class Program
                 services.AddSingleton<ITableWriter, TableWriter>();
                 services.AddSingleton<IMatchParser, MatchParser>();
                 services.AddSingleton<IPlayerParser, PlayerParser>();
+
+                services.AddSingleton(_ => new QueueServiceClient(storageConnection));
+                services.AddHttpClient<IHbStatzClient, HbStatzClient>(client =>
+                {
+                    client.BaseAddress = new Uri("https://hbstatz.is/");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("EzHandball-Ingestion/1.0 (+https://github.com/kromby/Ez.Handball.Backend)");
+                });
+                services.AddSingleton<IMatchReportClient, MatchReportClient>();
             })
             .Build();
 
