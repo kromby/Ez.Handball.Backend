@@ -7,6 +7,7 @@ using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Extensions.Logging.Abstractions;
+using Azure.Storage.Queues;
 using Moq;
 using Xunit;
 
@@ -16,9 +17,16 @@ public class MatchParserTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
     private readonly Mock<IBlobArchiver> _blobArchiver = new();
+    private readonly Mock<QueueServiceClient> _queueServiceClient = new();
+    private readonly Mock<QueueClient> _queueClient = new();
+
+    public MatchParserTests()
+    {
+        _queueServiceClient.Setup(q => q.GetQueueClient(It.IsAny<string>())).Returns(_queueClient.Object);
+    }
 
     private MatchParser CreateSut() =>
-        new(_tableWriter.Object, _blobArchiver.Object, NullLogger<MatchParser>.Instance);
+        new(_tableWriter.Object, _blobArchiver.Object, _queueServiceClient.Object, NullLogger<MatchParser>.Instance);
 
     private void SetupRoundBlob(string tournamentId, string gameId, string round)
     {
@@ -365,5 +373,34 @@ public class MatchParserTests
         _tableWriter.Verify(t => t.UpsertAsync("Matches",
             It.Is<MatchEntity>(e => e.RowKey == "5001" && e.Round == ""),
             default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MatchFinishedAndIngestHbStatzTrue_EnqueuesSyncMessage()
+    {
+        var tournamentEntity = new TournamentEntity
+        {
+            PartitionKey = "2025",
+            RowKey = "8444",
+            Name = "Olís deild karla",
+            Gender = "karlar",
+            Division = "1",
+            IngestHbStatz = true
+        };
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity> { tournamentEntity });
+
+        var blobContent = BuildMatchDetailsJson(
+            tournamentId: "8444",
+            reportStatus: "S");
+
+        await CreateSut().ParseAsync(blobContent, "5001");
+
+        _queueClient.Verify(q => q.CreateIfNotExistsAsync(It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _queueClient.Verify(q => q.SendMessageAsync(
+            It.Is<string>(msg => !string.IsNullOrEmpty(msg)),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

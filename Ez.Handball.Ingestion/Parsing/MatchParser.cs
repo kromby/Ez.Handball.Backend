@@ -5,6 +5,7 @@ using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Extensions.Logging;
+using Azure.Storage.Queues;
 
 namespace Ez.Handball.Ingestion.Parsing;
 
@@ -16,12 +17,14 @@ public class MatchParser : IMatchParser
 
     private readonly ITableWriter _tableWriter;
     private readonly IBlobArchiver _blobArchiver;
+    private readonly QueueServiceClient _queueServiceClient;
     private readonly ILogger<MatchParser> _logger;
 
-    public MatchParser(ITableWriter tableWriter, IBlobArchiver blobArchiver, ILogger<MatchParser> logger)
+    public MatchParser(ITableWriter tableWriter, IBlobArchiver blobArchiver, QueueServiceClient queueServiceClient, ILogger<MatchParser> logger)
     {
         _tableWriter = tableWriter;
         _blobArchiver = blobArchiver;
+        _queueServiceClient = queueServiceClient;
         _logger = logger;
     }
 
@@ -137,6 +140,16 @@ public class MatchParser : IMatchParser
             AwayHalftimeScore = awayHalftime,
             Round = round
         }, ct);
+
+        if (details.ReportStatus == "S" && tournament.IngestHbStatz)
+        {
+            var queueClient = _queueServiceClient.GetQueueClient("hbstatz-match-sync");
+            await queueClient.CreateIfNotExistsAsync(cancellationToken: ct);
+            var messageJson = JsonSerializer.Serialize(new { MatchId = matchId, TournamentId = tournamentId });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(messageJson);
+            await queueClient.SendMessageAsync(Convert.ToBase64String(bytes), ct);
+            _logger.LogInformation("Enqueued HBStatz sync message for match {MatchId}", matchId);
+        }
 
         _logger.LogInformation(
             "Parsed match {MatchId} (tournament {TournamentId}, gender {Gender})",
