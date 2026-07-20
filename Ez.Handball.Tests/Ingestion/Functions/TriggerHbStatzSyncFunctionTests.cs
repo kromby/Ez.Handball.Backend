@@ -46,9 +46,27 @@ public class TriggerHbStatzSyncFunctionTests
             .Setup(t => t.QueryAsync<MatchEntity>("Matches", It.Is<string>(f => f.Contains("PartitionKey eq '8444'")), It.IsAny<CancellationToken>()))
             .ReturnsAsync(matches);
 
-        var result = await CreateSut().ProcessAsync(null, null, CancellationToken.None);
+        var result = await CreateSut().ProcessAsync(null, null, null, CancellationToken.None);
 
         Assert.Equal(2, result);
         _queueClient.Verify(q => q.SendMessageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WithMatchId_EnqueuesSingleMatch()
+    {
+        var matches = new List<MatchEntity>
+        {
+            new() { PartitionKey = "8444", RowKey = "12922", Status = "S" }
+        };
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", "RowKey eq '12922'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(matches);
+
+        var result = await CreateSut().ProcessAsync(null, null, "12922", CancellationToken.None);
+
+        Assert.Equal(1, result);
+        _queueClient.Verify(q => q.SendMessageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

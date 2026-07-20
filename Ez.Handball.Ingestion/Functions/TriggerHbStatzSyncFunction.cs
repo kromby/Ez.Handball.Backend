@@ -29,11 +29,12 @@ public class TriggerHbStatzSyncFunction
         var logger = context.GetLogger<TriggerHbStatzSyncFunction>();
         var season = req.Query["season"];
         var limitStr = req.Query["limit"];
+        var matchId = req.Query["matchId"];
         int? limit = int.TryParse(limitStr, out var l) ? l : null;
 
-        logger.LogInformation("Manually triggering HBStatz sync. Season filter: {Season}, Limit: {Limit}", season ?? "None", limit?.ToString() ?? "None");
+        logger.LogInformation("Manually triggering HBStatz sync. MatchId: {MatchId}, Season filter: {Season}, Limit: {Limit}", matchId ?? "None", season ?? "None", limit?.ToString() ?? "None");
 
-        var enqueuedCount = await ProcessAsync(season, limit, context.CancellationToken);
+        var enqueuedCount = await ProcessAsync(season, limit, matchId, context.CancellationToken);
 
         logger.LogInformation("Finished manual HBStatz trigger. Enqueued {Count} matches", enqueuedCount);
 
@@ -47,8 +48,26 @@ public class TriggerHbStatzSyncFunction
         return response;
     }
 
-    public async Task<int> ProcessAsync(string? season, int? limit, CancellationToken ct)
+    public async Task<int> ProcessAsync(string? season, int? limit, string? matchId, CancellationToken ct)
     {
+        var queueClient = _queueServiceClient.GetQueueClient("hbstatz-match-sync");
+        await queueClient.CreateIfNotExistsAsync(cancellationToken: ct);
+
+        if (!string.IsNullOrWhiteSpace(matchId))
+        {
+            var escapedMatchId = ODataFilter.Escape(matchId);
+            var matches = await _tableWriter.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{escapedMatchId}'", ct);
+            if (matches.Count == 0) return 0;
+
+            var match = matches[0];
+            var tournamentId = match.PartitionKey;
+
+            var messageJson = JsonSerializer.Serialize(new { MatchId = match.RowKey, TournamentId = tournamentId });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(messageJson);
+            await queueClient.SendMessageAsync(Convert.ToBase64String(bytes), ct);
+            return 1;
+        }
+
         var filter = "IngestHbStatz eq true";
         if (!string.IsNullOrWhiteSpace(season))
         {
@@ -56,9 +75,6 @@ public class TriggerHbStatzSyncFunction
         }
 
         var tournaments = await _tableWriter.QueryAsync<TournamentEntity>("Tournaments", filter, ct);
-        var queueClient = _queueServiceClient.GetQueueClient("hbstatz-match-sync");
-        await queueClient.CreateIfNotExistsAsync(cancellationToken: ct);
-
         var enqueuedCount = 0;
 
         foreach (var tournament in tournaments)
@@ -75,8 +91,8 @@ public class TriggerHbStatzSyncFunction
                     break;
                 }
 
-                var matchId = match.RowKey;
-                var messageJson = JsonSerializer.Serialize(new { MatchId = matchId, TournamentId = tournamentId });
+                var currentMatchId = match.RowKey;
+                var messageJson = JsonSerializer.Serialize(new { MatchId = currentMatchId, TournamentId = tournamentId });
                 var bytes = System.Text.Encoding.UTF8.GetBytes(messageJson);
                 await queueClient.SendMessageAsync(Convert.ToBase64String(bytes), ct);
 
