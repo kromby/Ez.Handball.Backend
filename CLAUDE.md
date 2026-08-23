@@ -109,8 +109,12 @@ The `Tournaments` table must be seeded before the parse functions will work. Use
 |----|------------|--------|
 | 9142 | Olís deild karla | 2026/2027 |
 | 8434 | Olís deild kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8427 | Olís deild úrslit karla (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8430 | Olís deild úrslit kvenna (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
 | 8424 | Grill 66 deild karla | 2025/2026 (stale — 2026/27 ID not yet known) |
 | 8443 | Grill 66 deild kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8441 | Grill 66 deild umspil karla (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8422 | Grill 66 deild umspil kvenna (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
 | 8437 | Powerade bikar karla | 2025/2026 (stale — 2026/27 ID not yet known) |
 | 8436 | Powerade bikar kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
 

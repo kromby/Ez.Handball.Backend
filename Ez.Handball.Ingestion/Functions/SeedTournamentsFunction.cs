@@ -100,7 +100,22 @@ public class SeedTournamentsFunction
             {
                 other.IsCurrent = false;
                 await _tableWriter.UpsertAsync("Seasons", other);
+                await RetireIngestAsync(other.RowKey);
             }
+        }
+    }
+
+    // Prevents FetchMatchListFunction's unpartitioned "Ingest eq true" sync query from
+    // picking up a superseded season's tournaments alongside the new current season.
+    private async Task RetireIngestAsync(string seasonLabel)
+    {
+        var stale = await _tableWriter.QueryAsync<TournamentEntity>(
+            "Tournaments", $"PartitionKey eq '{seasonLabel}' and Ingest eq true");
+
+        foreach (var tournament in stale)
+        {
+            tournament.Ingest = false;
+            await _tableWriter.UpsertAsync("Tournaments", tournament);
         }
     }
 }
