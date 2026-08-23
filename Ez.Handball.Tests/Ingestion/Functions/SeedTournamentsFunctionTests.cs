@@ -54,7 +54,7 @@ public class SeedTournamentsFunctionTests
             "Tournaments",
             It.Is<TournamentEntity>(e =>
                 e.PartitionKey == "2025-26" &&
-                e.RowKey == "8444" &&
+                e.RowKey == "9142" &&
                 e.Name == "Olís deild karla"),
             default), Times.Once);
     }
@@ -122,7 +122,7 @@ public class SeedTournamentsFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync(
             "Tournaments",
             It.Is<TournamentEntity>(e =>
-                e.RowKey == "8444" &&
+                e.RowKey == "9142" &&
                 e.Type == "league" &&
                 e.CompetitionId == "olis-karla" &&
                 e.CompetitionName == "Olís deild karla" &&
