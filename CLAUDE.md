@@ -101,18 +101,28 @@ Gender values are `"karlar"` (men) or `"kvenna"` (women). The synthetic `teamId`
 
 `MatchEntity` carries `Venue`, `Attendance` (nullable), `HomeHalftimeScore`, and `AwayHalftimeScore` in addition to the final score. Second-half scores are derived (`final − halftime`) at read time, not stored.
 
-### Tournament IDs (2025/2026 season)
+### Tournament IDs
 
-The `Tournaments` table must be seeded before the parse functions will work. Use `POST /api/seed/tournaments?season=2025`. Current IDs hardcoded in `SeedTournamentsFunction`:
+The `Tournaments` table must be seeded before the parse functions will work. Use `POST /api/seed/tournaments?season=<startYear>`. Current IDs hardcoded in `SeedTournamentsFunction`:
 
-| ID | Competition |
-|----|------------|
-| 8444 | Olís deild karla |
-| 8434 | Olís deild kvenna |
-| 8424 | Grill 66 deild karla |
-| 8443 | Grill 66 deild kvenna |
-| 8437 | Powerade bikar karla |
-| 8436 | Powerade bikar kvenna |
+| ID | Competition | Season |
+|----|------------|--------|
+| 9142 | Olís deild karla | 2026/2027 |
+| 8434 | Olís deild kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8427 | Olís deild úrslit karla (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8430 | Olís deild úrslit kvenna (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8424 | Grill 66 deild karla | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8443 | Grill 66 deild kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8441 | Grill 66 deild umspil karla (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8422 | Grill 66 deild umspil kvenna (playoffs) | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8437 | Powerade bikar karla | 2025/2026 (stale — 2026/27 ID not yet known) |
+| 8436 | Powerade bikar kvenna | 2025/2026 (stale — 2026/27 ID not yet known) |
+
+Only Olís deild karla has `Ingest=true`/`Active=true`, so it's the only row that
+must be correct for the current season. The other rows still carry their
+2025/26 hsi.is IDs and need updating once next season's IDs for those
+competitions are known — seeding a new season now would write those stale IDs
+under the new season's partition.
 
 The `?season=` parameter is the integer **start year**; it is stored as the
 `YYYY-YY` label (e.g. `?season=2025` → PartitionKey `"2025-26"`). The label is

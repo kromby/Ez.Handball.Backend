@@ -14,7 +14,7 @@ public class SeedTournamentsFunction
         string Type, string CompetitionId, string CompetitionName,
         bool Ingest, bool Active, int Priority)> TournamentDefinitions =
     [
-        ("8444", "Olís deild karla",             "karlar", "1",       "league",   "olis-karla",     "Olís deild karla",      true,  true,  10),
+        ("9142", "Olís deild karla",             "karlar", "1",       "league",   "olis-karla",     "Olís deild karla",      true,  true,  10),
         ("8434", "Olís deild kvenna",            "kvenna", "1",       "league",   "olis-kvenna",    "Olís deild kvenna",     false, false, 10),
         ("8427", "Olís deild úrslit karla",      "karlar", "1-final", "playoffs", "olis-karla",     "Olís deild karla",      false, false, 20),
         ("8430", "Olís deild úrslit kvenna",     "kvenna", "1-final", "playoffs", "olis-kvenna",    "Olís deild kvenna",     false, false, 20),
@@ -100,7 +100,22 @@ public class SeedTournamentsFunction
             {
                 other.IsCurrent = false;
                 await _tableWriter.UpsertAsync("Seasons", other);
+                await RetireIngestAsync(other.RowKey);
             }
+        }
+    }
+
+    // Prevents FetchMatchListFunction's unpartitioned "Ingest eq true" sync query from
+    // picking up a superseded season's tournaments alongside the new current season.
+    private async Task RetireIngestAsync(string seasonLabel)
+    {
+        var stale = await _tableWriter.QueryAsync<TournamentEntity>(
+            "Tournaments", $"PartitionKey eq '{seasonLabel}' and Ingest eq true");
+
+        foreach (var tournament in stale)
+        {
+            tournament.Ingest = false;
+            await _tableWriter.UpsertAsync("Tournaments", tournament);
         }
     }
 }

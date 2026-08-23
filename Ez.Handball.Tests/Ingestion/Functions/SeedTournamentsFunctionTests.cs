@@ -15,6 +15,10 @@ public class SeedTournamentsFunctionTests
         _tableWriter
             .Setup(t => t.QueryAsync<SeasonEntity>("Seasons", "PartitionKey eq 'season'", default))
             .ReturnsAsync(new List<SeasonEntity>());
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", It.IsAny<string>(), default))
+            .ReturnsAsync(new List<TournamentEntity>());
     }
 
     private SeedTournamentsFunction CreateSut() => new(_tableWriter.Object);
@@ -54,7 +58,7 @@ public class SeedTournamentsFunctionTests
             "Tournaments",
             It.Is<TournamentEntity>(e =>
                 e.PartitionKey == "2025-26" &&
-                e.RowKey == "8444" &&
+                e.RowKey == "9142" &&
                 e.Name == "Olís deild karla"),
             default), Times.Once);
     }
@@ -122,7 +126,7 @@ public class SeedTournamentsFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync(
             "Tournaments",
             It.Is<TournamentEntity>(e =>
-                e.RowKey == "8444" &&
+                e.RowKey == "9142" &&
                 e.Type == "league" &&
                 e.CompetitionId == "olis-karla" &&
                 e.CompetitionName == "Olís deild karla" &&
@@ -182,6 +186,35 @@ public class SeedTournamentsFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync(
             "Seasons",
             It.Is<SeasonEntity>(e => e.RowKey == "2024-25" && e.IsCurrent == false),
+            default,
+            Azure.Data.Tables.TableUpdateMode.Replace), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_NewerSeason_RetiresIngestOnPreviousCurrentSeasonsTournaments()
+    {
+        _tableWriter
+            .Setup(t => t.QueryAsync<SeasonEntity>("Seasons", "PartitionKey eq 'season'", default))
+            .ReturnsAsync(new List<SeasonEntity>
+            {
+                new() { PartitionKey = "season", RowKey = "2025-26", StartYear = 2025, IsCurrent = true }
+            });
+
+        var staleLeague = new TournamentEntity
+        {
+            PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Ingest = true
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>(
+                "Tournaments", "PartitionKey eq '2025-26' and Ingest eq true", default))
+            .ReturnsAsync(new List<TournamentEntity> { staleLeague });
+
+        await CreateSut().ProcessAsync("2026");
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Tournaments",
+            It.Is<TournamentEntity>(e =>
+                e.PartitionKey == "2025-26" && e.RowKey == "8444" && e.Ingest == false),
             default,
             Azure.Data.Tables.TableUpdateMode.Replace), Times.Once);
     }
