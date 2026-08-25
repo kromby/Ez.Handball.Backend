@@ -49,6 +49,11 @@ var storageConnection = builder.Configuration["Storage:ConnectionString"]
     ?? "UseDevelopmentStorage=true";
 
 builder.Services.AddTableStorageInfrastructure(storageConnection);
+builder.Services.AddBlobStorageInfrastructure(
+    storageConnection, builder.Configuration["Storage:BlobContainerName"] ?? "raw");
+builder.Services.AddIngestionTriggerInfrastructure(
+    builder.Configuration["Ingestion:BaseUrl"] ?? "http://localhost:7071",
+    builder.Configuration["Ingestion:FunctionKey"]);
 
 builder.Services.AddAuthInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 
@@ -86,10 +91,12 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwt.SigningKey)) { KeyId = "ezhb-hs256" }, // must match JwtTokenService.SigningKeyId
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
+            ClockSkew = TimeSpan.FromSeconds(30),
+            RoleClaimType = Roles.ClaimType
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.Admin)));
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -141,6 +148,10 @@ builder.Services.AddScoped<IGetClubRosterUseCase, GetClubRosterUseCase>();
 builder.Services.AddScoped<IGetClubMatchesUseCase, GetClubMatchesUseCase>();
 builder.Services.AddScoped<IGetSeasonsUseCase, GetSeasonsUseCase>();
 builder.Services.AddScoped<IGetTournamentsUseCase, GetTournamentsUseCase>();
+builder.Services.AddScoped<IGetTournamentStatusUseCase, GetTournamentStatusUseCase>();
+builder.Services.AddScoped<IGetAdminGameStatusUseCase, GetAdminGameStatusUseCase>();
+builder.Services.AddScoped<ITriggerIngestionSyncUseCase, TriggerIngestionSyncUseCase>();
+builder.Services.AddScoped<ITriggerHbStatzSyncUseCase, TriggerHbStatzSyncUseCase>();
 builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
 builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
@@ -628,6 +639,7 @@ app.MapManagerEndpoints();
 app.MapMiniLeagueEndpoints();
 app.MapMiniLeagueInviteEndpoints();
 app.MapGameweekEndpoints();
+app.MapAdminEndpoints();
 
 // Debug-only replay harness (#96): only exists when the master override flag is on (off in
 // production → routes return 404). Behind an X-Debug-Key shared secret (see DebugKeyFilter).

@@ -98,7 +98,8 @@ internal sealed class TableMatchRepository : IMatchRepository
                 Venue: string.IsNullOrEmpty(m.Venue) ? null : m.Venue,
                 Status: m.Status,
                 Home: BuildListTeam(m.HomeTeamId, m.HomeScore, clubs),
-                Away: BuildListTeam(m.AwayTeamId, m.AwayScore, clubs)))
+                Away: BuildListTeam(m.AwayTeamId, m.AwayScore, clubs),
+                HbStatzSyncedAt: m.HbStatzSyncedAt))
             .ToList();
 
         return new TournamentMatches(tournamentId, tournamentName, season, items);

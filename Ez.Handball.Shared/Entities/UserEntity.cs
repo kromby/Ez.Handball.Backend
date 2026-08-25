@@ -12,6 +12,7 @@ public sealed class UserEntity : ITableEntity
     public string Language { get; set; } = "is";               // "is" | "en"
     public string FavoriteClubId { get; set; } = string.Empty; // validated against Clubs
     public bool EmailVerified { get; set; }                    // starts false
+    public bool IsAdmin { get; set; }                           // starts false; flip directly in table storage
     public string PasswordHash { get; set; } = string.Empty;
     public string ExternalId { get; set; } = string.Empty;     // reserved for managed-provider subject
     public DateTimeOffset CreatedAt { get; set; }

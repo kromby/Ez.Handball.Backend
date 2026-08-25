@@ -17,6 +17,24 @@ internal sealed class TableTournamentRepository : ITournamentRepository
     public Task<IReadOnlyList<Tournament>> ListBySeasonAsync(string season, CancellationToken ct) =>
         QueryAsync($"PartitionKey eq '{ODataFilter.Escape(season)}'", ct);
 
+    public async Task<IReadOnlyList<TournamentStatus>> ListAllAsync(CancellationToken ct)
+    {
+        // Full-table scan (no PartitionKey filter): the Tournaments table holds only a
+        // handful of rows per season — one per competition — so scanning every season
+        // stays cheap. This is the admin status view, not a hot read path.
+        var rows = new List<TournamentEntity>();
+        await foreach (var t in _query.QueryAsync<TournamentEntity>(Tables.Tournaments, null, ct))
+            rows.Add(t);
+
+        var nameComparer = StringComparer.Create(CultureInfo.GetCultureInfo("is-IS"), ignoreCase: true);
+        return rows
+            .OrderByDescending(t => t.PartitionKey, StringComparer.Ordinal) // newest season first
+            .ThenBy(t => t.Priority)
+            .ThenBy(t => t.Name, nameComparer)
+            .Select(MapStatus)
+            .ToList();
+    }
+
     private async Task<IReadOnlyList<Tournament>> QueryAsync(string filter, CancellationToken ct)
     {
         var rows = new List<TournamentEntity>();
@@ -38,5 +56,13 @@ internal sealed class TableTournamentRepository : ITournamentRepository
         // Defensive: rows seeded before this field existed default to League.
         var type = TournamentTypes.TryParse(t.Type, out var parsed) ? parsed : TournamentType.League;
         return new Tournament(t.RowKey, t.Name, t.Gender, type, t.CompetitionId, t.CompetitionName);
+    }
+
+    private static TournamentStatus MapStatus(TournamentEntity t)
+    {
+        var type = TournamentTypes.TryParse(t.Type, out var parsed) ? parsed : TournamentType.League;
+        return new TournamentStatus(
+            t.RowKey, t.Name, t.Gender, type, t.CompetitionId, t.CompetitionName,
+            t.PartitionKey, t.Active, t.Ingest, t.Priority);
     }
 }

@@ -23,6 +23,13 @@ internal static class Program
                     client.BaseAddress = new Uri(config["HsiApiBaseUrl"] ?? "https://hsi.is");
                 });
 
+                services.AddHttpClient<IHbStatzApiClient, HbStatzApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(config["HbStatzApiBaseUrl"] ?? "https://hbstatz.is/");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                        "EzHandball-Ingestion/1.0 (+https://github.com/kromby/Ez.Handball.Backend)");
+                });
+
                 var storageConnection = config["HandballStorageConnection"]
                     ?? "UseDevelopmentStorage=true";
 

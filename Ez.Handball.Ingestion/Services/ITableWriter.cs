@@ -13,4 +13,6 @@ public interface ITableWriter
 
     Task<IList<T>> QueryAsync<T>(string tableName, string filter, CancellationToken ct = default)
         where T : class, ITableEntity, new();
+
+    Task DeleteAsync(string tableName, string partitionKey, string rowKey, CancellationToken ct = default);
 }

@@ -5,6 +5,17 @@ namespace Ez.Handball.Application.Abstractions;
 /// <summary>An opaque secret handed to the client plus the hash stored server-side.</summary>
 public sealed record IssuedToken(string Value, string Hash, DateTimeOffset ExpiresAt);
 
+/// <summary>
+/// Shared contract between token issuance (<see cref="ITokenService"/>) and authorization
+/// (Program.cs's JwtBearer/RoleClaimType wiring): the claim type used for role claims in issued
+/// JWTs, and the one role currently defined.
+/// </summary>
+public static class Roles
+{
+    public const string ClaimType = "role";
+    public const string Admin = "admin";
+}
+
 public interface ITokenService
 {
     string CreateAccessToken(UserEntity user);
