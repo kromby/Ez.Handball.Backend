@@ -56,4 +56,17 @@ public class TableWriter : ITableWriter
         }
         return results;
     }
+
+    public async Task DeleteAsync(string tableName, string partitionKey, string rowKey, CancellationToken ct = default)
+    {
+        var table = _serviceClient.GetTableClient(tableName);
+        try
+        {
+            await table.DeleteEntityAsync(partitionKey, rowKey, ETag.All, ct);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            // Already gone — deleting is idempotent.
+        }
+    }
 }
