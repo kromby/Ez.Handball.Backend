@@ -10,4 +10,8 @@ public interface ITournamentRepository
     // All rows for the season, regardless of Ingest/Active — used by the
     // scope resolver to map competition/type → tournament ids.
     Task<IReadOnlyList<Tournament>> ListBySeasonAsync(string season, CancellationToken ct);
+
+    // Every row across every season, regardless of Ingest/Active — drives the
+    // admin tournament-status view.
+    Task<IReadOnlyList<TournamentStatus>> ListAllAsync(CancellationToken ct);
 }

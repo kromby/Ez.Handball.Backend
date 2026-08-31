@@ -24,6 +24,9 @@ public class TournamentEntity : ITableEntity
     public string CompetitionName { get; set; } = string.Empty;
     // Ingestion pipeline retrieves match data for this tournament.
     public bool Ingest { get; set; }
+    // Enriches finished matches with HBStatz per-player stats. Independent of Ingest —
+    // requires a resolvable entry in HbStatzCompetitionMap for this CompetitionId.
+    public bool IngestHbStatz { get; set; }
     // Surfaced/selectable in the UI (the /api/tournaments display list).
     public bool Active { get; set; }
     public int Priority { get; set; }

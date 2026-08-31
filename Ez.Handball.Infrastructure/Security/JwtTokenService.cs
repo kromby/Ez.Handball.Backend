@@ -39,13 +39,15 @@ internal sealed class JwtTokenService : ITokenService
     public string CreateAccessToken(UserEntity user)
     {
         var now = _now();
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.RowKey),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("email_verified", user.EmailVerified ? "true" : "false"),
-            new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
+            new(JwtRegisteredClaimNames.Sub, user.RowKey),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new("email_verified", user.EmailVerified ? "true" : "false"),
+            new(JwtRegisteredClaimNames.Name, user.DisplayName),
         };
+        if (user.IsAdmin)
+            claims.Add(new Claim(Roles.ClaimType, Roles.Admin));
 
         var token = new JwtSecurityToken(
             issuer: _settings.Issuer,

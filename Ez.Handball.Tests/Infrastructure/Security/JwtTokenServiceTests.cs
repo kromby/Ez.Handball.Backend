@@ -25,6 +25,11 @@ public class JwtTokenServiceTests
         RowKey = "u-123", Email = "a@b.is", DisplayName = "Jón", EmailVerified = true
     };
 
+    private static UserEntity AdminUser() => new()
+    {
+        RowKey = "u-123", Email = "a@b.is", DisplayName = "Jón", EmailVerified = true, IsAdmin = true
+    };
+
     [Fact]
     public void CreateAccessToken_EmbedsExpectedClaimsAndIsValidlySigned()
     {
@@ -44,6 +49,22 @@ public class JwtTokenServiceTests
         Assert.Equal("a@b.is", principal.FindFirst("email")!.Value);
         Assert.Equal("true", principal.FindFirst("email_verified")!.Value);
         Assert.Equal("Jón", principal.FindFirst("name")!.Value);
+    }
+
+    [Fact]
+    public void CreateAccessToken_NonAdminUser_OmitsRoleClaim()
+    {
+        var jwt = CreateSut().CreateAccessToken(User());
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(jwt);
+        Assert.DoesNotContain(token.Claims, c => c.Type == "role");
+    }
+
+    [Fact]
+    public void CreateAccessToken_AdminUser_IncludesAdminRoleClaim()
+    {
+        var jwt = CreateSut().CreateAccessToken(AdminUser());
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(jwt);
+        Assert.Contains(token.Claims, c => c.Type == "role" && c.Value == "admin");
     }
 
     [Fact]

@@ -7,6 +7,7 @@ public sealed record UserProfile(
     string Language,
     string FavoriteClubId,
     bool EmailVerified,
+    bool IsAdmin,
     DateTimeOffset CreatedAt,
     DateTimeOffset? LastLoginAt,
     string? TeamName = null);

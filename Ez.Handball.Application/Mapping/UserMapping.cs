@@ -13,6 +13,7 @@ public static class UserMapping
         Language: e.Language,
         FavoriteClubId: e.FavoriteClubId,
         EmailVerified: e.EmailVerified,
+        IsAdmin: e.IsAdmin,
         CreatedAt: e.CreatedAt,
         LastLoginAt: e.LastLoginAt);
 }

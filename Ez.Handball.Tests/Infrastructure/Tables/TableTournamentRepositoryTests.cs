@@ -25,11 +25,18 @@ public class TableTournamentRepositoryTests
                 default))
               .Returns(ToAsync(rows));
 
+    private void SetupEverySeason(params TournamentEntity[] rows) =>
+        _query.Setup(q => q.QueryAsync<TournamentEntity>(
+                Ez.Handball.Infrastructure.Tables.Tournaments,
+                null,
+                default))
+              .Returns(ToAsync(rows));
+
     private static TournamentEntity Tournament(
         string id, string name, string gender, int priority,
         string type = "league", string competitionId = "olis-karla",
         string competitionName = "Olís deild karla", bool active = true,
-        string season = "2025-26") =>
+        string season = "2025-26", bool ingestHbStatz = false) =>
         new()
         {
             PartitionKey = season,
@@ -41,6 +48,7 @@ public class TableTournamentRepositoryTests
             CompetitionId = competitionId,
             CompetitionName = competitionName,
             Ingest = true,
+            IngestHbStatz = ingestHbStatz,
             Active = active,
             Priority = priority
         };
@@ -123,5 +131,55 @@ public class TableTournamentRepositoryTests
             Ez.Handball.Infrastructure.Tables.Tournaments,
             "PartitionKey eq '2025-26'",
             default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ListAllAsync_ScansWithoutAPartitionFilter_AndMapsEveryField()
+    {
+        SetupEverySeason(Tournament("8444", "Olís deild karla", "karlar", 10, active: true, ingestHbStatz: true));
+
+        var result = await CreateSut().ListAllAsync(default);
+
+        var t = Assert.Single(result);
+        Assert.Equal("8444", t.TournamentId);
+        Assert.Equal("Olís deild karla", t.Name);
+        Assert.Equal("karlar", t.Gender);
+        Assert.Equal(TournamentType.League, t.Type);
+        Assert.Equal("olis-karla", t.CompetitionId);
+        Assert.Equal("Olís deild karla", t.CompetitionName);
+        Assert.Equal("2025-26", t.Season);
+        Assert.True(t.Active);
+        Assert.True(t.Ingest);
+        Assert.True(t.IngestHbStatz);
+        Assert.Equal(10, t.Priority);
+
+        _query.Verify(q => q.QueryAsync<TournamentEntity>(
+            Ez.Handball.Infrastructure.Tables.Tournaments, null, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ListAllAsync_IncludesInactiveRows_AcrossSeasons()
+    {
+        SetupEverySeason(
+            Tournament("1", "Olís deild karla", "karlar", 10, active: true, season: "2025-26"),
+            Tournament("2", "Olís deild karla", "karlar", 10, active: false, season: "2024-25"));
+
+        var result = await CreateSut().ListAllAsync(default);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, t => t.TournamentId == "2" && !t.Active);
+    }
+
+    [Fact]
+    public async Task ListAllAsync_OrdersByNewestSeasonFirst_ThenPriorityThenIcelandicName()
+    {
+        SetupEverySeason(
+            Tournament("1", "Þór",   "karlar", 30, season: "2024-25"),
+            Tournament("2", "Akur",  "karlar", 10, season: "2025-26"),
+            Tournament("3", "Valur", "karlar", 10, season: "2025-26"));
+
+        var result = await CreateSut().ListAllAsync(default);
+
+        Assert.Equal(new[] { "2", "3", "1" }, result.Select(t => t.TournamentId).ToArray());
     }
 }

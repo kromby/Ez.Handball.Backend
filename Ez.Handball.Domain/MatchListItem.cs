@@ -9,7 +9,8 @@ public sealed record MatchListItem(
     string? Venue,
     string Status,
     MatchListTeam Home,
-    MatchListTeam Away);
+    MatchListTeam Away,
+    DateTimeOffset? HbStatzSyncedAt = null);
 
 public sealed record MatchListTeam(
     string TeamId,
