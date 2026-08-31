@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Shared.Entities;
 
@@ -38,5 +40,26 @@ public static class HbStatzPlayerReconciler
         rosterName.Contains(hbStatzName, StringComparison.Ordinal) ||
         hbStatzName.Contains(rosterName, StringComparison.Ordinal);
 
-    private static string Normalize(string name) => name.Trim().ToLowerInvariant();
+    // Folds diacritics so accent-encoding differences between hsi.is and HBStatz (e.g. an
+    // exported "Bjarni I Selvindi" vs HBStatz's "Bjarni í Selvindi") don't defeat name matching.
+    // Icelandic-specific letters (þ/ð/æ) aren't decomposable via Unicode NFD, so they're mapped
+    // explicitly; everything else (á, é, í, ó, ú, ý, ö, ...) decomposes into a base letter plus a
+    // combining mark, which is then stripped.
+    private static string Normalize(string name)
+    {
+        var expanded = name
+            .Replace("þ", "th").Replace("Þ", "Th")
+            .Replace("ð", "d").Replace("Ð", "D")
+            .Replace("æ", "ae").Replace("Æ", "Ae");
+
+        var decomposed = expanded.Normalize(NormalizationForm.FormD);
+        var stripped = new StringBuilder(decomposed.Length);
+        foreach (var ch in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                stripped.Append(ch);
+        }
+
+        return stripped.ToString().Trim().ToLowerInvariant();
+    }
 }
