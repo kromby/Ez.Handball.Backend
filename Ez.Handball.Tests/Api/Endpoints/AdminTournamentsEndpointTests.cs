@@ -79,7 +79,7 @@ public class AdminTournamentsEndpointTests : IClassFixture<AdminTournamentsEndpo
             new List<TournamentStatus>
             {
                 new("8444", "Olís deild karla", "karlar", TournamentType.League,
-                    "olis-karla", "Olís deild karla", "2025-26", true, true, 10)
+                    "olis-karla", "Olís deild karla", "2025-26", true, true, true, 10)
             });
 
         var response = await _client.SendAsync(AuthedGet(TokenFor(isAdmin: true)));
@@ -91,6 +91,7 @@ public class AdminTournamentsEndpointTests : IClassFixture<AdminTournamentsEndpo
         Assert.Equal("2025-26", first.GetProperty("season").GetString());
         Assert.True(first.GetProperty("active").GetBoolean());
         Assert.True(first.GetProperty("ingest").GetBoolean());
+        Assert.True(first.GetProperty("ingestHbStatz").GetBoolean());
         Assert.Equal(10, first.GetProperty("priority").GetInt32());
     }
 }

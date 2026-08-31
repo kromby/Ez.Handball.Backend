@@ -118,6 +118,28 @@ public class AdminHbStatzSyncEndpointTests : IClassFixture<AdminHbStatzSyncEndpo
     }
 
     [Fact]
+    public async Task Post_AdminToken_RoundWithoutTournamentId_Returns400WithoutCallingUseCase()
+    {
+        var response = await _client.SendAsync(
+            AuthedPost(TokenFor(isAdmin: true), "/api/admin/hbstatz-sync?round=3"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        _factory.Uc.Verify(s => s.ExecuteAsync(
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Post_AdminToken_MatchIdWithoutTournamentId_Returns400WithoutCallingUseCase()
+    {
+        var response = await _client.SendAsync(
+            AuthedPost(TokenFor(isAdmin: true), "/api/admin/hbstatz-sync?matchId=103414"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        _factory.Uc.Verify(s => s.ExecuteAsync(
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Post_AdminToken_IngestionUnreachable_Returns502()
     {
         _factory.Uc.Setup(s => s.ExecuteAsync(null, null, null, It.IsAny<CancellationToken>()))

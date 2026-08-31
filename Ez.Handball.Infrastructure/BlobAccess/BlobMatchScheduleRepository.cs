@@ -18,28 +18,36 @@ internal sealed class BlobMatchScheduleRepository : IMatchScheduleRepository
         if (blob is null) return null;
 
         var response = JsonSerializer.Deserialize<RawMatchListResponse>(blob.Text);
-        var matches = (response?.Data ?? new List<RawMatchSummary>()).Select(Map).ToList();
+        // A match with an unparsable date is excluded rather than shown under a fake
+        // fallback timestamp (e.g. 1970-01-01) that would sort and display as if real.
+        var matches = (response?.Data ?? new List<RawMatchSummary>())
+            .Select(TryMap)
+            .Where(m => m is not null)
+            .Select(m => m!)
+            .ToList();
         return new MatchSchedule(matches, blob.LastModifiedUtc);
     }
 
-    private static ScheduledMatch Map(RawMatchSummary m) => new(
-        MatchId: m.GameId,
-        Round: m.Round,
-        Date: ParseDate(m.GameDayTime),
-        Venue: string.IsNullOrWhiteSpace(m.StadiumName) ? null : m.StadiumName.Trim(),
-        HomeTeamName: m.HomeTeamName,
-        AwayTeamName: m.AwayTeamName,
-        HsiStatus: m.Status);
+    private static ScheduledMatch? TryMap(RawMatchSummary m)
+    {
+        if (!TryParseDate(m.GameDayTime, out var date)) return null;
+        return new ScheduledMatch(
+            MatchId: m.GameId,
+            Round: m.Round,
+            Date: date,
+            Venue: string.IsNullOrWhiteSpace(m.StadiumName) ? null : m.StadiumName.Trim(),
+            HomeTeamName: m.HomeTeamName,
+            AwayTeamName: m.AwayTeamName,
+            HsiStatus: m.Status);
+    }
 
     // hsi.is list dates carry no timezone offset; Iceland has no DST, so the local
     // wall-clock value is numerically identical to UTC (mirrors MatchParser's
     // AssumeUniversal handling of the equivalent field on the match-details endpoint).
-    private static DateTimeOffset ParseDate(string raw) =>
+    private static bool TryParseDate(string raw, out DateTimeOffset date) =>
         DateTimeOffset.TryParseExact(
             raw, "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal, out var parsed)
-            ? parsed
-            : DateTimeOffset.UnixEpoch;
+            DateTimeStyles.AssumeUniversal, out date);
 
     // Mirrors Ez.Handball.Ingestion.Models.MatchListResponse — duplicated here rather than
     // shared, since this project doesn't reference the Functions project.

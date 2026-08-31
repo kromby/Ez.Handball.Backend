@@ -90,6 +90,26 @@ public class BlobMatchScheduleRepositoryTests
     }
 
     [Fact]
+    public async Task GetAsync_UnparsableDate_ExcludesTheMatchInsteadOfFakingATimestamp()
+    {
+        const string json = """
+        {
+          "data": [
+            { "GameId": "1", "Round": "1", "GameDayTime": "not-a-date", "Status": "O" },
+            { "GameId": "2", "Round": "1", "GameDayTime": "2025-09-03T19:30:00", "Status": "O" }
+          ]
+        }
+        """;
+        _blobs.Setup(b => b.ReadAsync("tournaments/8444/matches.json", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new BlobContent(json, LastModified));
+
+        var result = await CreateSut().GetAsync("8444", CancellationToken.None);
+
+        var match = Assert.Single(result!.Matches);
+        Assert.Equal("2", match.MatchId);
+    }
+
+    [Fact]
     public async Task GetAsync_EmptyDataArray_ReturnsEmptyMatches()
     {
         _blobs.Setup(b => b.ReadAsync("tournaments/8444/matches.json", It.IsAny<CancellationToken>()))

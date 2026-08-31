@@ -17,7 +17,7 @@ public class GetTournamentStatusUseCaseTests
         var expected = new List<TournamentStatus>
         {
             new("8444", "Olís deild karla", "karlar", TournamentType.League,
-                "olis-karla", "Olís deild karla", "2025-26", true, true, 10)
+                "olis-karla", "Olís deild karla", "2025-26", true, true, true, 10)
         };
         _tournaments.Setup(r => r.ListAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 

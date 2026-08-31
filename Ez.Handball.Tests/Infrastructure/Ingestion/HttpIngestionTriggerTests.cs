@@ -25,6 +25,12 @@ public class HttpIngestionTriggerTests
             => throw new HttpRequestException("connection refused");
     }
 
+    private sealed class CancellingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => throw new TaskCanceledException("canceled");
+    }
+
     private static HttpIngestionTrigger CreateSut(HttpMessageHandler handler, string? functionKey = null)
     {
         var client = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:7071") };
@@ -92,6 +98,30 @@ public class HttpIngestionTriggerTests
 
         Assert.False(result.Success);
         Assert.Equal("ingestion_unreachable", result.Error);
+    }
+
+    [Fact]
+    public async Task TriggerSyncAsync_MalformedJsonBody_ReturnsFailure()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("not json")
+        });
+
+        var result = await CreateSut(handler).TriggerSyncAsync(CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal("ingestion_returned_malformed_body", result.Error);
+    }
+
+    [Fact]
+    public async Task TriggerSyncAsync_CallerCancellation_Propagates()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(
+            () => CreateSut(new CancellingHandler()).TriggerSyncAsync(cts.Token));
     }
 
     [Fact]
@@ -168,5 +198,29 @@ public class HttpIngestionTriggerTests
 
         Assert.False(result.Success);
         Assert.Equal("ingestion_unreachable", result.Error);
+    }
+
+    [Fact]
+    public async Task TriggerHbStatzSyncAsync_MalformedJsonBody_ReturnsFailure()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("not json")
+        });
+
+        var result = await CreateSut(handler).TriggerHbStatzSyncAsync(null, null, null, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal("ingestion_returned_malformed_body", result.Error);
+    }
+
+    [Fact]
+    public async Task TriggerHbStatzSyncAsync_CallerCancellation_Propagates()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(
+            () => CreateSut(new CancellingHandler()).TriggerHbStatzSyncAsync(null, null, null, cts.Token));
     }
 }

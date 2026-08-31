@@ -61,6 +61,25 @@ public class TriggerHbStatzSyncFunctionTests
             .ReturnsAsync(new ClubEntity { RowKey = "385", Name = "Stjarnan" });
     // Away club intentionally left unmocked in some tests; set explicitly when needed.
 
+    // GameJson's one player line ("Arnór Snær Óskarsson" #6, home side) reconciles against this
+    // roster and an existing PlayerStats row — for tests where full reconciliation (not the
+    // reconciliation logic itself) is a precondition of what's under test.
+    private void SetupReconcilableRoster()
+    {
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '385-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity> { new() { PartitionKey = "385-karlar", RowKey = "hsi-1", Name = "Arnór Snær Óskarsson", JerseyNumber = "6" } });
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '390-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+    }
+
+    private void SetupExistingPlayerStat(string matchId) =>
+        _tableWriter.Setup(t => t.GetAsync<PlayerStatEntity>("PlayerStats", matchId, "hsi-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PlayerStatEntity
+            {
+                PartitionKey = matchId, RowKey = "hsi-1",
+                TournamentId = "9142", Season = "2025-26", TeamId = "385-karlar", ClubName = "Stjarnan"
+            });
+
     [Fact]
     public async Task SyncAsync_UnmappedCompetition_SkipsTournamentWithoutFetching()
     {
@@ -168,13 +187,14 @@ public class TriggerHbStatzSyncFunctionTests
     }
 
     [Fact]
-    public async Task SyncAsync_UnreconcilablePlayer_IsSkippedWithoutThrowing()
+    public async Task SyncAsync_UnreconcilablePlayer_LeavesMatchIncompleteAndUnsyncedForRetry()
     {
         SetupTournamentQuery("IngestHbStatz eq true", Tournament());
         _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FixturesJson);
         _hbStatzClient.Setup(c => c.GetGameJsonAsync(12924, It.IsAny<CancellationToken>())).ReturnsAsync(GameJson);
-        SetupMatches(Match("103414"));
+        var match = Match("103414");
+        SetupMatches(match);
         SetupClubs();
         _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
@@ -186,9 +206,27 @@ public class TriggerHbStatzSyncFunctionTests
 
         var result = await CreateSut().SyncAsync(null);
 
-        Assert.Equal(1, result.MatchesSynced); // match itself still counts as synced
+        Assert.Equal(0, result.MatchesSynced);
+        Assert.Contains("103414", result.Failed); // incomplete, not a fixture-matching failure
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats", It.IsAny<PlayerStatEntity>(),
             It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
+        _tableWriter.Verify(t => t.UpsertAsync("Matches", It.IsAny<MatchEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
+        Assert.Null(match.HbStatzSyncedAt); // stays eligible for the next default sweep
+    }
+
+    [Fact]
+    public async Task SyncAsync_RoundWithoutTournamentId_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => CreateSut().SyncAsync(null, round: "1"));
+    }
+
+    [Fact]
+    public async Task SyncAsync_MatchIdWithoutTournamentId_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => CreateSut().SyncAsync(null, matchId: "103414"));
     }
 
     [Fact]
@@ -219,8 +257,8 @@ public class TriggerHbStatzSyncFunctionTests
         SetupClubs();
         _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
-        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PlayerEntity>());
+        SetupReconcilableRoster();
+        SetupExistingPlayerStat("103414");
 
         var result = await CreateSut().SyncAsync("9142", matchId: "103414");
 
@@ -260,8 +298,8 @@ public class TriggerHbStatzSyncFunctionTests
         SetupClubs();
         _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
-        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PlayerEntity>());
+        SetupReconcilableRoster();
+        SetupExistingPlayerStat("103414");
 
         var result = await CreateSut().SyncAsync("9142", round: "3");
 

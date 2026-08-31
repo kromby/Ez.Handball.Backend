@@ -23,6 +23,7 @@ public static class AdminEndpoints
                 season = t.Season,
                 active = t.Active,
                 ingest = t.Ingest,
+                ingestHbStatz = t.IngestHbStatz,
                 priority = t.Priority
             }));
         });
@@ -68,6 +69,9 @@ public static class AdminEndpoints
             string? tournamentId, string? round, string? matchId,
             ITriggerHbStatzSyncUseCase uc, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(tournamentId) && (!string.IsNullOrWhiteSpace(round) || !string.IsNullOrWhiteSpace(matchId)))
+                return Results.BadRequest(new { error = "tournamentId_required_for_scoped_sync" });
+
             var result = await uc.ExecuteAsync(tournamentId, round, matchId, ct);
             return result.Success
                 ? Results.Ok(new

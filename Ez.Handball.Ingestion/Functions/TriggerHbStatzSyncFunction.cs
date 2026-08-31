@@ -38,22 +38,42 @@ public class TriggerHbStatzSyncFunction
         FunctionContext context)
     {
         var logger = context.GetLogger<TriggerHbStatzSyncFunction>();
-        var result = await SyncAsync(
-            req.Query["tournamentId"], req.Query["round"], req.Query["matchId"], logger, context.CancellationToken);
 
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(result);
-        return response;
+        try
+        {
+            var result = await SyncAsync(
+                req.Query["tournamentId"], req.Query["round"], req.Query["matchId"], logger, context.CancellationToken);
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(result);
+            return response;
+        }
+        catch (ArgumentException ex)
+        {
+            var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badRequest.WriteAsJsonAsync(new { error = ex.Message });
+            return badRequest;
+        }
     }
 
     // round/matchId scope to a specific tournament's round or single match and — unlike the
     // default "every never-synced match" sweep — force a re-sync even if HbStatzSyncedAt is
     // already set (the admin explicitly asked for this one/this round, e.g. after HBStatz
-    // corrected a stat line). Both require tournamentIdParam to resolve the right partition.
+    // corrected a stat line). Both require tournamentIdParam to resolve the right partition —
+    // without it, a scoped request would touch every IngestHbStatz-enabled tournament instead
+    // of just one.
     public async Task<HbStatzSyncResult> SyncAsync(
         string? tournamentIdParam, string? round = null, string? matchId = null,
         ILogger? logger = null, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(tournamentIdParam) &&
+            (!string.IsNullOrWhiteSpace(round) || !string.IsNullOrWhiteSpace(matchId)))
+        {
+            throw new ArgumentException("tournamentId is required when scoping to a round or match.");
+        }
+
+        // Full-table scan by design: the default sweep has no season/partition to key on, and
+        // Tournaments stays small (a handful of rows per season). Every other query below keys
+        // on PartitionKey.
         var filter = string.IsNullOrWhiteSpace(tournamentIdParam)
             ? "IngestHbStatz eq true"
             : $"RowKey eq '{Escape(tournamentIdParam)}' and IngestHbStatz eq true";
@@ -96,10 +116,18 @@ public class TriggerHbStatzSyncFunction
                 checkedCount++;
                 try
                 {
-                    if (await SyncMatchAsync(match, fixtures, logger, ct))
-                        syncedCount++;
-                    else
-                        unmatched.Add(match.RowKey);
+                    switch (await SyncMatchAsync(match, fixtures, logger, ct))
+                    {
+                        case MatchSyncOutcome.Synced:
+                            syncedCount++;
+                            break;
+                        case MatchSyncOutcome.Unmatched:
+                            unmatched.Add(match.RowKey);
+                            break;
+                        case MatchSyncOutcome.Incomplete:
+                            failed.Add(match.RowKey);
+                            break;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -138,15 +166,17 @@ public class TriggerHbStatzSyncFunction
         return all.Where(m => m.HbStatzSyncedAt is null).ToList();
     }
 
-    private async Task<bool> SyncMatchAsync(
+    private enum MatchSyncOutcome { Synced, Unmatched, Incomplete }
+
+    private async Task<MatchSyncOutcome> SyncMatchAsync(
         MatchEntity match, IReadOnlyList<HbStatzFixture> fixtures, ILogger? logger, CancellationToken ct)
     {
         var homeClubName = await ResolveClubNameAsync(match.HomeTeamId, ct);
         var awayClubName = await ResolveClubNameAsync(match.AwayTeamId, ct);
-        if (homeClubName is null || awayClubName is null) return false;
+        if (homeClubName is null || awayClubName is null) return MatchSyncOutcome.Unmatched;
 
         var fixture = HbStatzFixtureMatcher.FindMatch(fixtures, match.Date, homeClubName, awayClubName);
-        if (fixture is null) return false;
+        if (fixture is null) return MatchSyncOutcome.Unmatched;
 
         var gameJson = await _hbStatzClient.GetGameJsonAsync(fixture.GameId, ct);
         await _blobArchiver.SaveAsync($"hbstatz/matches/{match.RowKey}.json", gameJson, ct);
@@ -156,15 +186,23 @@ public class TriggerHbStatzSyncFunction
         {
             logger?.LogWarning(
                 "HBStatz game {GameId} for match {MatchId} had no players payload", fixture.GameId, match.RowKey);
-            return false;
+            return MatchSyncOutcome.Unmatched;
         }
 
-        await MergePlayerStatsAsync(match.RowKey, match.HomeTeamId, game.Players.Home, logger, ct);
-        await MergePlayerStatsAsync(match.RowKey, match.AwayTeamId, game.Players.Away, logger, ct);
+        var homeReconciled = await MergePlayerStatsAsync(match.RowKey, match.HomeTeamId, game.Players.Home, logger, ct);
+        var awayReconciled = await MergePlayerStatsAsync(match.RowKey, match.AwayTeamId, game.Players.Away, logger, ct);
+        if (!homeReconciled || !awayReconciled)
+        {
+            // Leave HbStatzSyncedAt unset so the default sweep retries this match — e.g. once the
+            // roster is corrected or the player shows up in a later HBStatz correction.
+            logger?.LogWarning(
+                "HBStatz sync for match {MatchId} had unreconciled players; leaving it eligible for retry", match.RowKey);
+            return MatchSyncOutcome.Incomplete;
+        }
 
         match.HbStatzSyncedAt = DateTimeOffset.UtcNow;
         await _tableWriter.UpsertAsync("Matches", match, ct, TableUpdateMode.Merge);
-        return true;
+        return MatchSyncOutcome.Synced;
     }
 
     private async Task<string?> ResolveClubNameAsync(string teamId, CancellationToken ct)
@@ -175,10 +213,13 @@ public class TriggerHbStatzSyncFunction
         return club?.Name;
     }
 
-    private async Task MergePlayerStatsAsync(
+    // Returns false if any line couldn't be reconciled/merged, so the caller can leave the match
+    // eligible for a retry instead of marking a partially-synced match as done.
+    private async Task<bool> MergePlayerStatsAsync(
         string matchId, string teamId, IReadOnlyList<HbStatzPlayerLine> lines, ILogger? logger, CancellationToken ct)
     {
         var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{Escape(teamId)}'", ct);
+        var allReconciled = true;
 
         foreach (var line in lines)
         {
@@ -188,6 +229,7 @@ public class TriggerHbStatzSyncFunction
                 logger?.LogWarning(
                     "Could not reconcile HBStatz player {Name} (#{Number}) for team {TeamId} in match {MatchId}",
                     line.Name, line.Number, teamId, matchId);
+                allReconciled = false;
                 continue;
             }
 
@@ -200,6 +242,7 @@ public class TriggerHbStatzSyncFunction
                 logger?.LogWarning(
                     "No existing PlayerStats row for player {PlayerId} in match {MatchId}; skipping HBStatz merge",
                     playerId, matchId);
+                allReconciled = false;
                 continue;
             }
 
@@ -221,6 +264,8 @@ public class TriggerHbStatzSyncFunction
 
             await _tableWriter.UpsertAsync("PlayerStats", existing, ct, TableUpdateMode.Merge);
         }
+
+        return allReconciled;
     }
 
     private static string Escape(string value) => value.Replace("'", "''");

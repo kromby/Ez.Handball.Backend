@@ -33,9 +33,17 @@ internal sealed class HttpIngestionTrigger : IIngestionTrigger
             IReadOnlyList<string> failed = body?.Failed ?? new List<string>();
             return new SyncTriggerResult(true, body?.Synced ?? 0, failed, null);
         }
+        catch (TaskCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return new SyncTriggerResult(false, 0, Array.Empty<string>(), "ingestion_unreachable");
+        }
+        catch (JsonException)
+        {
+            return new SyncTriggerResult(false, 0, Array.Empty<string>(), "ingestion_returned_malformed_body");
         }
     }
 
@@ -64,10 +72,19 @@ internal sealed class HttpIngestionTrigger : IIngestionTrigger
             return new HbStatzSyncTriggerResult(
                 true, body?.MatchesChecked ?? 0, body?.MatchesSynced ?? 0, unmatched, failed, null);
         }
+        catch (TaskCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return new HbStatzSyncTriggerResult(
                 false, 0, 0, Array.Empty<string>(), Array.Empty<string>(), "ingestion_unreachable");
+        }
+        catch (JsonException)
+        {
+            return new HbStatzSyncTriggerResult(
+                false, 0, 0, Array.Empty<string>(), Array.Empty<string>(), "ingestion_returned_malformed_body");
         }
     }
 

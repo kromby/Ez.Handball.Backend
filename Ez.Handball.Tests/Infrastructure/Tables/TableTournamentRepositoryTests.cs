@@ -36,7 +36,7 @@ public class TableTournamentRepositoryTests
         string id, string name, string gender, int priority,
         string type = "league", string competitionId = "olis-karla",
         string competitionName = "Olís deild karla", bool active = true,
-        string season = "2025-26") =>
+        string season = "2025-26", bool ingestHbStatz = false) =>
         new()
         {
             PartitionKey = season,
@@ -48,6 +48,7 @@ public class TableTournamentRepositoryTests
             CompetitionId = competitionId,
             CompetitionName = competitionName,
             Ingest = true,
+            IngestHbStatz = ingestHbStatz,
             Active = active,
             Priority = priority
         };
@@ -135,7 +136,7 @@ public class TableTournamentRepositoryTests
     [Fact]
     public async Task ListAllAsync_ScansWithoutAPartitionFilter_AndMapsEveryField()
     {
-        SetupEverySeason(Tournament("8444", "Olís deild karla", "karlar", 10, active: true));
+        SetupEverySeason(Tournament("8444", "Olís deild karla", "karlar", 10, active: true, ingestHbStatz: true));
 
         var result = await CreateSut().ListAllAsync(default);
 
@@ -149,6 +150,7 @@ public class TableTournamentRepositoryTests
         Assert.Equal("2025-26", t.Season);
         Assert.True(t.Active);
         Assert.True(t.Ingest);
+        Assert.True(t.IngestHbStatz);
         Assert.Equal(10, t.Priority);
 
         _query.Verify(q => q.QueryAsync<TournamentEntity>(

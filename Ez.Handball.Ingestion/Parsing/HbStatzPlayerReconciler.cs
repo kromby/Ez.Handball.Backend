@@ -23,12 +23,20 @@ public static class HbStatzPlayerReconciler
 
         if (jersey is not null)
         {
+            // A jersey match with a different name is not evidence of the same person: HBStatz
+            // may list a player absent from our roster, and jerseys are reused across seasons.
+            // Only accept it when the names are at least a prefix/substring variant of each other.
             var byJersey = roster.Where(p => p.JerseyNumber == jersey).ToList();
-            if (byJersey.Count == 1) return byJersey[0].RowKey;
+            if (byJersey.Count == 1 && NamesLooselyMatch(Normalize(byJersey[0].Name), normalizedName))
+                return byJersey[0].RowKey;
         }
 
         return null;
     }
+
+    private static bool NamesLooselyMatch(string rosterName, string hbStatzName) =>
+        rosterName.Contains(hbStatzName, StringComparison.Ordinal) ||
+        hbStatzName.Contains(rosterName, StringComparison.Ordinal);
 
     private static string Normalize(string name) => name.Trim().ToLowerInvariant();
 }

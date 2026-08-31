@@ -12,4 +12,5 @@ public sealed record TournamentStatus(
     string Season,
     bool Active,
     bool Ingest,
+    bool IngestHbStatz,
     int Priority);

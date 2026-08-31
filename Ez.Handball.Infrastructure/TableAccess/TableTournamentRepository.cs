@@ -63,6 +63,6 @@ internal sealed class TableTournamentRepository : ITournamentRepository
         var type = TournamentTypes.TryParse(t.Type, out var parsed) ? parsed : TournamentType.League;
         return new TournamentStatus(
             t.RowKey, t.Name, t.Gender, type, t.CompetitionId, t.CompetitionName,
-            t.PartitionKey, t.Active, t.Ingest, t.Priority);
+            t.PartitionKey, t.Active, t.Ingest, t.IngestHbStatz, t.Priority);
     }
 }

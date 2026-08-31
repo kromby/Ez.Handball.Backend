@@ -83,4 +83,16 @@ public class HbStatzPlayerReconcilerTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void Resolve_UnknownNameWithUniqueJersey_ReturnsNull_RatherThanTrustingTheJerseyAlone()
+    {
+        // A jersey number alone is not evidence of identity: it can be reused season to season,
+        // and HBStatz may list someone entirely absent from our roster.
+        var roster = new List<PlayerEntity> { Player("p1", "Jón Jónsson", "6") };
+
+        var result = HbStatzPlayerReconciler.Resolve(roster, Line("Completely Different Name", 6));
+
+        Assert.Null(result);
+    }
 }
