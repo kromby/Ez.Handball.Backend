@@ -11,4 +11,8 @@ public sealed record PlayerStat(
     int Goals,
     int YellowCards,
     int TwoMinuteSuspensions,
-    int RedCards);
+    int RedCards,
+    int? HbStatzAssists = null,
+    int? HbStatzSteals = null,
+    int? HbStatzBlocks = null,
+    int? HbStatzSaves = null);

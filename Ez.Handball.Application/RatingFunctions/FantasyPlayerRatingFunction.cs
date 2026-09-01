@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.RatingFunctions;
 public sealed class FantasyPlayerRatingFunction : IPlayerRatingFunction
 {
     public GameFlavor Flavor => GameFlavor.Fantasy;
-    public int? DefaultRuleSetVersion => 1;
+    public int? DefaultRuleSetVersion => 2;
 
     public PlayerRating Compute(PlayerRatingInputs inputs)
     {
@@ -20,6 +20,10 @@ public sealed class FantasyPlayerRatingFunction : IPlayerRatingFunction
             Component("yellowCards", s.YellowCards,          rs.YellowCardPoints),
             Component("twoMinute",   s.TwoMinuteSuspensions, rs.TwoMinutePoints),
             Component("redCards",    s.RedCards,             rs.RedCardPoints),
+            Component("assists",     s.Assists,              rs.AssistPoints),
+            Component("steals",      s.Steals,               rs.StealPoints),
+            Component("blocks",      s.Blocks,               rs.BlockPoints),
+            Component("saves",       s.Saves,                rs.SavePoints),
         };
 
         var value = components.Sum(c => c.Contribution);

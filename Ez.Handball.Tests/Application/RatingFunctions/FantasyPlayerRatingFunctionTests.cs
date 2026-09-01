@@ -21,7 +21,7 @@ public class FantasyPlayerRatingFunctionTests
         var fn = new FantasyPlayerRatingFunction();
 
         Assert.Equal(GameFlavor.Fantasy, fn.Flavor);
-        Assert.Equal(1, fn.DefaultRuleSetVersion);
+        Assert.Equal(2, fn.DefaultRuleSetVersion);
     }
 
     [Fact]
@@ -43,7 +43,11 @@ public class FantasyPlayerRatingFunctionTests
             c => { Assert.Equal("appearances", c.Key); Assert.Equal(9, c.Value);  Assert.Equal(1, c.Weight);  Assert.Equal(9, c.Contribution); },
             c => { Assert.Equal("yellowCards", c.Key); Assert.Equal(4, c.Value);  Assert.Equal(-1, c.Weight); Assert.Equal(-4, c.Contribution); },
             c => { Assert.Equal("twoMinute", c.Key);   Assert.Equal(2, c.Value);  Assert.Equal(-2, c.Weight); Assert.Equal(-4, c.Contribution); },
-            c => { Assert.Equal("redCards", c.Key);    Assert.Equal(0, c.Value);  Assert.Equal(-5, c.Weight); Assert.Equal(0, c.Contribution); });
+            c => { Assert.Equal("redCards", c.Key);    Assert.Equal(0, c.Value);  Assert.Equal(-5, c.Weight); Assert.Equal(0, c.Contribution); },
+            c => { Assert.Equal("assists", c.Key);     Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
+            c => { Assert.Equal("steals", c.Key);      Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
+            c => { Assert.Equal("blocks", c.Key);      Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
+            c => { Assert.Equal("saves", c.Key);       Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); });
     }
 
     [Fact]
@@ -55,5 +59,24 @@ public class FantasyPlayerRatingFunctionTests
 
         Assert.Equal(0, result.Rating);
         Assert.All(result.Components, c => Assert.Equal(0, c.Contribution));
+    }
+
+    [Fact]
+    public void Compute_WithHbStatzComponents_IncludesThemInWeightedSum()
+    {
+        var rs = new ScoringRuleSet(GameFlavor.Fantasy, 2, GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
+            RedCardPoints: -5, AppearancePoints: 1, AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 0.5);
+        var stats = new AggregatedStats(Games: 1, Goals: 2, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0,
+            Assists: 3, Steals: 2, Blocks: 1, Saves: 10);
+
+        // 2*2 + 1*1 + 3*1 + 2*1 + 1*1 + 10*0.5 = 4 + 1 + 3 + 2 + 1 + 5 = 16
+        var result = new FantasyPlayerRatingFunction().Compute(new PlayerRatingInputs("p1", stats, rs, Ctx()));
+
+        Assert.Equal("fantasy-v2", result.Version);
+        Assert.Equal(16, result.Rating);
+        Assert.Contains(result.Components, c => c.Key == "assists" && c.Contribution == 3);
+        Assert.Contains(result.Components, c => c.Key == "steals" && c.Contribution == 2);
+        Assert.Contains(result.Components, c => c.Key == "blocks" && c.Contribution == 1);
+        Assert.Contains(result.Components, c => c.Key == "saves" && c.Contribution == 5);
     }
 }

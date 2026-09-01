@@ -98,6 +98,28 @@ public class SettleGameweekUseCaseTests
     }
 
     [Fact]
+    public async Task AllFinal_IncludesHbStatzComponents_WhenPresent()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: true);
+        var rulesWithHbStatz = new ScoringRuleSet(GameFlavor.Fantasy, 1, GoalPoints: 1, YellowCardPoints: 0,
+            TwoMinutePoints: 0, RedCardPoints: 0, AppearancePoints: 1,
+            AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 1);
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>())).ReturnsAsync(rulesWithHbStatz);
+        _stats.Setup(s => s.GetByMatchAsync("m1", It.IsAny<CancellationToken>())).ReturnsAsync(new[]
+        {
+            new PlayerStat("gk1", "m1", "8444", null, "2025-26", "h", "Club", 0, 0, 0, 0, HbStatzSaves: 5),
+            new PlayerStat("fp1", "m1", "8444", null, "2025-26", "h", "Club", 3, 0, 0, 0, HbStatzAssists: 2),
+        });
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(result);
+        // gk1: appearance 1 + save 5 = 6 (starter, no multiplier)
+        // fp1: appearance 1 + goal 3 + assist 2 = 6, captain doubled => 12
+        Assert.Equal(6 + 12, settled.Score.Points);
+    }
+
+    [Fact]
     public async Task NoSnapshot_SnapshotsLiveLineupFirst()
     {
         SetupCommon(GameweekStatus.Settled, snapshotExists: false);

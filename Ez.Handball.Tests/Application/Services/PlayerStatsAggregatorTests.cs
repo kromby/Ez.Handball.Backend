@@ -20,6 +20,11 @@ public class PlayerStatsAggregatorTests
     private static PlayerStat Stat(string season, string tournamentId, int goals) =>
         new("p1", "match", tournamentId, "T", season, "team", "Club", goals, 0, 0, 0);
 
+    private static PlayerStat StatWithHbStatz(
+        string season, string tournamentId, int? assists, int? steals, int? blocks, int? saves) =>
+        new("p1", "match", tournamentId, "T", season, "team", "Club", 0, 0, 0, 0,
+            HbStatzAssists: assists, HbStatzSteals: steals, HbStatzBlocks: blocks, HbStatzSaves: saves);
+
     private void SetupTournamentsBySeason(string season, params Tournament[] rows) =>
         _tournaments.Setup(r => r.ListBySeasonAsync(season, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(rows);
@@ -134,5 +139,23 @@ public class PlayerStatsAggregatorTests
 
         Assert.Equal(1, result.Games);
         Assert.Equal(3, result.Goals);
+    }
+
+    [Fact]
+    public async Task SumsHbStatzFields_DefaultingNullToZero()
+    {
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>
+              {
+                  StatWithHbStatz("2025-26", "8444", assists: 2, steals: 1, blocks: null, saves: null),
+                  StatWithHbStatz("2025-26", "8444", assists: null, steals: 3, blocks: 1, saves: 8),
+              });
+
+        var result = await CreateSut().AggregateAsync("p1", "2025-26", null, null, null, default);
+
+        Assert.Equal(2, result.Assists);
+        Assert.Equal(4, result.Steals);
+        Assert.Equal(1, result.Blocks);
+        Assert.Equal(8, result.Saves);
     }
 }

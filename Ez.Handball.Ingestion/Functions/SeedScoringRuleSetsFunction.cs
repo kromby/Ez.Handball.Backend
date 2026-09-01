@@ -16,6 +16,16 @@ public class SeedScoringRuleSetsFunction
         ("fantasy-v1", "twoMinute",   "-2"),
         ("fantasy-v1", "redCards",    "-5"),
         ("fantasy-v1", "appearances", "1"),
+
+        ("fantasy-v2", "goals",       "2"),
+        ("fantasy-v2", "yellowCards", "-1"),
+        ("fantasy-v2", "twoMinute",   "-2"),
+        ("fantasy-v2", "redCards",    "-5"),
+        ("fantasy-v2", "appearances", "1"),
+        ("fantasy-v2", "assists",     "1"),
+        ("fantasy-v2", "steals",      "1"),
+        ("fantasy-v2", "blocks",      "1"),
+        ("fantasy-v2", "saves",       "0.5"),
     ];
 
     private readonly ITableWriter _tableWriter;
