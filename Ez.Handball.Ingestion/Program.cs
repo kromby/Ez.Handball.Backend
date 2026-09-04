@@ -45,6 +45,7 @@ internal static class Program
                 services.AddSingleton<ITableWriter, TableWriter>();
                 services.AddSingleton<IMatchParser, MatchParser>();
                 services.AddSingleton<IPlayerParser, PlayerParser>();
+                services.AddSingleton<IHbStatzPlayerPositionAggregator, HbStatzPlayerPositionAggregator>();
             })
             .Build();
 
