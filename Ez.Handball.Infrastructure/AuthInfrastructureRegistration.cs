@@ -1,3 +1,4 @@
+using Azure.Communication.Email;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Infrastructure.Email;
 using Ez.Handball.Infrastructure.Security;
@@ -35,10 +36,26 @@ public static class AuthInfrastructureRegistration
 
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+
+        // Development always renders through the console (safe to see real token-bearing links
+        // locally); otherwise use the real ACS provider once Email:ConnectionString is configured
+        // (e.g. via Azure App Service application settings), and fall back to a safe no-op until then.
+        var emailConnectionString = config["Email:ConnectionString"];
         if (isDevelopment)
+        {
             services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+        }
+        else if (!string.IsNullOrWhiteSpace(emailConnectionString))
+        {
+            var fromAddress = config["Email:FromAddress"]
+                ?? throw new InvalidOperationException("Email:FromAddress is required when Email:ConnectionString is set");
+            services.AddSingleton(new EmailClient(emailConnectionString));
+            services.AddSingleton<IEmailSender>(sp => new AcsEmailSender(sp.GetRequiredService<EmailClient>(), fromAddress));
+        }
         else
+        {
             services.AddSingleton<IEmailSender, NoopEmailSender>();
+        }
 
         return services;
     }
