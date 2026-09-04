@@ -47,8 +47,9 @@ public static class AuthInfrastructureRegistration
         }
         else if (!string.IsNullOrWhiteSpace(emailConnectionString))
         {
-            var fromAddress = config["Email:FromAddress"]
-                ?? throw new InvalidOperationException("Email:FromAddress is required when Email:ConnectionString is set");
+            var fromAddress = config["Email:FromAddress"];
+            if (string.IsNullOrWhiteSpace(fromAddress))
+                throw new InvalidOperationException("Email:FromAddress is required when Email:ConnectionString is set");
             services.AddSingleton(new EmailClient(emailConnectionString));
             services.AddSingleton<IEmailSender>(sp => new AcsEmailSender(sp.GetRequiredService<EmailClient>(), fromAddress));
         }
