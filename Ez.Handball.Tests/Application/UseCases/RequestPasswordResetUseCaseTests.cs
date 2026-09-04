@@ -23,7 +23,7 @@ public class RequestPasswordResetUseCaseTests
     public async Task ExistingEmail_CreatesResetToken_AndSendsLink()
     {
         _users.Setup(u => u.GetByEmailAsync("a@b.is", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is" });
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is", Language = "en" });
         _tokens.Setup(t => t.CreateEmailToken()).Returns(new IssuedToken("rvalue", "rhash", Now.AddHours(24)));
 
         var result = await CreateSut().ExecuteAsync("A@B.is", CancellationToken.None);
@@ -33,7 +33,7 @@ public class RequestPasswordResetUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "reset" && e.RowKey == "rhash" && e.UserId == "u-1"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendPasswordResetEmailAsync(
-            "a@b.is", "http://localhost/reset?token=rvalue", "is", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/reset?token=rvalue", "en", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public class ResendVerificationUseCaseTests
     public async Task Unverified_CreatesTokenAndSends()
     {
         _users.Setup(u => u.GetByIdAsync("u-1", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is", EmailVerified = false });
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is", EmailVerified = false, Language = "en" });
         _tokens.Setup(t => t.CreateEmailToken()).Returns(new IssuedToken("vvalue", "vhash", Now.AddHours(24)));
 
         var result = await CreateSut().ExecuteAsync("u-1", CancellationToken.None);
@@ -33,7 +33,7 @@ public class ResendVerificationUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "verify" && e.RowKey == "vhash" && e.UserId == "u-1"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendVerificationEmailAsync(
-            "a@b.is", "http://localhost/verify?token=vvalue", "is", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/verify?token=vvalue", "en", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
