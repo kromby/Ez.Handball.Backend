@@ -19,7 +19,8 @@ public class RegisterUseCaseTests
     private readonly Mock<IEmailSender> _email = new();
     private readonly Mock<ITeamProvisioningService> _provisioning = new();
     private readonly Mock<IGameTeamNameIndexRepository> _nameIndex = new();
-    private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
+    private readonly AuthSettings _settings = new(
+        "http://localhost/verify?token={token}", "http://localhost/reset?token={token}", "http://localhost/join?token={token}");
 
     private RegisterUseCase CreateSut() => new(
         _users.Object, _refresh.Object, _emailTokens.Object, _clubs.Object,

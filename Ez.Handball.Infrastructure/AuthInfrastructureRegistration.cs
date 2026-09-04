@@ -25,7 +25,8 @@ public static class AuthInfrastructureRegistration
 
         services.AddSingleton(new AuthSettings(
             config["Auth:VerificationUrlTemplate"] ?? "http://localhost/verify?token={token}",
-            config["Auth:ResetUrlTemplate"] ?? "http://localhost/reset?token={token}"));
+            config["Auth:ResetUrlTemplate"] ?? "http://localhost/reset?token={token}",
+            config["Auth:InviteUrlTemplate"] ?? "http://localhost/join?token={token}"));
 
         services.AddSingleton<Func<DateTimeOffset>>(_ => () => DateTimeOffset.UtcNow);
 

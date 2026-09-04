@@ -13,7 +13,8 @@ public class RequestPasswordResetUseCaseTests
     private readonly Mock<IEmailTokenRepository> _emailTokens = new();
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<IEmailSender> _email = new();
-    private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
+    private readonly AuthSettings _settings = new(
+        "http://localhost/verify?token={token}", "http://localhost/reset?token={token}", "http://localhost/join?token={token}");
 
     private RequestPasswordResetUseCase CreateSut() =>
         new(_users.Object, _emailTokens.Object, _tokens.Object, _email.Object, _settings);
