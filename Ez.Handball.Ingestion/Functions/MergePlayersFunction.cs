@@ -119,6 +119,26 @@ public class MergePlayersFunction
             await _tableWriter.DeleteAsync("PlayerStats", stat.PartitionKey, request.MergePlayerId, ct);
         }
 
+        // PlayerPositionObservations is keyed the other way round (PartitionKey = playerId,
+        // RowKey = matchId), but needs the same re-key or the merged-away player's position
+        // history is orphaned and permanently lost. The kept player's Position/PositionSecondary
+        // are not recomputed here — the next HBStatz sync or backfill run picks these rows up.
+        var observations = await _tableWriter.QueryAsync<PlayerPositionObservationEntity>(
+            "PlayerPositionObservations", $"PartitionKey eq '{Escape(request.MergePlayerId)}'", ct);
+
+        foreach (var observation in observations)
+        {
+            await _tableWriter.UpsertAsync("PlayerPositionObservations", new PlayerPositionObservationEntity
+            {
+                PartitionKey = request.KeepPlayerId,
+                RowKey = observation.RowKey,
+                Position = observation.Position,
+                MatchDate = observation.MatchDate
+            }, ct);
+
+            await _tableWriter.DeleteAsync("PlayerPositionObservations", request.MergePlayerId, observation.RowKey, ct);
+        }
+
         keepPlayer.Name = string.IsNullOrWhiteSpace(request.PreferredName) ? keepPlayer.Name : request.PreferredName.Trim();
         keepPlayer.DateOfBirth ??= mergePlayer.DateOfBirth;
         keepPlayer.JerseyNumber ??= mergePlayer.JerseyNumber;
