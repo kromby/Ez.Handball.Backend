@@ -35,8 +35,8 @@ GET /api/squad/constraints?flavor=fantasy&ruleSetVersion=1    (public — no aut
 - `flavor`: blank or `fantasy` (case-insensitive) accepted; anything else → `400 { "error": "invalid_flavor" }`.
 - `ruleSetVersion` (int, optional): selects the constraints group (`fantasy-squad-v{n}`);
   omitted → the default/current version (`1`). Unknown → `400 { "error": "invalid_rule_set" }`.
-- `posLimits`: string→int map keyed by the stored position codes — placeholder vocabulary,
-  owner review still pending; the endpoint returns whatever is seeded.
+- `posLimits`: string→int map keyed by the stored position codes — resolved by Backend#106,
+  the position vocabulary (GK/LW/RW/LB/CB/RB/LP) is populated from HBStatz observations.
 
 ## Why public
 
@@ -161,7 +161,7 @@ Moq mock (same harness as `SquadEndpointTests` — no real storage touched):
 - [x] `flavor` / `ruleSetVersion` validation with `invalid_flavor` / `invalid_rule_set`
       error codes, consistent with #54.
 - [x] `posLimits` returned as a string→int map keyed by the stored position codes
-      (placeholder vocabulary; endpoint returns whatever is seeded).
+      (resolved by Backend#106 — positions from HBStatz observations).
 - [x] Tests: happy path (default + explicit `ruleSetVersion`), `invalid_flavor`,
       `invalid_rule_set`, response shape.
 
@@ -170,8 +170,8 @@ Moq mock (same harness as `SquadEndpointTests` — no real storage touched):
 - No separate `SquadConstraintsEndpoints.cs` extension file — it is a single public
   read, mapped inline like clubs/seasons. A grouped file is only justified if more
   public `/api/squad/*` endpoints appear later.
-- No position-vocabulary validation — the position codes are placeholder and pending
-  owner review; the endpoint returns whatever is seeded.
+- No position-vocabulary validation — the position codes are now confirmed real, backed by
+  HBStatz observations (Backend#106); the endpoint returns whatever is seeded.
 - No caching.
 
 ## Dependencies

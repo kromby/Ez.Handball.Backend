@@ -66,7 +66,7 @@ The lineup carries only `PlayerId` + role + bench order. **Position is never sen
 
 A new versioned config group `fantasy-lineup-v{n}` in the existing `Config` table, read by `TableLineupConstraintsRepository` (mirrors `TableSquadConstraintsRepository` reading `fantasy-squad-v{n}`). This is a **separate version line** from `fantasy-squad-v{n}` (squad-building rules), since lineup rules evolve independently. Default version 1, overridable via `ruleSetVersion` query param like the squad endpoints.
 
-Seeded by a new `SeedLineupConstraintsFunction` (`POST /api/seed/lineup-constraints`), mirroring `SeedSquadConstraintsFunction`. Placeholder values, owner-tunable — flagged in a comment like the squad-constraints seed (the position vocabulary must be reconciled with real `Player.Position` values):
+Seeded by a new `SeedLineupConstraintsFunction` (`POST /api/seed/lineup-constraints`), mirroring `SeedSquadConstraintsFunction`. Placeholder values, owner-tunable — flagged in a comment like the squad-constraints seed (resolved by Backend#106 — positions are derived from HBStatz observations):
 
 ```
 fantasy-lineup-v1  starterCount        7
