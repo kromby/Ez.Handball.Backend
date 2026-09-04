@@ -69,7 +69,7 @@ internal sealed class TablePlayerRepository : IPlayerRepository
             Gender: row.Gender,
             Position: row.Position,
             Retired: row.Retired == true,
-            PositionSecondary: row.PositionSecondary);
+            PositionSecondary: row.PositionSecondary ?? string.Empty);
     }
 
     private static int ComputeAge(DateOnly dob, DateOnly today)

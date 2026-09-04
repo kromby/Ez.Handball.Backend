@@ -103,7 +103,7 @@ public class BackfillPlayerPositionsFunction
             if (changed)
             {
                 changes.Add(new BackfillPositionResult(
-                    playerId, player.Name, player.Position, primary, player.PositionSecondary, newSecondary));
+                    playerId, player.Name, player.Position, primary, player.PositionSecondary ?? string.Empty, newSecondary));
             }
 
             if (!dryRun)

@@ -111,6 +111,111 @@ public class PlayerParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_ExistingPlayerHasPosition_KeepsIt_AndNeverSetsPositionSecondary()
+    {
+        // hsi.is's POSITION field is unreliable, so it is only a weak fallback for a
+        // brand-new player. Once anything else (HBStatz, or a manual correction via
+        // SetPlayerPositionFunction) has put a value there, a reparse must not revert it.
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+
+        var match = BuildMatch(matchId: matchId, homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
+
+        // Existing row already carries an HBStatz-derived (or manually set) position pair.
+        _tableWriter
+            .Setup(t => t.GetAsync<PlayerEntity>("Players", teamId, "42", default))
+            .ReturnsAsync(new PlayerEntity
+            {
+                PartitionKey = teamId,
+                RowKey = "42",
+                Name = "Jón Jónsson",
+                Position = "LB",
+                PositionSecondary = "CB"
+            });
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Goalkeeper", // hsi.is disagrees — must be ignored
+            Player = "1",
+            Goals = "1"
+        };
+
+        var blobContent = BuildPlayerStatsJson(new[] { player });
+
+        // Act
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
+
+        // Assert — Position preserved, PositionSecondary left unset so Merge won't clobber it
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e =>
+                e.PartitionKey == teamId &&
+                e.RowKey == "42" &&
+                e.Position == "LB" &&
+                e.PositionSecondary == null &&
+                e.Retired == null),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ExistingPlayerHasBlankPosition_FallsBackToHsiValue()
+    {
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+
+        var match = BuildMatch(matchId: matchId, homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<PlayerEntity>("Players", teamId, "42", default))
+            .ReturnsAsync(new PlayerEntity
+            {
+                PartitionKey = teamId,
+                RowKey = "42",
+                Name = "Jón Jónsson",
+                Position = "   "
+            });
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Goalkeeper",
+            Player = "1",
+            Goals = "1"
+        };
+
+        await CreateSut().ParseAsync(BuildPlayerStatsJson(new[] { player }), matchId, clubId);
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.RowKey == "42" && e.Position == "Goalkeeper"),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+    }
+
+    [Fact]
     public async Task ParseAsync_AwayClubResolution_UsesAwayTeamId()
     {
         // Arrange
