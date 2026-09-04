@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Ez.Handball.Infrastructure.Email;
 
 internal static class EmailTemplates
@@ -42,19 +44,29 @@ internal static class EmailTemplates
 
     public static (string Subject, string Html, string Text) MiniLeagueInvite(
         string language, string inviterName, string leagueName, string link)
-        => language == "is"
+    {
+        // inviterName and leagueName are user-controlled (DisplayName / league name, length-validated
+        // only) and this email goes to a third-party address the inviter chooses — HTML-encode them
+        // for the Html body only. Subject and Text are plain-text contexts, so they keep the raw
+        // values (HTML-encoding there would show literal "&quot;" etc. to the recipient). link is a
+        // server-built URL, not user input, so it's never encoded.
+        var safeInviterName = WebUtility.HtmlEncode(inviterName);
+        var safeLeagueName = WebUtility.HtmlEncode(leagueName);
+
+        return language == "is"
             ? (
                 $"{inviterName} bauð þér í deildina \"{leagueName}\" hjá {Brand}",
-                $"<p>{inviterName} bauð þér að ganga í deildina <strong>{leagueName}</strong> hjá {Brand}.</p>" +
+                $"<p>{safeInviterName} bauð þér að ganga í deildina <strong>{safeLeagueName}</strong> hjá {Brand}.</p>" +
                 $"<p><a href=\"{link}\">Skrá mig í deildina</a></p>" +
                 $"<p>Ef hlekkurinn virkar ekki, afritaðu þessa slóð í vafrann þinn:<br>{link}</p>",
                 $"{inviterName} bauð þér að ganga í deildina \"{leagueName}\" hjá {Brand}.\n\nGakktu í deildina hér:\n{link}"
               )
             : (
                 $"{inviterName} invited you to \"{leagueName}\" on {Brand}",
-                $"<p>{inviterName} invited you to join <strong>{leagueName}</strong> on {Brand}.</p>" +
+                $"<p>{safeInviterName} invited you to join <strong>{safeLeagueName}</strong> on {Brand}.</p>" +
                 $"<p><a href=\"{link}\">Join the league</a></p>" +
                 $"<p>If the link doesn't work, copy this URL into your browser:<br>{link}</p>",
                 $"{inviterName} invited you to join \"{leagueName}\" on {Brand}.\n\nJoin here:\n{link}"
               );
+    }
 }

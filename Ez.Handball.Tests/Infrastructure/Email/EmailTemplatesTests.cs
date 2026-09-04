@@ -1,3 +1,4 @@
+using System.Net;
 using Ez.Handball.Infrastructure.Email;
 
 namespace Ez.Handball.Tests.Infrastructure.Email;
@@ -54,5 +55,26 @@ public class EmailTemplatesTests
         Assert.DoesNotContain("{link}", subject + html + text);
         Assert.DoesNotContain("{inviterName}", subject + html + text);
         Assert.DoesNotContain("{leagueName}", subject + html + text);
+    }
+
+    [Theory]
+    [InlineData("is")]
+    [InlineData("en")]
+    public void MiniLeagueInvite_MarkupInInviterOrLeagueName_IsEncodedInHtml_ButRawInText(string language)
+    {
+        const string maliciousInviter = "<script>alert(1)</script>";
+        const string maliciousLeague = "Evil <img src=x onerror=alert(2)> League";
+
+        var (_, html, text) = EmailTemplates.MiniLeagueInvite(
+            language, maliciousInviter, maliciousLeague, "http://localhost/join?token=abc");
+
+        Assert.DoesNotContain("<script>alert(1)</script>", html);
+        Assert.DoesNotContain("<img src=x onerror=alert(2)>", html);
+        Assert.Contains(WebUtility.HtmlEncode(maliciousInviter), html);
+        Assert.Contains(WebUtility.HtmlEncode(maliciousLeague), html);
+
+        // Text is a plain-text context: the raw values must appear verbatim, unescaped.
+        Assert.Contains(maliciousInviter, text);
+        Assert.Contains(maliciousLeague, text);
     }
 }
