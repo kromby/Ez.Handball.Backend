@@ -66,7 +66,7 @@ public class RegisterUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "verify" && e.RowKey == "ehash"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendVerificationEmailAsync(
-            "a@b.is", "http://localhost/verify?token=evalue", "evalue", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/verify?token=evalue", "is", It.IsAny<CancellationToken>()), Times.Once);
         _refresh.Verify(r => r.AddAsync(
             It.Is<RefreshTokenEntity>(t => t.RowKey == "rhash"), It.IsAny<CancellationToken>()), Times.Once);
     }

@@ -32,7 +32,7 @@ public class ResendVerificationUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "verify" && e.RowKey == "vhash" && e.UserId == "u-1"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendVerificationEmailAsync(
-            "a@b.is", "http://localhost/verify?token=vvalue", "vvalue", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/verify?token=vvalue", "is", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

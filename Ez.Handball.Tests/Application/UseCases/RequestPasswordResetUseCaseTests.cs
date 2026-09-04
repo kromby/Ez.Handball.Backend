@@ -32,7 +32,7 @@ public class RequestPasswordResetUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "reset" && e.RowKey == "rhash" && e.UserId == "u-1"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendPasswordResetEmailAsync(
-            "a@b.is", "http://localhost/reset?token=rvalue", "rvalue", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/reset?token=rvalue", "is", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
