@@ -48,14 +48,21 @@ public sealed class SendMiniLeagueInviteEmailUseCase : ISendMiniLeagueInviteEmai
         var members = await _leagues.GetMembersAsync(leagueId, ct);
         if (members.All(m => m.UserId != userId)) return SendMiniLeagueInviteEmailResult.NotMember.Instance;
 
-        // Get-or-create, never regenerate: emailing a second person must not invalidate a link
-        // already sent to an earlier recipient (unlike GenerateInviteUseCase, which always rotates).
-        var invite = await _invites.GetByLeagueAsync(leagueId, ct);
-        if (invite is null)
+        // Get-or-create, never regenerate a still-valid link: emailing a second person must not
+        // invalidate a link already sent to an earlier recipient (unlike GenerateInviteUseCase,
+        // which always rotates). But an already-expired invite is treated as absent — reusing a
+        // dead token would email a link that 410s on click while still reporting success. Add the
+        // fresh replacement before deleting the expired one (add-first, so a concurrent join never
+        // sees zero valid tokens), mirroring GenerateInviteUseCase's ordering.
+        var existing = await _invites.GetByLeagueAsync(leagueId, ct);
+        var invite = existing;
+        if (invite is null || (invite.ExpiresAt is { } expiresAt && _now() >= expiresAt))
         {
             var token = _tokens.CreateInviteCode();
             invite = new MiniLeagueInvite(token, leagueId, userId, _now(), null);
             await _invites.AddAsync(invite, ct);
+            if (existing is not null)
+                await _invites.DeleteByTokenAsync(existing.Token, ct);
         }
 
         // The recipient may not have an account yet, so the inviter's own language is the only

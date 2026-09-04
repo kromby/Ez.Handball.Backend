@@ -104,6 +104,50 @@ public class SendMiniLeagueInviteEmailUseCaseTests
     }
 
     [Fact]
+    public async Task ExpiredExistingInvite_IsTreatedAsAbsent_GeneratesFreshTokenAndDeletesExpired()
+    {
+        LeagueExists();
+        Members("lg-1", "u-1");
+        var expired = new MiniLeagueInvite("tok-expired", "lg-1", "u-1", Now.AddDays(-10), Now.AddDays(-1));
+        _invites.Setup(r => r.GetByLeagueAsync("lg-1", It.IsAny<CancellationToken>())).ReturnsAsync(expired);
+        _tokens.Setup(t => t.CreateInviteCode()).Returns("tok-new");
+        _users.Setup(u => u.GetByIdAsync("u-1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", DisplayName = "Jón", Language = "en" });
+
+        var result = await CreateSut().ExecuteAsync("u-1", "lg-1", "friend@example.com", CancellationToken.None);
+
+        Assert.IsType<SendMiniLeagueInviteEmailResult.Sent>(result);
+        _invites.Verify(r => r.AddAsync(
+            It.Is<MiniLeagueInvite>(i => i.Token == "tok-new" && i.LeagueId == "lg-1" && i.CreatedByUserId == "u-1"),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _invites.Verify(r => r.DeleteByTokenAsync("tok-expired", It.IsAny<CancellationToken>()), Times.Once);
+        _email.Verify(e => e.SendMiniLeagueInviteEmailAsync(
+            "friend@example.com", "Jón", "Office League", "http://localhost/join?token=tok-new", "en",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExistingInvite_WithFutureExpiry_IsReused_DoesNotRegenerate()
+    {
+        LeagueExists();
+        Members("lg-1", "u-1");
+        var stillValid = new MiniLeagueInvite("tok-existing", "lg-1", "u-1", Now.AddDays(-1), Now.AddDays(1));
+        _invites.Setup(r => r.GetByLeagueAsync("lg-1", It.IsAny<CancellationToken>())).ReturnsAsync(stillValid);
+        _users.Setup(u => u.GetByIdAsync("u-1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", DisplayName = "Jón", Language = "is" });
+
+        var result = await CreateSut().ExecuteAsync("u-1", "lg-1", "friend@example.com", CancellationToken.None);
+
+        Assert.IsType<SendMiniLeagueInviteEmailResult.Sent>(result);
+        _invites.Verify(r => r.AddAsync(It.IsAny<MiniLeagueInvite>(), It.IsAny<CancellationToken>()), Times.Never);
+        _invites.Verify(r => r.DeleteByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokens.Verify(t => t.CreateInviteCode(), Times.Never);
+        _email.Verify(e => e.SendMiniLeagueInviteEmailAsync(
+            "friend@example.com", "Jón", "Office League", "http://localhost/join?token=tok-existing", "is",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task SecondInviteEmail_DoesNotInvalidateFirstRecipientsLink()
     {
         LeagueExists();
