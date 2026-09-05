@@ -38,16 +38,13 @@ public class FantasyPlayerRatingFunctionTests
         Assert.Equal("fantasy-v1", result.Version);
         Assert.Equal(37, result.Rating);
 
+        // v1 keeps its fixed five-component shape — no assists/steals/blocks/saves components.
         Assert.Collection(result.Components,
             c => { Assert.Equal("goals", c.Key);       Assert.Equal(18, c.Value); Assert.Equal(2, c.Weight);  Assert.Equal(36, c.Contribution); },
             c => { Assert.Equal("appearances", c.Key); Assert.Equal(9, c.Value);  Assert.Equal(1, c.Weight);  Assert.Equal(9, c.Contribution); },
             c => { Assert.Equal("yellowCards", c.Key); Assert.Equal(4, c.Value);  Assert.Equal(-1, c.Weight); Assert.Equal(-4, c.Contribution); },
             c => { Assert.Equal("twoMinute", c.Key);   Assert.Equal(2, c.Value);  Assert.Equal(-2, c.Weight); Assert.Equal(-4, c.Contribution); },
-            c => { Assert.Equal("redCards", c.Key);    Assert.Equal(0, c.Value);  Assert.Equal(-5, c.Weight); Assert.Equal(0, c.Contribution); },
-            c => { Assert.Equal("assists", c.Key);     Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
-            c => { Assert.Equal("steals", c.Key);      Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
-            c => { Assert.Equal("blocks", c.Key);      Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); },
-            c => { Assert.Equal("saves", c.Key);       Assert.Equal(0, c.Value);  Assert.Equal(0, c.Weight);  Assert.Equal(0, c.Contribution); });
+            c => { Assert.Equal("redCards", c.Key);    Assert.Equal(0, c.Value);  Assert.Equal(-5, c.Weight); Assert.Equal(0, c.Contribution); });
     }
 
     [Fact]

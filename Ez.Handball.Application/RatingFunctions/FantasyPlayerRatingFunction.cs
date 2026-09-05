@@ -20,11 +20,17 @@ public sealed class FantasyPlayerRatingFunction : IPlayerRatingFunction
             Component("yellowCards", s.YellowCards,          rs.YellowCardPoints),
             Component("twoMinute",   s.TwoMinuteSuspensions, rs.TwoMinutePoints),
             Component("redCards",    s.RedCards,             rs.RedCardPoints),
-            Component("assists",     s.Assists,              rs.AssistPoints),
-            Component("steals",      s.Steals,               rs.StealPoints),
-            Component("blocks",      s.Blocks,               rs.BlockPoints),
-            Component("saves",       s.Saves,                rs.SavePoints),
         };
+
+        // v1 consumers expect a fixed five-component shape — only append the HBStatz-derived
+        // components for v2+ rule sets, rather than always including them at zero for v1.
+        if (rs.Version >= 2)
+        {
+            components.Add(Component("assists", s.Assists, rs.AssistPoints));
+            components.Add(Component("steals",  s.Steals,  rs.StealPoints));
+            components.Add(Component("blocks",  s.Blocks,  rs.BlockPoints));
+            components.Add(Component("saves",   s.Saves,   rs.SavePoints));
+        }
 
         var value = components.Sum(c => c.Contribution);
 

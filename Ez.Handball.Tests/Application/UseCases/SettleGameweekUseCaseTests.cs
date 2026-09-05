@@ -101,10 +101,18 @@ public class SettleGameweekUseCaseTests
     public async Task AllFinal_IncludesHbStatzComponents_WhenPresent()
     {
         SetupCommon(GameweekStatus.Settled, snapshotExists: true);
-        var rulesWithHbStatz = new ScoringRuleSet(GameFlavor.Fantasy, 1, GoalPoints: 1, YellowCardPoints: 0,
+        // HbStatz-derived components are only scored for a v2+ rule set (FantasyPlayerRatingFunction
+        // gates them by version) — override the config lookup to request version 2 accordingly.
+        // The calendar mock is keyed by the exact config value (record equality), so it needs the
+        // same override to still resolve round "1".
+        var configV2 = Config with { ScoringRuleSetVersion = 2 };
+        _config.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(configV2);
+        _calendar.Setup(c => c.GetCalendarAsync(configV2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { GW("1", GameweekStatus.Settled, Match("m1", final: true)) });
+        var rulesWithHbStatz = new ScoringRuleSet(GameFlavor.Fantasy, 2, GoalPoints: 1, YellowCardPoints: 0,
             TwoMinutePoints: 0, RedCardPoints: 0, AppearancePoints: 1,
             AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 1);
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>())).ReturnsAsync(rulesWithHbStatz);
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>())).ReturnsAsync(rulesWithHbStatz);
         _stats.Setup(s => s.GetByMatchAsync("m1", It.IsAny<CancellationToken>())).ReturnsAsync(new[]
         {
             new PlayerStat("gk1", "m1", "8444", null, "2025-26", "h", "Club", 0, 0, 0, 0, HbStatzSaves: 5),
