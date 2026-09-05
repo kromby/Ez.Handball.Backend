@@ -105,6 +105,30 @@ public class TableScoringRuleSetRepositoryTests
     }
 
     [Fact]
+    public async Task GetAsync_UnparseableOptionalValue_ReturnsNull()
+    {
+        SetupGroup("fantasy-v2",
+            ("goals", "2"), ("yellowCards", "-1"), ("twoMinute", "-2"), ("redCards", "-5"), ("appearances", "1"),
+            ("assists", "not-a-number"), ("steals", "1"), ("blocks", "1"), ("saves", "0.5"));
+
+        Assert.Null(await CreateSut().GetAsync(GameFlavor.Fantasy, 2, default));
+    }
+
+    [Fact]
+    public async Task GetAsync_MissingOptionalValue_DefaultsToZero()
+    {
+        SetupGroup("fantasy-v1", FullFantasyV1); // no assists/steals/blocks/saves keys at all
+
+        var rs = await CreateSut().GetAsync(GameFlavor.Fantasy, 1, default);
+
+        Assert.NotNull(rs);
+        Assert.Equal(0, rs!.AssistPoints);
+        Assert.Equal(0, rs.StealPoints);
+        Assert.Equal(0, rs.BlockPoints);
+        Assert.Equal(0, rs.SavePoints);
+    }
+
+    [Fact]
     public async Task GetAsync_ComposesLowercasedGroupName_ForManager()
     {
         SetupGroup("manager-v2",
