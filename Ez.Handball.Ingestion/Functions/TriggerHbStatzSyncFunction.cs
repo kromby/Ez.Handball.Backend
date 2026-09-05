@@ -241,7 +241,19 @@ public class TriggerHbStatzSyncFunction
             var positionCode = HbStatzPositionMapper.MapToCode(line.Position);
             if (positionCode is not null)
             {
-                await _positionAggregator.RecordAndRecomputeAsync(playerId, matchId, matchDate, positionCode, ct);
+                // Position tracking is independent of the stats merge below — a transient
+                // failure here (e.g. a table-storage hiccup) must not abort the stats merge
+                // for the remaining players on this roster.
+                try
+                {
+                    await _positionAggregator.RecordAndRecomputeAsync(playerId, matchId, matchDate, positionCode, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger?.LogError(ex,
+                        "Failed to record position observation for player {PlayerId} in match {MatchId}",
+                        playerId, matchId);
+                }
             }
 
             // Fetch-then-merge, not a bare partial upsert: PlayerStatEntity's existing HSÍ
