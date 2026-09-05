@@ -1,8 +1,9 @@
 namespace Ez.Handball.Ingestion.Parsing;
 
-// Primary = most-frequently-observed code; ties break by whichever code was observed earliest
-// (deterministic without needing extra state). Secondary = the next most frequent code, but
-// only if it accounts for more than 10% of total observations — otherwise there's no secondary.
+// Primary = most-frequently-observed code; ties break by whichever code was observed earliest,
+// then by the code itself (ordinal) if even that's tied — fully deterministic regardless of
+// enumeration order. Secondary = the next most frequent code, but only if it accounts for more
+// than 10% of total observations — otherwise there's no secondary.
 public static class PositionModeCalculator
 {
     public static (string Primary, string? Secondary) Compute(
@@ -16,6 +17,7 @@ public static class PositionModeCalculator
             .Select(g => new { Code = g.Key, Count = g.Count(), FirstSeen = g.Min(o => o.MatchDate) })
             .OrderByDescending(g => g.Count)
             .ThenBy(g => g.FirstSeen)
+            .ThenBy(g => g.Code, StringComparer.Ordinal)
             .ToList();
 
         var primary = ranked[0].Code;

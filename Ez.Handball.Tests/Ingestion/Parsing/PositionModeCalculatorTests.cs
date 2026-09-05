@@ -72,6 +72,18 @@ public class PositionModeCalculatorTests
     }
 
     [Fact]
+    public void Compute_TiedCountsAndTiedFirstSeenDate_BreaksByCodeOrdinal()
+    {
+        // LB and RB both have count=1 and both first (and only) observed on the same date —
+        // count and date alone can't break the tie, so it must fall back to the code itself.
+        var observations = new[] { ("RB", Day(3)), ("LB", Day(3)) };
+
+        var (primary, _) = PositionModeCalculator.Compute(observations);
+
+        Assert.Equal("LB", primary); // "LB" < "RB" ordinally
+    }
+
+    [Fact]
     public void Compute_EmptyObservations_Throws()
     {
         Assert.Throws<ArgumentException>(() => PositionModeCalculator.Compute(Array.Empty<(string, DateTimeOffset)>()));
