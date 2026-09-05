@@ -181,6 +181,7 @@ builder.Services.AddScoped<IGenerateInviteUseCase, GenerateInviteUseCase>();
 builder.Services.AddScoped<IGetInviteUseCase, GetInviteUseCase>();
 builder.Services.AddScoped<IPreviewInviteUseCase, PreviewInviteUseCase>();
 builder.Services.AddScoped<IJoinMiniLeagueUseCase, JoinMiniLeagueUseCase>();
+builder.Services.AddScoped<ISendMiniLeagueInviteEmailUseCase, SendMiniLeagueInviteEmailUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<IRefreshTokenUseCase, RefreshTokenUseCase>();

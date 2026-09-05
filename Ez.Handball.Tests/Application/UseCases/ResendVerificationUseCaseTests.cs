@@ -13,7 +13,8 @@ public class ResendVerificationUseCaseTests
     private readonly Mock<IEmailTokenRepository> _emailTokens = new();
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<IEmailSender> _email = new();
-    private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
+    private readonly AuthSettings _settings = new(
+        "http://localhost/verify?token={token}", "http://localhost/reset?token={token}", "http://localhost/join?token={token}");
 
     private ResendVerificationUseCase CreateSut() =>
         new(_users.Object, _emailTokens.Object, _tokens.Object, _email.Object, _settings);
@@ -22,7 +23,7 @@ public class ResendVerificationUseCaseTests
     public async Task Unverified_CreatesTokenAndSends()
     {
         _users.Setup(u => u.GetByIdAsync("u-1", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is", EmailVerified = false });
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", Email = "a@b.is", EmailVerified = false, Language = "en" });
         _tokens.Setup(t => t.CreateEmailToken()).Returns(new IssuedToken("vvalue", "vhash", Now.AddHours(24)));
 
         var result = await CreateSut().ExecuteAsync("u-1", CancellationToken.None);
@@ -32,7 +33,7 @@ public class ResendVerificationUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "verify" && e.RowKey == "vhash" && e.UserId == "u-1"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendVerificationEmailAsync(
-            "a@b.is", "http://localhost/verify?token=vvalue", "vvalue", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/verify?token=vvalue", "en", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

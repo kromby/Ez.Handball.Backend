@@ -41,7 +41,7 @@ public sealed class ResendVerificationUseCase : IResendVerificationUseCase
             PartitionKey = "verify", RowKey = token.Hash, UserId = userId, ExpiresAt = token.ExpiresAt
         }, ct);
         var link = _settings.VerificationUrlTemplate.Replace("{token}", token.Value);
-        await _email.SendVerificationEmailAsync(user.Email, link, token.Value, ct);
+        await _email.SendVerificationEmailAsync(user.Email, link, user.Language, ct);
 
         return new ResendVerificationResult.Accepted();
     }
