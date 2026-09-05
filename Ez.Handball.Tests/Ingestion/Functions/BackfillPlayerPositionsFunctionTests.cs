@@ -56,6 +56,8 @@ public class BackfillPlayerPositionsFunctionTests
 
         Assert.True(result.DryRun);
         Assert.Equal(1, result.BlobsProcessed);
+        // A dry run previews changes but reports zero as actually applied.
+        Assert.Equal(0, result.PlayersUpdated);
         var change = Assert.Single(result.Changes);
         Assert.Equal("hsi-1", change.PlayerId);
         Assert.Equal("LB", change.NewPosition);
@@ -101,5 +103,26 @@ public class BackfillPlayerPositionsFunctionTests
         Assert.Equal(0, result.BlobsProcessed);
         Assert.Single(result.Errors);
         Assert.Empty(result.Changes);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_UnreconcilablePlayer_IsReportedInErrorsNotSilentlyDropped()
+    {
+        SetupOneArchivedMatch("103414", Day(1), GameJsonLeftBack);
+        // Roster has nobody matching "Arnór Snær Óskarsson" / #6, so reconciliation fails.
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '385-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '390-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+
+        var result = await CreateSut().ProcessAsync(dryRun: true);
+
+        // The blob is still fully processed (it's not a blob-level failure)...
+        Assert.Equal(1, result.BlobsProcessed);
+        Assert.Empty(result.Changes);
+        // ...but the unreconciled player is visible in Errors, not silently dropped.
+        Assert.Single(result.Errors);
+        Assert.Contains("103414", result.Errors[0]);
+        Assert.Contains("Arnór", result.Errors[0]);
     }
 }

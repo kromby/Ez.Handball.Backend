@@ -77,8 +77,8 @@ public class BackfillPlayerPositionsFunction
                     continue;
                 }
 
-                await TallyTeamAsync(match.HomeTeamId, match.Date, matchId, game.Players.Home, observationsByPlayer, ct);
-                await TallyTeamAsync(match.AwayTeamId, match.Date, matchId, game.Players.Away, observationsByPlayer, ct);
+                await TallyTeamAsync(match.HomeTeamId, match.Date, matchId, game.Players.Home, observationsByPlayer, errors, logger, ct);
+                await TallyTeamAsync(match.AwayTeamId, match.Date, matchId, game.Players.Away, observationsByPlayer, errors, logger, ct);
                 blobsProcessed++;
             }
             catch (Exception ex)
@@ -125,19 +125,38 @@ public class BackfillPlayerPositionsFunction
             }
         }
 
-        return new BackfillPlayerPositionsResult(dryRun, blobsProcessed, changes.Count, changes, errors);
+        // A dry run reports what WOULD change, never what was applied — PlayersUpdated must
+        // reflect actual writes, not the preview.
+        return new BackfillPlayerPositionsResult(dryRun, blobsProcessed, dryRun ? 0 : changes.Count, changes, errors);
     }
 
     private async Task TallyTeamAsync(
         string teamId, DateTimeOffset matchDate, string matchId, IReadOnlyList<HbStatzPlayerLine> lines,
-        Dictionary<string, List<(string Code, DateTimeOffset MatchDate, string MatchId)>> tally, CancellationToken ct)
+        Dictionary<string, List<(string Code, DateTimeOffset MatchDate, string MatchId)>> tally,
+        List<string> errors, ILogger? logger, CancellationToken ct)
     {
         var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{Escape(teamId)}'", ct);
         foreach (var line in lines)
         {
             var playerId = HbStatzPlayerReconciler.Resolve(roster, line);
-            if (playerId is null) continue;
+            if (playerId is null)
+            {
+                // Matches the sibling live-sync path's warning (TriggerHbStatzSyncFunction), and
+                // also surfaced in Errors — a server log line is invisible to whoever called this
+                // HTTP endpoint, but the response's Errors list isn't. Without this, the blob still
+                // counts as "processed" while this player silently gets no observation.
+                var detail = $"match {matchId}: could not reconcile HBStatz player {line.Name} (#{line.Number}) for team {teamId}";
+                logger?.LogWarning(
+                    "Could not reconcile HBStatz player {Name} (#{Number}) for team {TeamId} in match {MatchId}",
+                    line.Name, line.Number, teamId, matchId);
+                errors.Add(detail);
+                continue;
+            }
 
+            // An unmapped position label isn't a reconciliation failure — the player and match
+            // are known, HBStatz just used a label our vocabulary doesn't recognize (or gave
+            // none). Not logged as a warning; HbStatzPositionMapper is the single place that
+            // vocabulary is defined and extended.
             var code = HbStatzPositionMapper.MapToCode(line.Position);
             if (code is null) continue;
 
