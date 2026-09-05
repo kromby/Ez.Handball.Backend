@@ -63,7 +63,11 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 Goals: s.Goals,
                 YellowCards: s.YellowCards,
                 TwoMinuteSuspensions: s.TwoMinuteSuspensions,
-                RedCards: s.RedCards));
+                RedCards: s.RedCards,
+                HbStatzAssists: s.HbStatzAssists,
+                HbStatzSteals: s.HbStatzSteals,
+                HbStatzBlocks: s.HbStatzBlocks,
+                HbStatzSaves: s.HbStatzSaves));
         }
 
         return result;
@@ -86,7 +90,11 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 Goals: s.Goals,
                 YellowCards: s.YellowCards,
                 TwoMinuteSuspensions: s.TwoMinuteSuspensions,
-                RedCards: s.RedCards));
+                RedCards: s.RedCards,
+                HbStatzAssists: s.HbStatzAssists,
+                HbStatzSteals: s.HbStatzSteals,
+                HbStatzBlocks: s.HbStatzBlocks,
+                HbStatzSaves: s.HbStatzSaves));
         }
         return result;
     }

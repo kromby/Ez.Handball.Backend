@@ -14,15 +14,31 @@ public class SeedScoringRuleSetsFunctionTests
     [Fact]
     public void RuleSetDefinitions_AreTheFantasyV1Weights()
     {
-        var defs = SeedScoringRuleSetsFunction.RuleSetDefinitions;
+        var defs = SeedScoringRuleSetsFunction.RuleSetDefinitions.Where(d => d.Group == "fantasy-v1").ToList();
 
         Assert.Equal(5, defs.Count);
-        Assert.All(defs, d => Assert.Equal("fantasy-v1", d.Group));
         Assert.Contains(defs, d => d.Key == "goals" && d.Value == "2");
         Assert.Contains(defs, d => d.Key == "yellowCards" && d.Value == "-1");
         Assert.Contains(defs, d => d.Key == "twoMinute" && d.Value == "-2");
         Assert.Contains(defs, d => d.Key == "redCards" && d.Value == "-5");
         Assert.Contains(defs, d => d.Key == "appearances" && d.Value == "1");
+    }
+
+    [Fact]
+    public void RuleSetDefinitions_AreTheFantasyV2Weights()
+    {
+        var defs = SeedScoringRuleSetsFunction.RuleSetDefinitions.Where(d => d.Group == "fantasy-v2").ToList();
+
+        Assert.Equal(9, defs.Count);
+        Assert.Contains(defs, d => d.Key == "goals" && d.Value == "2");
+        Assert.Contains(defs, d => d.Key == "yellowCards" && d.Value == "-1");
+        Assert.Contains(defs, d => d.Key == "twoMinute" && d.Value == "-2");
+        Assert.Contains(defs, d => d.Key == "redCards" && d.Value == "-5");
+        Assert.Contains(defs, d => d.Key == "appearances" && d.Value == "1");
+        Assert.Contains(defs, d => d.Key == "assists" && d.Value == "1");
+        Assert.Contains(defs, d => d.Key == "steals" && d.Value == "1");
+        Assert.Contains(defs, d => d.Key == "blocks" && d.Value == "1");
+        Assert.Contains(defs, d => d.Key == "saves" && d.Value == "0.5");
     }
 
     [Fact]
@@ -37,11 +53,25 @@ public class SeedScoringRuleSetsFunctionTests
             It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-v1"),
             default,
             Azure.Data.Tables.TableUpdateMode.Replace),
-            Times.Exactly(SeedScoringRuleSetsFunction.RuleSetDefinitions.Count));
+            Times.Exactly(5));
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Config",
+            It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-v2"),
+            default,
+            Azure.Data.Tables.TableUpdateMode.Replace),
+            Times.Exactly(9));
 
         _tableWriter.Verify(t => t.UpsertAsync(
             "Config",
             It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-v1" && e.RowKey == "goals" && e.Value == "2"),
+            default,
+            Azure.Data.Tables.TableUpdateMode.Replace),
+            Times.Once);
+
+        _tableWriter.Verify(t => t.UpsertAsync(
+            "Config",
+            It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-v2" && e.RowKey == "saves" && e.Value == "0.5"),
             default,
             Azure.Data.Tables.TableUpdateMode.Replace),
             Times.Once);

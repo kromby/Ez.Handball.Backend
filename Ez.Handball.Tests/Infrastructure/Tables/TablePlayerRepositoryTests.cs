@@ -241,4 +241,34 @@ public class TablePlayerRepositoryTests
         Assert.NotNull(result);
         Assert.False(result!.Retired);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_MapsPositionSecondary()
+    {
+        SetupRows("1", new PlayerEntity
+        {
+            PartitionKey = "385-karlar", RowKey = "1", Name = "X",
+            Gender = "karlar", ClubId = "385", Position = "CB", PositionSecondary = "LB"
+        });
+
+        var result = await CreateSut().GetByIdAsync("1", default);
+
+        Assert.NotNull(result);
+        Assert.Equal("CB", result!.Position);
+        Assert.Equal("LB", result.PositionSecondary);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_BlankPositionSecondary_MapsToEmptyString()
+    {
+        SetupRows("1", new PlayerEntity
+        {
+            PartitionKey = "385-karlar", RowKey = "1", Name = "X",
+            Gender = "karlar", ClubId = "385", Position = "CB"
+        });
+
+        var result = await CreateSut().GetByIdAsync("1", default);
+
+        Assert.Equal(string.Empty, result!.PositionSecondary);
+    }
 }

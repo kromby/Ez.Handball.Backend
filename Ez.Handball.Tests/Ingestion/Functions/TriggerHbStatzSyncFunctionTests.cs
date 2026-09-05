@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Functions;
+using Ez.Handball.Ingestion.Parsing;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Moq;
@@ -12,9 +13,10 @@ public class TriggerHbStatzSyncFunctionTests
     private readonly Mock<ITableWriter> _tableWriter = new();
     private readonly Mock<IBlobArchiver> _blobArchiver = new();
     private readonly Mock<IHbStatzApiClient> _hbStatzClient = new();
+    private readonly Mock<IHbStatzPlayerPositionAggregator> _positionAggregator = new();
 
     private TriggerHbStatzSyncFunction CreateSut() =>
-        new(_tableWriter.Object, _blobArchiver.Object, _hbStatzClient.Object);
+        new(_tableWriter.Object, _blobArchiver.Object, _hbStatzClient.Object, _positionAggregator.Object);
 
     private static TournamentEntity Tournament(string competitionId = "olis-karla", bool ingestHbStatz = true) => new()
     {
@@ -305,5 +307,72 @@ public class TriggerHbStatzSyncFunctionTests
 
         Assert.Equal(1, result.MatchesChecked);
         Assert.Equal(1, result.MatchesSynced);
+    }
+
+    [Fact]
+    public async Task SyncAsync_ReconciledPlayerWithPosition_RecordsPositionObservation()
+    {
+        const string gameJsonWithPosition = """
+        {
+          "players": {
+            "home": [ { "player_id": 803, "name": "Arnór Snær Óskarsson", "number": 6, "position": "Left Back", "goals": 9, "shots": 14, "assists": 2, "turnovers": 3, "steals": 0, "blocks": 0, "legal_stops": 2, "grade_total": 8.78 } ],
+            "away": []
+          }
+        }
+        """;
+
+        SetupTournamentQuery("IngestHbStatz eq true", Tournament());
+        _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FixturesJson);
+        _hbStatzClient.Setup(c => c.GetGameJsonAsync(12924, It.IsAny<CancellationToken>())).ReturnsAsync(gameJsonWithPosition);
+        var match = Match("103414");
+        SetupMatches(match);
+        SetupClubs();
+        _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
+        SetupReconcilableRoster();
+        SetupExistingPlayerStat("103414");
+
+        await CreateSut().SyncAsync(null);
+
+        _positionAggregator.Verify(a => a.RecordAndRecomputeAsync(
+            "hsi-1", "103414", match.Date, "LB", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SyncAsync_PositionAggregatorThrows_StillCompletesTheStatsMergeAndMarksSynced()
+    {
+        const string gameJsonWithPosition = """
+        {
+          "players": {
+            "home": [ { "player_id": 803, "name": "Arnór Snær Óskarsson", "number": 6, "position": "Left Back", "goals": 9, "shots": 14, "assists": 2, "turnovers": 3, "steals": 0, "blocks": 0, "legal_stops": 2, "grade_total": 8.78 } ],
+            "away": []
+          }
+        }
+        """;
+
+        SetupTournamentQuery("IngestHbStatz eq true", Tournament());
+        _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FixturesJson);
+        _hbStatzClient.Setup(c => c.GetGameJsonAsync(12924, It.IsAny<CancellationToken>())).ReturnsAsync(gameJsonWithPosition);
+        var match = Match("103414");
+        SetupMatches(match);
+        SetupClubs();
+        _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
+        SetupReconcilableRoster();
+        SetupExistingPlayerStat("103414");
+        _positionAggregator
+            .Setup(a => a.RecordAndRecomputeAsync("hsi-1", "103414", match.Date, "LB", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("transient table storage error"));
+
+        var result = await CreateSut().SyncAsync(null);
+
+        // Position tracking failing doesn't block the stats merge or the match being marked synced.
+        Assert.Equal(1, result.MatchesSynced);
+        Assert.Empty(result.Failed);
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
+            It.Is<PlayerStatEntity>(e => e.RowKey == "hsi-1" && e.HbStatzAssists == 2),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
     }
 }

@@ -121,10 +121,16 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
                         Goals = cur.Goals + s.Goals,
                         YellowCards = cur.YellowCards + s.YellowCards,
                         TwoMinuteSuspensions = cur.TwoMinuteSuspensions + s.TwoMinuteSuspensions,
-                        RedCards = cur.RedCards + s.RedCards
+                        RedCards = cur.RedCards + s.RedCards,
+                        Assists = cur.Assists + (s.HbStatzAssists ?? 0),
+                        Steals = cur.Steals + (s.HbStatzSteals ?? 0),
+                        Blocks = cur.Blocks + (s.HbStatzBlocks ?? 0),
+                        Saves = cur.Saves + (s.HbStatzSaves ?? 0)
                     };
                 else
-                    acc[s.PlayerId] = new AggregatedStats(1, s.Goals, s.YellowCards, s.TwoMinuteSuspensions, s.RedCards);
+                    acc[s.PlayerId] = new AggregatedStats(
+                        1, s.Goals, s.YellowCards, s.TwoMinuteSuspensions, s.RedCards,
+                        s.HbStatzAssists ?? 0, s.HbStatzSteals ?? 0, s.HbStatzBlocks ?? 0, s.HbStatzSaves ?? 0);
             }
         }
         return acc;

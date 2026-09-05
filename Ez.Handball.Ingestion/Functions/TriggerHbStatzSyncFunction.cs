@@ -24,12 +24,16 @@ public class TriggerHbStatzSyncFunction
     private readonly ITableWriter _tableWriter;
     private readonly IBlobArchiver _blobArchiver;
     private readonly IHbStatzApiClient _hbStatzClient;
+    private readonly IHbStatzPlayerPositionAggregator _positionAggregator;
 
-    public TriggerHbStatzSyncFunction(ITableWriter tableWriter, IBlobArchiver blobArchiver, IHbStatzApiClient hbStatzClient)
+    public TriggerHbStatzSyncFunction(
+        ITableWriter tableWriter, IBlobArchiver blobArchiver, IHbStatzApiClient hbStatzClient,
+        IHbStatzPlayerPositionAggregator positionAggregator)
     {
         _tableWriter = tableWriter;
         _blobArchiver = blobArchiver;
         _hbStatzClient = hbStatzClient;
+        _positionAggregator = positionAggregator;
     }
 
     [Function("TriggerHbStatzSync")]
@@ -189,8 +193,8 @@ public class TriggerHbStatzSyncFunction
             return MatchSyncOutcome.Unmatched;
         }
 
-        var homeReconciled = await MergePlayerStatsAsync(match.RowKey, match.HomeTeamId, game.Players.Home, logger, ct);
-        var awayReconciled = await MergePlayerStatsAsync(match.RowKey, match.AwayTeamId, game.Players.Away, logger, ct);
+        var homeReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.HomeTeamId, game.Players.Home, logger, ct);
+        var awayReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.AwayTeamId, game.Players.Away, logger, ct);
         if (!homeReconciled || !awayReconciled)
         {
             // Leave HbStatzSyncedAt unset so the default sweep retries this match — e.g. once the
@@ -216,7 +220,8 @@ public class TriggerHbStatzSyncFunction
     // Returns false if any line couldn't be reconciled/merged, so the caller can leave the match
     // eligible for a retry instead of marking a partially-synced match as done.
     private async Task<bool> MergePlayerStatsAsync(
-        string matchId, string teamId, IReadOnlyList<HbStatzPlayerLine> lines, ILogger? logger, CancellationToken ct)
+        string matchId, DateTimeOffset matchDate, string teamId, IReadOnlyList<HbStatzPlayerLine> lines,
+        ILogger? logger, CancellationToken ct)
     {
         var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{Escape(teamId)}'", ct);
         var allReconciled = true;
@@ -231,6 +236,24 @@ public class TriggerHbStatzSyncFunction
                     line.Name, line.Number, teamId, matchId);
                 allReconciled = false;
                 continue;
+            }
+
+            var positionCode = HbStatzPositionMapper.MapToCode(line.Position);
+            if (positionCode is not null)
+            {
+                // Position tracking is independent of the stats merge below — a transient
+                // failure here (e.g. a table-storage hiccup) must not abort the stats merge
+                // for the remaining players on this roster.
+                try
+                {
+                    await _positionAggregator.RecordAndRecomputeAsync(playerId, matchId, matchDate, positionCode, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger?.LogError(ex,
+                        "Failed to record position observation for player {PlayerId} in match {MatchId}",
+                        playerId, matchId);
+                }
             }
 
             // Fetch-then-merge, not a bare partial upsert: PlayerStatEntity's existing HSÍ
