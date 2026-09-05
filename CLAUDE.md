@@ -96,6 +96,7 @@ All three endpoints wrap their payload in `{"data": ...}`:
 | Matches | tournamentId | matchId |
 | Players | teamId (synthetic) | playerId |
 | PlayerStats | matchId | playerId |
+| PlayerPositionObservations | playerId | matchId |
 
 Gender values are `"karlar"` (men) or `"kvenna"` (women). The synthetic `teamId` is derived by `MatchParser` at parse time using the `gender` field from the `Tournaments` table — this lookup must succeed before any match/player data is written.
 
@@ -161,6 +162,14 @@ clobbers manual edits. Curate further by editing the `Retired` column directly i
 the `Players` table — use `Edm.Boolean`, not String (a String value causes a 500
 on read). `POST /api/reparse` preserves all `Retired` values because the Players
 upsert uses `Merge`.
+
+After deploying the HBStatz position backfill (Backend#106), run
+`POST /api/players/backfill-positions` once (add `?dryRun=false` to actually
+write — it defaults to a dry run) to derive `Position`/`PositionSecondary` for
+every player observed in an already-archived `hbstatz/matches/*.json` blob.
+It's idempotent and safe to re-run. Going forward, `POST /api/hbstatz/sync`
+keeps both fields current automatically as new matches sync. Players HBStatz
+never reaches can be corrected manually via `POST /api/players/set-position`.
 
 ### Gameweek engine (Backend#60)
 

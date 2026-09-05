@@ -14,6 +14,8 @@ public class PlayerEntity : ITableEntity
 
     public string Name { get; set; } = string.Empty;
     public string Position { get; set; } = string.Empty;
+    // Nullable so a Merge upsert that doesn't set it (PlayerParser) leaves the stored value untouched.
+    public string? PositionSecondary { get; set; }
     public string? JerseyNumber { get; set; }
     public DateTimeOffset? DateOfBirth { get; set; }
     public string Gender { get; set; } = string.Empty;

@@ -129,6 +129,7 @@ public class TransferPlayersFunction
             RowKey = player.RowKey,
             Name = player.Name,
             Position = player.Position,
+            PositionSecondary = player.PositionSecondary,
             JerseyNumber = player.JerseyNumber,
             DateOfBirth = player.DateOfBirth,
             Gender = gender,
