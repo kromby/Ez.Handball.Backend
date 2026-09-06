@@ -2,6 +2,8 @@ using Ez.Handball.Application.UseCases;
 
 namespace Ez.Handball.Api;
 
+public record SetPlayerPositionRequest(string Position, string? PositionSecondary);
+
 public static class AdminEndpoints
 {
     public static void MapAdminEndpoints(this WebApplication app)
@@ -82,6 +84,35 @@ public static class AdminEndpoints
                     failed = result.Failed
                 })
                 : Results.Json(new { error = result.Error ?? "sync_failed" }, statusCode: StatusCodes.Status502BadGateway);
+        });
+
+        admin.MapGet("/players/missing-position", async (
+            IGetPlayersMissingPositionUseCase uc, CancellationToken ct) =>
+        {
+            var players = await uc.ExecuteAsync(ct);
+            return Results.Ok(players.Select(p => new
+            {
+                playerId = p.PlayerId,
+                name = p.Name,
+                clubId = p.ClubId,
+                clubName = p.ClubName,
+                gender = p.Gender,
+                position = p.Position
+            }));
+        });
+
+        admin.MapPost("/players/{playerId}/position", async (
+            string playerId, SetPlayerPositionRequest body,
+            ISetPlayerPositionUseCase uc, CancellationToken ct) =>
+        {
+            var result = await uc.ExecuteAsync(playerId, body.Position, body.PositionSecondary, ct);
+            return result switch
+            {
+                SetPlayerPositionResult.Ok             => Results.Ok(),
+                SetPlayerPositionResult.InvalidPosition => Results.BadRequest(new { error = "invalid_position" }),
+                SetPlayerPositionResult.PlayerNotFound  => Results.NotFound(new { error = "player_not_found" }),
+                _                                       => Results.Problem()
+            };
         });
     }
 }

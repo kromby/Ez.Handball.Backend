@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Domain;
 using Ez.Handball.Infrastructure;
@@ -11,13 +12,14 @@ namespace Ez.Handball.Tests.Infrastructure.Tables;
 public class TablePlayerRepositoryTests
 {
     private readonly Mock<ITableQuery> _query = new();
+    private readonly TableServiceClient _client = new("UseDevelopmentStorage=true");
 
     private IPlayerRepository CreateSut(DateOnly? today = null)
     {
         var clock = today is null
             ? (Func<DateOnly>)(() => DateOnly.FromDateTime(DateTime.UtcNow))
             : (() => today.Value);
-        return new TablePlayerRepository(_query.Object, clock, NullLogger<TablePlayerRepository>.Instance);
+        return new TablePlayerRepository(_client, _query.Object, clock, NullLogger<TablePlayerRepository>.Instance);
     }
 
     private void SetupRows(string playerId, params PlayerEntity[] rows)
@@ -103,6 +105,33 @@ public class TablePlayerRepositoryTests
         Assert.Empty(result);
         _query.Verify(q => q.QueryAsync<PlayerEntity>(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private void SetupMissingPositionRows(params PlayerEntity[] rows) =>
+        _query
+            .Setup(q => q.QueryAsync<PlayerEntity>(
+                Ez.Handball.Infrastructure.Tables.Players, "(Position eq '') or (Position eq 'Leikmaður')", default))
+            .Returns(ToAsync(rows));
+
+    [Fact]
+    public async Task ListMissingPositionAsync_ReturnsNoPositionAndPlaceholderPlayers_ExcludingRetired()
+    {
+        SetupMissingPositionRows(
+            ClubPlayer("1", "No Position", "385", position: ""),
+            ClubPlayer("2", "Placeholder", "385", position: "Leikmaður"),
+            ClubPlayer("3", "Retired", "385", position: "", retired: true));
+
+        var result = await CreateSut().ListMissingPositionAsync(default);
+
+        Assert.Equal(new[] { "1", "2" }, result.Select(p => p.PlayerId).OrderBy(x => x).ToArray());
+    }
+
+    [Fact]
+    public async Task ListMissingPositionAsync_NoRows_ReturnsEmpty()
+    {
+        SetupMissingPositionRows();
+
+        Assert.Empty(await CreateSut().ListMissingPositionAsync(default));
     }
 
     [Fact]

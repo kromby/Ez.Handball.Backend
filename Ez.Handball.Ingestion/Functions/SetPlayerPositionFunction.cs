@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Azure.Data.Tables;
-using Ez.Handball.Ingestion.Parsing;
+using Ez.Handball.Domain;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
 using Microsoft.Azure.Functions.Worker;

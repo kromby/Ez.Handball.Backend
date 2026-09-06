@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Domain;
 using Ez.Handball.Shared.Entities;
@@ -7,15 +8,18 @@ namespace Ez.Handball.Infrastructure.TableAccess;
 
 internal sealed class TablePlayerRepository : IPlayerRepository
 {
+    private readonly TableServiceClient _client;
     private readonly ITableQuery _query;
     private readonly Func<DateOnly> _today;
     private readonly ILogger<TablePlayerRepository> _logger;
 
     public TablePlayerRepository(
+        TableServiceClient client,
         ITableQuery query,
         Func<DateOnly> today,
         ILogger<TablePlayerRepository> logger)
     {
+        _client = client;
         _query = query;
         _today = today;
         _logger = logger;
@@ -48,6 +52,39 @@ internal sealed class TablePlayerRepository : IPlayerRepository
         }
 
         return players;
+    }
+
+    public async Task<IReadOnlyList<Player>> ListMissingPositionAsync(CancellationToken ct)
+    {
+        var today = _today();
+        var players = new List<Player>();
+        await foreach (var r in _query.QueryAsync<PlayerEntity>(
+                           Tables.Players, "(Position eq '') or (Position eq 'Leikmaður')", ct))
+        {
+            if (r.Retired == true) continue;
+            players.Add(ToPlayer(r, today));
+        }
+
+        return players;
+    }
+
+    public async Task<bool> SetPositionAsync(string playerId, string position, string positionSecondary, CancellationToken ct)
+    {
+        PlayerEntity? row = null;
+        await foreach (var r in _query.QueryAsync<PlayerEntity>(
+                           Tables.Players, $"RowKey eq '{ODataFilter.Escape(playerId)}'", ct))
+        {
+            row = r;
+            break;
+        }
+
+        if (row is null) return false;
+
+        row.Position = position;
+        row.PositionSecondary = positionSecondary;
+        var table = _client.GetTableClient(Tables.Players);
+        await table.UpsertEntityAsync(row, TableUpdateMode.Merge, ct);
+        return true;
     }
 
     private static Player ToPlayer(PlayerEntity row, DateOnly today)
