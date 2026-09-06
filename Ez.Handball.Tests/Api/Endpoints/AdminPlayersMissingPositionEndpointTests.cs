@@ -78,7 +78,7 @@ public class AdminPlayersMissingPositionEndpointTests : IClassFixture<AdminPlaye
     [Fact]
     public async Task Get_AdminToken_Returns200WithExpectedShape()
     {
-        _factory.Uc.Setup(s => s.ExecuteAsync(It.IsAny<CancellationToken>()))
+        _factory.Uc.Setup(s => s.ExecuteAsync(null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Player> { SamplePlayer() });
 
         var response = await _client.SendAsync(
@@ -93,5 +93,18 @@ public class AdminPlayersMissingPositionEndpointTests : IClassFixture<AdminPlaye
         Assert.Equal("Stjarnan", player.GetProperty("clubName").GetString());
         Assert.Equal("karlar", player.GetProperty("gender").GetString());
         Assert.Equal("Leikmaður", player.GetProperty("position").GetString());
+    }
+
+    [Fact]
+    public async Task Get_AdminToken_ClubIdAndGenderQueryParams_PassesThroughToUseCase()
+    {
+        _factory.Uc.Setup(s => s.ExecuteAsync("385", "karlar", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Player>());
+
+        var response = await _client.SendAsync(AuthedGet(
+            TokenFor(isAdmin: true), "/api/admin/players/missing-position?clubId=385&gender=karlar"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        _factory.Uc.Verify(s => s.ExecuteAsync("385", "karlar", It.IsAny<CancellationToken>()), Times.Once);
     }
 }

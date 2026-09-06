@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.UseCases;
 
 public interface IGetPlayersMissingPositionUseCase
 {
-    Task<IReadOnlyList<Player>> ExecuteAsync(CancellationToken ct);
+    Task<IReadOnlyList<Player>> ExecuteAsync(string? clubId, string? gender, CancellationToken ct);
 }
 
 public class GetPlayersMissingPositionUseCase : IGetPlayersMissingPositionUseCase
@@ -17,5 +17,6 @@ public class GetPlayersMissingPositionUseCase : IGetPlayersMissingPositionUseCas
         _players = players;
     }
 
-    public Task<IReadOnlyList<Player>> ExecuteAsync(CancellationToken ct) => _players.ListMissingPositionAsync(ct);
+    public Task<IReadOnlyList<Player>> ExecuteAsync(string? clubId, string? gender, CancellationToken ct) =>
+        _players.ListMissingPositionAsync(clubId, gender, ct);
 }

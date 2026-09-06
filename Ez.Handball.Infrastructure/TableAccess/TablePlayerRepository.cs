@@ -54,12 +54,19 @@ internal sealed class TablePlayerRepository : IPlayerRepository
         return players;
     }
 
-    public async Task<IReadOnlyList<Player>> ListMissingPositionAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<Player>> ListMissingPositionAsync(string? clubId, string? gender, CancellationToken ct)
     {
+        var clauses = new List<string> { "(Position eq '') or (Position eq 'Leikmaður')" };
+        if (!string.IsNullOrWhiteSpace(clubId))
+            clauses.Add($"ClubId eq '{ODataFilter.Escape(clubId)}'");
+        if (!string.IsNullOrWhiteSpace(gender))
+            clauses.Add($"Gender eq '{ODataFilter.Escape(gender)}'");
+
+        var filter = clauses.Count == 1 ? clauses[0] : string.Join(" and ", clauses.Select(c => $"({c})"));
+
         var today = _today();
         var players = new List<Player>();
-        await foreach (var r in _query.QueryAsync<PlayerEntity>(
-                           Tables.Players, "(Position eq '') or (Position eq 'Leikmaður')", ct))
+        await foreach (var r in _query.QueryAsync<PlayerEntity>(Tables.Players, filter, ct))
         {
             if (r.Retired == true) continue;
             players.Add(ToPlayer(r, today));

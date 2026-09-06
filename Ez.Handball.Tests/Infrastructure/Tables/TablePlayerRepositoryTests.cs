@@ -107,21 +107,22 @@ public class TablePlayerRepositoryTests
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private void SetupMissingPositionRows(params PlayerEntity[] rows) =>
+    private const string BaseMissingPositionFilter = "(Position eq '') or (Position eq 'Leikmaður')";
+
+    private void SetupMissingPositionRows(string filter, params PlayerEntity[] rows) =>
         _query
-            .Setup(q => q.QueryAsync<PlayerEntity>(
-                Ez.Handball.Infrastructure.Tables.Players, "(Position eq '') or (Position eq 'Leikmaður')", default))
+            .Setup(q => q.QueryAsync<PlayerEntity>(Ez.Handball.Infrastructure.Tables.Players, filter, default))
             .Returns(ToAsync(rows));
 
     [Fact]
     public async Task ListMissingPositionAsync_ReturnsNoPositionAndPlaceholderPlayers_ExcludingRetired()
     {
-        SetupMissingPositionRows(
+        SetupMissingPositionRows(BaseMissingPositionFilter,
             ClubPlayer("1", "No Position", "385", position: ""),
             ClubPlayer("2", "Placeholder", "385", position: "Leikmaður"),
             ClubPlayer("3", "Retired", "385", position: "", retired: true));
 
-        var result = await CreateSut().ListMissingPositionAsync(default);
+        var result = await CreateSut().ListMissingPositionAsync(null, null, default);
 
         Assert.Equal(new[] { "1", "2" }, result.Select(p => p.PlayerId).OrderBy(x => x).ToArray());
     }
@@ -129,9 +130,58 @@ public class TablePlayerRepositoryTests
     [Fact]
     public async Task ListMissingPositionAsync_NoRows_ReturnsEmpty()
     {
-        SetupMissingPositionRows();
+        SetupMissingPositionRows(BaseMissingPositionFilter);
 
-        Assert.Empty(await CreateSut().ListMissingPositionAsync(default));
+        Assert.Empty(await CreateSut().ListMissingPositionAsync(null, null, default));
+    }
+
+    [Fact]
+    public async Task ListMissingPositionAsync_ClubIdProvided_AddsClubIdClauseToFilter()
+    {
+        SetupMissingPositionRows(
+            $"({BaseMissingPositionFilter}) and (ClubId eq '385')",
+            ClubPlayer("1", "No Position", "385", position: ""));
+
+        var result = await CreateSut().ListMissingPositionAsync("385", null, default);
+
+        Assert.Equal(new[] { "1" }, result.Select(p => p.PlayerId).ToArray());
+    }
+
+    [Fact]
+    public async Task ListMissingPositionAsync_GenderProvided_AddsGenderClauseToFilter()
+    {
+        SetupMissingPositionRows(
+            $"({BaseMissingPositionFilter}) and (Gender eq 'karlar')",
+            ClubPlayer("1", "No Position", "385", position: ""));
+
+        var result = await CreateSut().ListMissingPositionAsync(null, "karlar", default);
+
+        Assert.Equal(new[] { "1" }, result.Select(p => p.PlayerId).ToArray());
+    }
+
+    [Fact]
+    public async Task ListMissingPositionAsync_ClubIdAndGenderProvided_AddsBothClausesToFilter()
+    {
+        SetupMissingPositionRows(
+            $"({BaseMissingPositionFilter}) and (ClubId eq '385') and (Gender eq 'karlar')",
+            ClubPlayer("1", "No Position", "385", position: ""));
+
+        var result = await CreateSut().ListMissingPositionAsync("385", "karlar", default);
+
+        Assert.Equal(new[] { "1" }, result.Select(p => p.PlayerId).ToArray());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ListMissingPositionAsync_BlankClubIdOrGender_TreatedAsNotProvided(string blank)
+    {
+        SetupMissingPositionRows(BaseMissingPositionFilter,
+            ClubPlayer("1", "No Position", "385", position: ""));
+
+        var result = await CreateSut().ListMissingPositionAsync(blank, blank, default);
+
+        Assert.Equal(new[] { "1" }, result.Select(p => p.PlayerId).ToArray());
     }
 
     [Fact]

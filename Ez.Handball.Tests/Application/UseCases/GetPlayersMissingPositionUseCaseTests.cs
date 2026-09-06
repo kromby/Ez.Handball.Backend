@@ -20,10 +20,24 @@ public class GetPlayersMissingPositionUseCaseTests
                 TeamId: "385-karlar", ClubId: "385", ClubName: "Stjarnan", Gender: "karlar",
                 Position: "", Retired: false)
         };
-        _players.Setup(r => r.ListMissingPositionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(expected);
+        _players
+            .Setup(r => r.ListMissingPositionAsync(null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
 
-        var result = await CreateSut().ExecuteAsync(CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync(null, null, CancellationToken.None);
 
         Assert.Same(expected, result);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ForwardsClubIdAndGenderToRepository()
+    {
+        _players
+            .Setup(r => r.ListMissingPositionAsync("385", "karlar", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Player>());
+
+        await CreateSut().ExecuteAsync("385", "karlar", CancellationToken.None);
+
+        _players.Verify(r => r.ListMissingPositionAsync("385", "karlar", It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -87,9 +87,10 @@ public static class AdminEndpoints
         });
 
         admin.MapGet("/players/missing-position", async (
+            string? clubId, string? gender,
             IGetPlayersMissingPositionUseCase uc, CancellationToken ct) =>
         {
-            var players = await uc.ExecuteAsync(ct);
+            var players = await uc.ExecuteAsync(clubId, gender, ct);
             return Results.Ok(players.Select(p => new
             {
                 playerId = p.PlayerId,
