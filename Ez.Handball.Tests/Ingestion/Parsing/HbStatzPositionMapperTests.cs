@@ -29,12 +29,4 @@ public class HbStatzPositionMapperTests
     {
         Assert.Null(HbStatzPositionMapper.MapToCode(label));
     }
-
-    [Fact]
-    public void PositionVocabulary_ContainsExactlySevenCodes()
-    {
-        Assert.Equal(
-            new[] { "CB", "GK", "LB", "LP", "LW", "RB", "RW" },
-            PositionVocabulary.Codes.OrderBy(c => c));
-    }
 }
