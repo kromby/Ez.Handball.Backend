@@ -19,7 +19,8 @@ public class RegisterUseCaseTests
     private readonly Mock<IEmailSender> _email = new();
     private readonly Mock<ITeamProvisioningService> _provisioning = new();
     private readonly Mock<IGameTeamNameIndexRepository> _nameIndex = new();
-    private readonly AuthSettings _settings = new("http://localhost/verify?token={token}", "http://localhost/reset?token={token}");
+    private readonly AuthSettings _settings = new(
+        "http://localhost/verify?token={token}", "http://localhost/reset?token={token}", "http://localhost/join?token={token}");
 
     private RegisterUseCase CreateSut() => new(
         _users.Object, _refresh.Object, _emailTokens.Object, _clubs.Object,
@@ -27,7 +28,7 @@ public class RegisterUseCaseTests
         _provisioning.Object, _nameIndex.Object);
 
     private static RegisterCommand ValidCmd() =>
-        new("A@B.is", "hunter2hunter2", "Jón", "is", "385", "Dream Team");
+        new("A@B.is", "hunter2hunter2", "Jón", "en", "385", "Dream Team");
 
     private void HappyPathStubs()
     {
@@ -66,7 +67,7 @@ public class RegisterUseCaseTests
             It.Is<EmailTokenEntity>(e => e.PartitionKey == "verify" && e.RowKey == "ehash"),
             It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendVerificationEmailAsync(
-            "a@b.is", "http://localhost/verify?token=evalue", "evalue", It.IsAny<CancellationToken>()), Times.Once);
+            "a@b.is", "http://localhost/verify?token=evalue", "en", It.IsAny<CancellationToken>()), Times.Once);
         _refresh.Verify(r => r.AddAsync(
             It.Is<RefreshTokenEntity>(t => t.RowKey == "rhash"), It.IsAny<CancellationToken>()), Times.Once);
     }

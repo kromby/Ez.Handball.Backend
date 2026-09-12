@@ -10,9 +10,14 @@ public class ConsoleEmailSenderTests
 
     [Fact]
     public async Task SendVerificationEmailAsync_DoesNotThrow()
-        => await _sut.SendVerificationEmailAsync("a@b.is", "http://localhost/verify?token=abc", "abc", default);
+        => await _sut.SendVerificationEmailAsync("a@b.is", "http://localhost/verify?token=abc", "is", default);
 
     [Fact]
     public async Task SendPasswordResetEmailAsync_DoesNotThrow()
-        => await _sut.SendPasswordResetEmailAsync("a@b.is", "http://localhost/reset?token=abc", "abc", default);
+        => await _sut.SendPasswordResetEmailAsync("a@b.is", "http://localhost/reset?token=abc", "en", default);
+
+    [Fact]
+    public async Task SendMiniLeagueInviteEmailAsync_DoesNotThrow()
+        => await _sut.SendMiniLeagueInviteEmailAsync(
+            "a@b.is", "Jón", "Office League", "http://localhost/join?token=abc", "is", default);
 }

@@ -108,7 +108,7 @@ public sealed class RegisterUseCase : IRegisterUseCase
             PartitionKey = "verify", RowKey = emailToken.Hash, UserId = userId, ExpiresAt = emailToken.ExpiresAt
         }, ct);
         var link = _settings.VerificationUrlTemplate.Replace("{token}", emailToken.Value);
-        await _email.SendVerificationEmailAsync(email, link, emailToken.Value, ct);
+        await _email.SendVerificationEmailAsync(email, link, user.Language, ct);
 
         var access = _tokens.CreateAccessToken(user);
         var refresh = _tokens.CreateRefreshToken(userId);

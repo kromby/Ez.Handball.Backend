@@ -21,16 +21,28 @@ public class AuthEndpointTests : IClassFixture<AuthEndpointTests.Factory>, IAsyn
         public string? LastVerificationToken;
         public string? LastResetToken;
 
-        public Task SendVerificationEmailAsync(string email, string link, string token, CancellationToken ct)
+        public Task SendVerificationEmailAsync(string email, string link, string language, CancellationToken ct)
         {
-            LastVerificationToken = token;
+            LastVerificationToken = ExtractToken(link);
             return Task.CompletedTask;
         }
 
-        public Task SendPasswordResetEmailAsync(string email, string link, string token, CancellationToken ct)
+        public Task SendPasswordResetEmailAsync(string email, string link, string language, CancellationToken ct)
         {
-            LastResetToken = token;
+            LastResetToken = ExtractToken(link);
             return Task.CompletedTask;
+        }
+
+        public Task SendMiniLeagueInviteEmailAsync(
+            string email, string inviterName, string leagueName, string link, string language, CancellationToken ct)
+            => Task.CompletedTask;
+
+        // The interface no longer carries the raw token (it's already embedded in `link`) — these
+        // integration tests still need the raw value to drive the follow-up /verify and /reset calls.
+        private static string ExtractToken(string link)
+        {
+            var idx = link.IndexOf("token=", StringComparison.Ordinal);
+            return idx < 0 ? string.Empty : link[(idx + "token=".Length)..];
         }
     }
 
