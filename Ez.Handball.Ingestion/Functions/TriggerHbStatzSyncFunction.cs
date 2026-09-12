@@ -18,22 +18,26 @@ public record HbStatzSyncResult(
 // hsi.is's finished matches against HBStatz's fixtures list (matched by date + team names — the
 // two sources use unrelated match IDs) and merges HBStatz's richer per-player stat lines onto the
 // existing PlayerStats rows. Synchronous and admin-triggered (no queue) — this is a manual,
-// low-volume action, unlike the always-on hsi.is blob-trigger pipeline.
+// low-volume action, unlike the always-on hsi.is blob-trigger pipeline. A successfully synced
+// match is considered final: this is what pokes the settlement trigger (moved off the raw
+// hsi.is ingestion path so settlement waits for HBStatz's richer stats, not the first hsi.is pass).
 public class TriggerHbStatzSyncFunction
 {
     private readonly ITableWriter _tableWriter;
     private readonly IBlobArchiver _blobArchiver;
     private readonly IHbStatzApiClient _hbStatzClient;
     private readonly IHbStatzPlayerPositionAggregator _positionAggregator;
+    private readonly ISettlementTrigger _settlementTrigger;
 
     public TriggerHbStatzSyncFunction(
         ITableWriter tableWriter, IBlobArchiver blobArchiver, IHbStatzApiClient hbStatzClient,
-        IHbStatzPlayerPositionAggregator positionAggregator)
+        IHbStatzPlayerPositionAggregator positionAggregator, ISettlementTrigger settlementTrigger)
     {
         _tableWriter = tableWriter;
         _blobArchiver = blobArchiver;
         _hbStatzClient = hbStatzClient;
         _positionAggregator = positionAggregator;
+        _settlementTrigger = settlementTrigger;
     }
 
     [Function("TriggerHbStatzSync")]
@@ -206,6 +210,7 @@ public class TriggerHbStatzSyncFunction
 
         match.HbStatzSyncedAt = DateTimeOffset.UtcNow;
         await _tableWriter.UpsertAsync("Matches", match, ct, TableUpdateMode.Merge);
+        await _settlementTrigger.PokeAsync(match.RowKey, ct);
         return MatchSyncOutcome.Synced;
     }
 

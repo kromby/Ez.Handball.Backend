@@ -196,6 +196,9 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
   authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
 - **V0 limitation:** settlement runs per team. There is no all-teams fan-out yet —
-  the ingestion `TriggerSettlement` blob function is a logging stub establishing the
-  trigger point; the per-team POST loop is a follow-up. Scoring point values come
-  from the configured `ScoringRuleSet` version (#27 calibration plugs in there).
+  `ISettlementTrigger`/`SettlementTrigger` (`Ez.Handball.Ingestion/Services`) is a logging stub
+  establishing the trigger point; the per-team POST loop is a follow-up. It's poked from
+  `TriggerHbStatzSyncFunction` once a match's HBStatz enrichment sync succeeds — not from the
+  raw hsi.is ingestion path — so settlement waits for HBStatz's richer stats rather than firing
+  on the first hsi.is pass. Scoring point values come from the configured `ScoringRuleSet`
+  version (#27 calibration plugs in there).

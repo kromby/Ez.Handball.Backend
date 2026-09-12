@@ -14,9 +14,10 @@ public class TriggerHbStatzSyncFunctionTests
     private readonly Mock<IBlobArchiver> _blobArchiver = new();
     private readonly Mock<IHbStatzApiClient> _hbStatzClient = new();
     private readonly Mock<IHbStatzPlayerPositionAggregator> _positionAggregator = new();
+    private readonly Mock<ISettlementTrigger> _settlementTrigger = new();
 
     private TriggerHbStatzSyncFunction CreateSut() =>
-        new(_tableWriter.Object, _blobArchiver.Object, _hbStatzClient.Object, _positionAggregator.Object);
+        new(_tableWriter.Object, _blobArchiver.Object, _hbStatzClient.Object, _positionAggregator.Object, _settlementTrigger.Object);
 
     private static TournamentEntity Tournament(string competitionId = "olis-karla", bool ingestHbStatz = true) => new()
     {
@@ -139,6 +140,7 @@ public class TriggerHbStatzSyncFunctionTests
         Assert.Equal(1, result.MatchesChecked);
         Assert.Equal(0, result.MatchesSynced);
         Assert.Contains("999999", result.Unmatched);
+        _settlementTrigger.Verify(s => s.PokeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -186,6 +188,8 @@ public class TriggerHbStatzSyncFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync("Matches",
             It.Is<MatchEntity>(e => e.RowKey == "103414" && e.HbStatzSyncedAt != null),
             It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
+
+        _settlementTrigger.Verify(s => s.PokeAsync("103414", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -215,6 +219,7 @@ public class TriggerHbStatzSyncFunctionTests
         _tableWriter.Verify(t => t.UpsertAsync("Matches", It.IsAny<MatchEntity>(),
             It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
         Assert.Null(match.HbStatzSyncedAt); // stays eligible for the next default sweep
+        _settlementTrigger.Verify(s => s.PokeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
