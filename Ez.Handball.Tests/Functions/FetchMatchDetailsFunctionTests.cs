@@ -47,7 +47,7 @@ public class FetchMatchDetailsFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_SkipsMatch_WhenFinishedAndBlobAlreadyExists()
+    public async Task ProcessAsync_SkipsMatch_WhenFinishedAndArchivedDetailsAreAlreadyFinished()
     {
         var match = new MatchSummary
         {
@@ -60,12 +60,48 @@ public class FetchMatchDetailsFunctionTests
 
         _blobArchiver.Setup(b => b.ExistsAsync("matches/2001/details.json", default))
             .ReturnsAsync(true);
+        _blobArchiver.Setup(b => b.ReadAsync("matches/2001/details.json", default))
+            .ReturnsAsync("""{"data":{"REPORT_STATUS":"S"}}""");
 
         await CreateSut().ProcessAsync(blobContent);
 
         _apiClient.Verify(a => a.GetMatchDetailsJsonAsync(It.IsAny<string>(), default), Times.Never);
         _apiClient.Verify(a => a.GetMatchPlayerStatsJsonAsync(It.IsAny<string>(), It.IsAny<string>(), default), Times.Never);
         _blobArchiver.Verify(b => b.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), default), Times.Never);
+    }
+
+    // hsi.is archives a placeholder details blob (REPORT_STATUS "1", no scores) for matches
+    // fetched before they're played. Once the match list flips a match to "S", the previously
+    // archived placeholder must not be mistaken for the real, finished report — otherwise the
+    // match is stuck with placeholder data forever (Backend#117).
+    [Fact]
+    public async Task ProcessAsync_RefetchesMatch_WhenFinishedButArchivedDetailsAreStillAPrematchPlaceholder()
+    {
+        var match = new MatchSummary
+        {
+            GameId = "2002",
+            HomeTeamId = "10",
+            AwayTeamId = "20",
+            Status = "S"
+        };
+        var blobContent = Serialize(new MatchListResponse { Data = [match] });
+
+        _blobArchiver.Setup(b => b.ExistsAsync("matches/2002/details.json", default))
+            .ReturnsAsync(true);
+        _blobArchiver.Setup(b => b.ReadAsync("matches/2002/details.json", default))
+            .ReturnsAsync("""{"data":{"REPORT_STATUS":"1"}}""");
+        _apiClient.Setup(a => a.GetMatchDetailsJsonAsync("2002", default))
+            .ReturnsAsync("""{"data":{"REPORT_STATUS":"S"}}""");
+        _apiClient.Setup(a => a.GetMatchPlayerStatsJsonAsync("2002", "10", default))
+            .ReturnsAsync("""{"clubId":"10"}""");
+        _apiClient.Setup(a => a.GetMatchPlayerStatsJsonAsync("2002", "20", default))
+            .ReturnsAsync("""{"clubId":"20"}""");
+
+        await CreateSut().ProcessAsync(blobContent);
+
+        _blobArchiver.Verify(b => b.SaveAsync("matches/2002/details.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/2002/players-10.json", It.IsAny<string>(), default), Times.Once);
+        _blobArchiver.Verify(b => b.SaveAsync("matches/2002/players-20.json", It.IsAny<string>(), default), Times.Once);
     }
 
     [Fact]
