@@ -10,8 +10,8 @@ namespace Ez.Handball.Ingestion.Functions;
 public class SeedSquadConstraintsFunction
 {
     // Fantasy squad constraints. startingCap = a new manager's cash; maxSquadSize caps the
-    // roster; posLimit:{Position} caps players per position. PLACEHOLDER position vocabulary —
-    // must be reconciled with real Player.Position values (owner review). Tunable config.
+    // roster; posLimit:{Position} caps players per position. The GK/LW/RW/LB/CB/RB/LP vocabulary
+    // is confirmed real, backed by HBStatz-observed positions (Backend#106). Tunable config.
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> ConstraintDefinitions =
     [
         ("fantasy-squad-v1", "startingCap",   "100000000"),

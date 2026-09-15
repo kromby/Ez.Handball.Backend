@@ -15,6 +15,9 @@ public class PlayerPriceServiceTests
     private static readonly ScoringRuleSet ScoringV1 =
         new(GameFlavor.Fantasy, 1, 2, -1, -2, -5, 1);
 
+    private static readonly ScoringRuleSet ScoringV2 =
+        new(GameFlavor.Fantasy, 2, 2, -1, -2, -5, 1, AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 0.5);
+
     private static readonly PriceRuleSet PriceV1 = new(1, 3, "ISK", new[]
     {
         new PriceBand(0, 5000000),
@@ -34,6 +37,8 @@ public class PlayerPriceServiceTests
     {
         _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ScoringV1);
+        _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ScoringV2);
         _prices.Setup(r => r.GetAsync(1, It.IsAny<CancellationToken>()))
                .ReturnsAsync(PriceV1);
         Aggregate(0, 0);
@@ -80,7 +85,7 @@ public class PlayerPriceServiceTests
     [Fact]
     public async Task MissingScoringRuleSet_ReturnsNull()
     {
-        _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>()))
+        _scoring.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ScoringRuleSet?)null);
 
         var price = await CreateSut().GetPriceAsync("p1", 1, "2025-26", null, default);

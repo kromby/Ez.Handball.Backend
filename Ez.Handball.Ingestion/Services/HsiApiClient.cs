@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using System.Text;
+
 namespace Ez.Handball.Ingestion.Services;
 
 public class HsiApiClient : IHsiApiClient
@@ -27,6 +30,22 @@ public class HsiApiClient : IHsiApiClient
         request.Headers.TryAddWithoutValidation("Accept", AcceptHeader);
         var response = await _http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(ct);
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+
+        // hsi.is's CDN has been observed to serve a gzip-compressed body with no
+        // Content-Encoding header (a cache-variant artifact, not a negotiated encoding),
+        // so HttpClient's automatic decompression never kicks in. Detect the gzip magic
+        // bytes directly rather than trusting the header, or the raw compressed bytes get
+        // mangled into "text" here and corrupt whatever archives this response.
+        if (bytes.Length >= 2 && bytes[0] == 0x1F && bytes[1] == 0x8B)
+        {
+            using var compressed = new MemoryStream(bytes);
+            using var gzip = new GZipStream(compressed, CompressionMode.Decompress);
+            using var decompressed = new MemoryStream();
+            await gzip.CopyToAsync(decompressed, ct);
+            return Encoding.UTF8.GetString(decompressed.ToArray());
+        }
+
+        return Encoding.UTF8.GetString(bytes);
     }
 }

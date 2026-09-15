@@ -29,6 +29,12 @@ public class HbStatzPlayerLine
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    [JsonPropertyName("position")]
+    public string Position { get; set; } = string.Empty;
+
+    [JsonPropertyName("position_secondary")]
+    public string? PositionSecondary { get; set; }
+
     [JsonPropertyName("number")]
     public int? Number { get; set; }
 

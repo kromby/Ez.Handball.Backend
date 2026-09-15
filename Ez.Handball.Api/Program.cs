@@ -152,6 +152,8 @@ builder.Services.AddScoped<IGetTournamentStatusUseCase, GetTournamentStatusUseCa
 builder.Services.AddScoped<IGetAdminGameStatusUseCase, GetAdminGameStatusUseCase>();
 builder.Services.AddScoped<ITriggerIngestionSyncUseCase, TriggerIngestionSyncUseCase>();
 builder.Services.AddScoped<ITriggerHbStatzSyncUseCase, TriggerHbStatzSyncUseCase>();
+builder.Services.AddScoped<IGetPlayersMissingPositionUseCase, GetPlayersMissingPositionUseCase>();
+builder.Services.AddScoped<ISetPlayerPositionUseCase, SetPlayerPositionUseCase>();
 builder.Services.AddScoped<ITournamentScopeResolver, TournamentScopeResolver>();
 builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();

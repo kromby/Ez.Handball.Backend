@@ -11,8 +11,8 @@ public class SeedLineupConstraintsFunction
 {
     // Fantasy lineup (formation) constraints. starterCount = size of the starting 7;
     // captainMultiplier is read by scoring (#60); startMin/startMax:{Position} bound how many
-    // starters may play each position (GK min=max=1 = exactly one keeper). PLACEHOLDER position
-    // vocabulary — must be reconciled with real Player.Position values (owner review). Tunable.
+    // starters may play each position (GK min=max=1 = exactly one keeper). The GK/LW/RW/LB/CB/
+    // RB/LP vocabulary is confirmed real, backed by HBStatz-observed positions (Backend#106).
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> ConstraintDefinitions =
     [
         ("fantasy-lineup-v1", "starterCount",      "7"),

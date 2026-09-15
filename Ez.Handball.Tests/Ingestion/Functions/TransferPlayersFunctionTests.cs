@@ -34,7 +34,7 @@ public class TransferPlayersFunctionTests
         new()
         {
             PartitionKey = $"{clubId}-{gender}", RowKey = id, Name = name, Position = "CB",
-            Gender = gender, ClubId = clubId, ClubName = clubName
+            PositionSecondary = "LP", Gender = gender, ClubId = clubId, ClubName = clubName
         };
 
     [Fact]
@@ -49,7 +49,10 @@ public class TransferPlayersFunctionTests
         Assert.Equal("Applied", result.Results[0].Status);
 
         _tableWriter.Verify(t => t.UpsertAsync("Players",
-            It.Is<PlayerEntity>(e => e.PartitionKey == "1-karlar" && e.RowKey == "p1" && e.ClubId == "1" && e.ClubName == "FH"),
+            It.Is<PlayerEntity>(e => e.PartitionKey == "1-karlar" && e.RowKey == "p1" && e.ClubId == "1" && e.ClubName == "FH"
+                // Both position fields must survive the partition move — the new row is written
+                // with Replace, so anything not copied across is permanently lost.
+                && e.Position == "CB" && e.PositionSecondary == "LP"),
             It.IsAny<CancellationToken>(), TableUpdateMode.Replace), Times.Once);
 
         _tableWriter.Verify(t => t.UpsertAsync("Teams",

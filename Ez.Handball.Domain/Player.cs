@@ -11,4 +11,5 @@ public sealed record Player(
     string? ClubName,
     string Gender,
     string Position,
-    bool Retired);
+    bool Retired,
+    string PositionSecondary = "");

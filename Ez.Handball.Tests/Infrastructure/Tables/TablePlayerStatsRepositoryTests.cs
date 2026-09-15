@@ -56,7 +56,8 @@ public class TablePlayerStatsRepositoryTests
             RowKey = "12345",
             Goals = 5, YellowCards = 0, TwoMinuteSuspensions = 1, RedCards = 0,
             TournamentId = "8444", Season = "2025-26",
-            TeamId = "385-karlar", ClubName = "Stjarnan"
+            TeamId = "385-karlar", ClubName = "Stjarnan",
+            HbStatzAssists = 2, HbStatzSteals = 1, HbStatzBlocks = 0, HbStatzSaves = null
         });
         SetupTournaments("2025-26", new TournamentEntity
         {
@@ -75,6 +76,10 @@ public class TablePlayerStatsRepositoryTests
         Assert.Equal("Stjarnan", only.ClubName);
         Assert.Equal(5, only.Goals);
         Assert.Equal(1, only.TwoMinuteSuspensions);
+        Assert.Equal(2, only.HbStatzAssists);
+        Assert.Equal(1, only.HbStatzSteals);
+        Assert.Equal(0, only.HbStatzBlocks);
+        Assert.Null(only.HbStatzSaves);
     }
 
     [Fact]
@@ -109,5 +114,30 @@ public class TablePlayerStatsRepositoryTests
 
         Assert.Single(result);
         Assert.Null(result[0].TournamentName);
+    }
+
+    [Fact]
+    public async Task GetByMatchAsync_MapsHbStatzFields()
+    {
+        _query.Setup(q => q.QueryAsync<PlayerStatEntity>(
+                Ez.Handball.Infrastructure.Tables.PlayerStats, "PartitionKey eq 'match-1'", default))
+              .Returns(ToAsync(new[]
+              {
+                  new PlayerStatEntity
+                  {
+                      PartitionKey = "match-1",
+                      RowKey = "12345",
+                      Goals = 3, TournamentId = "8444", Season = "2025-26", TeamId = "385-karlar",
+                      HbStatzAssists = 1, HbStatzSteals = 2, HbStatzBlocks = 3, HbStatzSaves = 4
+                  }
+              }));
+
+        var result = await CreateSut().GetByMatchAsync("match-1", default);
+
+        var only = Assert.Single(result);
+        Assert.Equal(1, only.HbStatzAssists);
+        Assert.Equal(2, only.HbStatzSteals);
+        Assert.Equal(3, only.HbStatzBlocks);
+        Assert.Equal(4, only.HbStatzSaves);
     }
 }

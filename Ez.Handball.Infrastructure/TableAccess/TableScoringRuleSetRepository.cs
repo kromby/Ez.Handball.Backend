@@ -29,7 +29,16 @@ internal sealed class TableScoringRuleSetRepository : IScoringRuleSetRepository
             !TryGet(values, "appearances", out var appearances))
             return null;
 
-        return new ScoringRuleSet(flavor, version, goals, yellow, twoMin, red, appearances);
+        // New in fantasy-v2: optional keys default to 0 when absent so fantasy-v1 (which has none
+        // of them) keeps loading — but a present-and-malformed value is a config error, not a
+        // silent zero, same as the required keys above.
+        if (!TryGetOptional(values, "assists", out var assists) ||
+            !TryGetOptional(values, "steals", out var steals) ||
+            !TryGetOptional(values, "blocks", out var blocks) ||
+            !TryGetOptional(values, "saves", out var saves))
+            return null;
+
+        return new ScoringRuleSet(flavor, version, goals, yellow, twoMin, red, appearances, assists, steals, blocks, saves);
     }
 
     private static bool TryGet(IReadOnlyDictionary<string, string> values, string key, out double result)
@@ -37,5 +46,12 @@ internal sealed class TableScoringRuleSetRepository : IScoringRuleSetRepository
         result = 0;
         return values.TryGetValue(key, out var raw)
             && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+    }
+
+    private static bool TryGetOptional(IReadOnlyDictionary<string, string> values, string key, out double result)
+    {
+        result = 0;
+        if (!values.TryGetValue(key, out var raw)) return true; // absent — valid, defaults to 0
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 }

@@ -19,7 +19,7 @@ public class SeedGameweekConfigFunction
         ("fantasy-gameweek-v1", "tournamentId",             "8444"),
         ("fantasy-gameweek-v1", "lockOffsetHours",          "1"),
         ("fantasy-gameweek-v1", "matchFinalBufferHours",    "3"),
-        ("fantasy-gameweek-v1", "scoringRuleSetVersion",    "1"),
+        ("fantasy-gameweek-v1", "scoringRuleSetVersion",    "2"),
         ("fantasy-gameweek-v1", "lineupConstraintsVersion", "1"),
     ];
 

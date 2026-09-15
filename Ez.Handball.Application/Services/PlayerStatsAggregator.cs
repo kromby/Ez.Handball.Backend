@@ -34,6 +34,10 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
             Goals: list.Sum(r => r.Goals),
             YellowCards: list.Sum(r => r.YellowCards),
             TwoMinuteSuspensions: list.Sum(r => r.TwoMinuteSuspensions),
-            RedCards: list.Sum(r => r.RedCards));
+            RedCards: list.Sum(r => r.RedCards),
+            Assists: list.Sum(r => r.HbStatzAssists ?? 0),
+            Steals: list.Sum(r => r.HbStatzSteals ?? 0),
+            Blocks: list.Sum(r => r.HbStatzBlocks ?? 0),
+            Saves: list.Sum(r => r.HbStatzSaves ?? 0));
     }
 }

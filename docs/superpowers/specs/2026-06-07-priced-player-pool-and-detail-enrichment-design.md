@@ -43,7 +43,7 @@ enrichment cost for every caller.
 | Param | Notes |
 |-------|-------|
 | `season`, `tournamentId`, `competitionId`, `type`, `gender` | Scope filters — reuse the existing `ITournamentScopeResolver` machinery, identical semantics to `/api/leaderboard` (incl. `tournamentId` + `competitionId` together → `400 invalid_scope`). |
-| `position` | Optional. Filters to the stored position code (placeholder vocabulary, owner review pending). Exact match, case-insensitive (`OrdinalIgnoreCase`). |
+| `position` | Optional. Filters to the stored position code (resolved by Backend#106 — positions from HBStatz observations). Exact match, case-insensitive (`OrdinalIgnoreCase`). |
 | `sort` | `rating` (default) \| `price` \| `pickPercentage`. All **descending**. Sort applies to the full scoped set, then pages. |
 | `offset` / `limit` | Same rules as leaderboard: `offset` default 0, `limit` default 50, max 200; out-of-range → `400 invalid_pagination`. |
 | `version` | Optional price-rule-set version. Defaults to `1` (parity with `/api/players/{id}/salary`). |
@@ -67,7 +67,7 @@ enrichment cost for every caller.
 
 The envelope mirrors `Leaderboard` (`total`, `offset`, `limit`, `entries`).
 
-- `position` is the stored code from the `Players` table (placeholder vocabulary).
+- `position` is the stored code from the `Players` table (resolved by Backend#106 — positions from HBStatz observations).
 - `price` reuses the #52 salary primitive (`PlayerCost` → `{ amount, currency }`).
 - `rating` reuses the #52 fantasy rating metric.
 - `pickPercentage` is always `null` (deferred — see follow-up below).
@@ -152,7 +152,7 @@ is the separate #50 follow-up and is out of scope here).
 - `GET /api/players/{playerId}` response carries `price` + `position`; tested.
 - `price` reuses the salary primitive (#52); `rating` reuses the #52 metric — no
   re-derivation (shared compute helper, regression-tested).
-- Position values are the stored codes (placeholder vocabulary).
+- Position values are the stored codes (resolved by Backend#106 — positions from HBStatz observations).
 - The pool computes rating + salary for the whole list with O(1) Table queries
   (bulk scan + rule-sets loaded once), not O(N).
 

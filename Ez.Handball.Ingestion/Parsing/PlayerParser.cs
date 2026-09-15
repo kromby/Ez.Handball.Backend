@@ -82,12 +82,22 @@ public class PlayerParser : IPlayerParser
             _ = int.TryParse(player.TwoMinuteSuspensions, out var twoMinuteSuspensions);
             _ = int.TryParse(player.RedCards, out var redCards);
 
+            // hsi.is's POSITION is unreliable, so it is only a weak fallback for a player we've
+            // never seen before. Once any better source (HBStatz via the position aggregator, or
+            // a manual SetPlayerPosition correction) has written a value, keep it — otherwise
+            // every reparse would revert it. PositionSecondary is deliberately not set at all:
+            // it's nullable, so Merge leaves whatever that other source stored untouched.
+            var existingPlayer = await _tableWriter.GetAsync<PlayerEntity>("Players", teamId, playerId, ct);
+            var position = existingPlayer is not null && !string.IsNullOrWhiteSpace(existingPlayer.Position)
+                ? existingPlayer.Position
+                : player.Position;
+
             await _tableWriter.UpsertAsync("Players", new PlayerEntity
             {
                 PartitionKey = teamId,
                 RowKey = playerId,
                 Name = player.Name,
-                Position = player.Position,
+                Position = position,
                 JerseyNumber = player.PlayerJerseyNumber,
                 DateOfBirth = ParseDateOfBirth(player.Identifier),
                 Gender = derivedGender,
