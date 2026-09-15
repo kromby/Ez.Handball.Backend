@@ -42,7 +42,7 @@ public sealed class RequestPasswordResetUseCase : IRequestPasswordResetUseCase
                 PartitionKey = "reset", RowKey = token.Hash, UserId = user.RowKey, ExpiresAt = token.ExpiresAt
             }, ct);
             var link = _settings.ResetUrlTemplate.Replace("{token}", token.Value);
-            await _email.SendPasswordResetEmailAsync(user.Email, link, token.Value, ct);
+            await _email.SendPasswordResetEmailAsync(user.Email, link, user.Language, ct);
         }
 
         return new RequestPasswordResetResult.Accepted();

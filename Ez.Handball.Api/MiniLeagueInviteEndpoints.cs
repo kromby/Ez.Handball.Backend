@@ -4,6 +4,7 @@ using Ez.Handball.Application.UseCases;
 namespace Ez.Handball.Api;
 
 public sealed record GenerateInviteRequest(int? ExpiresInDays);
+public sealed record SendInviteEmailRequest(string? Email);
 public sealed record JoinMiniLeagueRequest(string? Token);
 
 public static class MiniLeagueInviteEndpoints
@@ -29,6 +30,28 @@ public static class MiniLeagueInviteEndpoints
                 _                                   => Results.Problem()
             };
         });
+
+        group.MapPost("/{id}/invite/email", async (
+            string id, SendInviteEmailRequest req, HttpContext http,
+            ISendMiniLeagueInviteEmailUseCase uc, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return Results.BadRequest(new { error = "invalid_email" });
+
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(userId, id, req.Email, ct);
+            return result switch
+            {
+                SendMiniLeagueInviteEmailResult.Sent          => Results.Ok(new { sent = true }),
+                SendMiniLeagueInviteEmailResult.LeagueNotFound => Results.NotFound(new { error = "league_not_found" }),
+                SendMiniLeagueInviteEmailResult.NotMember      => Results.Json(new { error = "not_member" }, statusCode: StatusCodes.Status403Forbidden),
+                SendMiniLeagueInviteEmailResult.InvalidEmail   => Results.BadRequest(new { error = "invalid_email" }),
+                _                                               => Results.Problem()
+            };
+        }).RequireRateLimiting("auth-sensitive");
 
         group.MapGet("/{id}/invite", async (
             string id, HttpContext http, IGetInviteUseCase uc, CancellationToken ct) =>

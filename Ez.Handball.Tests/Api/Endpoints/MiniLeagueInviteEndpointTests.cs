@@ -24,6 +24,7 @@ public class MiniLeagueInviteEndpointTests : IClassFixture<MiniLeagueInviteEndpo
         public Mock<IGetInviteUseCase> Get { get; } = new();
         public Mock<IPreviewInviteUseCase> Preview { get; } = new();
         public Mock<IJoinMiniLeagueUseCase> Join { get; } = new();
+        public Mock<ISendMiniLeagueInviteEmailUseCase> SendEmail { get; } = new();
 
         static Factory()
         {
@@ -48,10 +49,12 @@ public class MiniLeagueInviteEndpointTests : IClassFixture<MiniLeagueInviteEndpo
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetInviteUseCase)));
                 services.Remove(services.Single(d => d.ServiceType == typeof(IPreviewInviteUseCase)));
                 services.Remove(services.Single(d => d.ServiceType == typeof(IJoinMiniLeagueUseCase)));
+                services.Remove(services.Single(d => d.ServiceType == typeof(ISendMiniLeagueInviteEmailUseCase)));
                 services.AddSingleton(Generate.Object);
                 services.AddSingleton(Get.Object);
                 services.AddSingleton(Preview.Object);
                 services.AddSingleton(Join.Object);
+                services.AddSingleton(SendEmail.Object);
             });
             return base.CreateHost(builder);
         }
@@ -69,6 +72,7 @@ public class MiniLeagueInviteEndpointTests : IClassFixture<MiniLeagueInviteEndpo
         _factory.Get.Reset();
         _factory.Preview.Reset();
         _factory.Join.Reset();
+        _factory.SendEmail.Reset();
         _client = factory.CreateClient();
     }
 
@@ -325,5 +329,66 @@ public class MiniLeagueInviteEndpointTests : IClassFixture<MiniLeagueInviteEndpo
         Assert.Equal(HttpStatusCode.Gone, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invite_expired", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task InviteEmail_WithoutToken_Returns401()
+    {
+        var resp = await _client.PostAsJsonAsync("/api/mini-leagues/lg-1/invite/email", new { email = "friend@example.com" });
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task InviteEmail_HappyPath_Returns200()
+    {
+        _factory.SendEmail.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "lg-1", "friend@example.com", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMiniLeagueInviteEmailResult.Sent());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues/lg-1/invite/email", token, new { email = "friend@example.com" }));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("sent").GetBoolean());
+    }
+
+    [Fact]
+    public async Task InviteEmail_BlankEmail_Returns400()
+    {
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues/lg-1/invite/email", token, new { email = "   " }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_email", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task InviteEmail_NotMember_Returns403()
+    {
+        _factory.SendEmail.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMiniLeagueInviteEmailResult.NotMember());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues/lg-1/invite/email", token, new { email = "friend@example.com" }));
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("not_member", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task InviteEmail_LeagueNotFound_Returns404()
+    {
+        _factory.SendEmail.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMiniLeagueInviteEmailResult.LeagueNotFound());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues/lg-x/invite/email", token, new { email = "friend@example.com" }));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("league_not_found", body.GetProperty("error").GetString());
     }
 }
