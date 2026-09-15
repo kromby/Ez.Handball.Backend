@@ -38,9 +38,8 @@ public class FetchMatchDetailsFunction
             {
                 var detailsPath = $"matches/{match.GameId}/details.json";
                 var isFinished = match.Status == "S";
-                var blobExists = await _blobArchiver.ExistsAsync(detailsPath);
 
-                if (isFinished && blobExists)
+                if (isFinished && await ArchivedDetailsAreFinishedAsync(detailsPath))
                 {
                     logger?.LogInformation("Skipping finished match {MatchId} — details already archived", match.GameId);
                     continue;
@@ -60,6 +59,26 @@ public class FetchMatchDetailsFunction
             {
                 logger?.LogError(ex, "Failed to process match {MatchId}", match.GameId);
             }
+        }
+    }
+
+    // hsi.is archives a placeholder details report (REPORT_STATUS "1", no scores) as soon as a
+    // match is fetched — even long before it's played. Once the match list later flips that
+    // match to "S", the existence of A details blob doesn't mean it's the FINISHED report: it
+    // may still be that pre-match placeholder. Only the blob's own REPORT_STATUS can tell.
+    private async Task<bool> ArchivedDetailsAreFinishedAsync(string detailsPath)
+    {
+        if (!await _blobArchiver.ExistsAsync(detailsPath)) return false;
+
+        try
+        {
+            var existing = await _blobArchiver.ReadAsync(detailsPath);
+            var details = JsonSerializer.Deserialize<MatchDetailsResponse>(existing);
+            return details?.Data?.ReportStatus == "S";
+        }
+        catch (JsonException)
+        {
+            return false;
         }
     }
 }
