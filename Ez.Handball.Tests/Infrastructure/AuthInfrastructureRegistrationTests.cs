@@ -45,19 +45,85 @@ public class AuthInfrastructureRegistrationTests
         Assert.IsType<NoopEmailSender>(sender);
     }
 
+    private static Dictionary<string, string?> AcsConfigValues() => new()
+    {
+        ["Jwt:SigningKey"] = "test-signing-key",
+        ["Email:ConnectionString"] = FakeAcsConnectionString,
+        ["Email:FromAddress"] = "noreply@example.com",
+        ["Auth:VerificationUrlTemplate"] = "https://app.example.com/verify?token={token}",
+        ["Auth:ResetUrlTemplate"] = "https://app.example.com/reset?token={token}",
+        ["Auth:InviteUrlTemplate"] = "https://app.example.com/join?token={token}",
+    };
+
     [Fact]
     public void NonDevelopment_ConnectionStringAndFromAddressSet_ResolvesAcsEmailSender()
     {
-        var config = BuildConfig(new()
-        {
-            ["Jwt:SigningKey"] = "test-signing-key",
-            ["Email:ConnectionString"] = FakeAcsConnectionString,
-            ["Email:FromAddress"] = "noreply@example.com",
-        });
+        var config = BuildConfig(AcsConfigValues());
 
         var sender = ResolveEmailSender(config, isDevelopment: false);
 
         Assert.IsType<AcsEmailSender>(sender);
+    }
+
+    [Theory]
+    [InlineData("Auth:VerificationUrlTemplate")]
+    [InlineData("Auth:ResetUrlTemplate")]
+    [InlineData("Auth:InviteUrlTemplate")]
+    public void NonDevelopment_AcsConfigured_UrlTemplateMissing_Throws(string settingName)
+    {
+        var values = AcsConfigValues();
+        values.Remove(settingName);
+        var config = BuildConfig(values);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => services.AddAuthInfrastructure(config, isDevelopment: false));
+        Assert.Contains(settingName, ex.Message);
+    }
+
+    [Theory]
+    [InlineData("Auth:VerificationUrlTemplate")]
+    [InlineData("Auth:ResetUrlTemplate")]
+    [InlineData("Auth:InviteUrlTemplate")]
+    public void NonDevelopment_AcsConfigured_UrlTemplateNotHttps_Throws(string settingName)
+    {
+        var values = AcsConfigValues();
+        values[settingName] = "http://app.example.com/verify?token={token}";
+        var config = BuildConfig(values);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => services.AddAuthInfrastructure(config, isDevelopment: false));
+        Assert.Contains(settingName, ex.Message);
+    }
+
+    [Fact]
+    public void NonDevelopment_AcsConfigured_UrlTemplateIsLocalhost_Throws()
+    {
+        var values = AcsConfigValues();
+        values["Auth:InviteUrlTemplate"] = "https://localhost/join?token={token}";
+        var config = BuildConfig(values);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => services.AddAuthInfrastructure(config, isDevelopment: false));
+        Assert.Contains("Auth:InviteUrlTemplate", ex.Message);
+    }
+
+    [Fact]
+    public void Development_UrlTemplateMissingOrNonHttps_DoesNotThrow()
+    {
+        var config = BuildConfig(new() { ["Jwt:SigningKey"] = "test-signing-key" });
+
+        var sender = ResolveEmailSender(config, isDevelopment: true);
+
+        Assert.IsType<ConsoleEmailSender>(sender);
     }
 
     [Fact]
