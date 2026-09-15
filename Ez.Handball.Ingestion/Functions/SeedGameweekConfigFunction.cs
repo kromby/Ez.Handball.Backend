@@ -13,10 +13,10 @@ public class SeedGameweekConfigFunction
     // gameweeks; lockOffsetHours is how far before first throw-off a gameweek locks (owner-tunable);
     // matchFinalBufferHours is how long after throw-off a fixture counts as final (#95, owner-tunable);
     // the version keys point at which scoring rule set (#27) and lineup constraints (#61) the rollup uses.
-    // PLACEHOLDER tournamentId 8444 (Olís deild karla) — owner must confirm per season/environment.
+    // tournamentId 9142 (Olís deild karla, 2026/2027) — owner must update each season/environment.
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> ConfigDefinitions =
     [
-        ("fantasy-gameweek-v1", "tournamentId",             "8444"),
+        ("fantasy-gameweek-v1", "tournamentId",             "9142"),
         ("fantasy-gameweek-v1", "lockOffsetHours",          "1"),
         ("fantasy-gameweek-v1", "matchFinalBufferHours",    "3"),
         ("fantasy-gameweek-v1", "scoringRuleSetVersion",    "2"),
