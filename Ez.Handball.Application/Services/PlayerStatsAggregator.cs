@@ -45,16 +45,7 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
             scoped = scoped.Where(r => ids.Contains(r.TournamentId));
 
         var list = scoped.ToList();
-        return new AggregatedStats(
-            Games: list.Count,
-            Goals: list.Sum(r => r.Goals),
-            YellowCards: list.Sum(r => r.YellowCards),
-            TwoMinuteSuspensions: list.Sum(r => r.TwoMinuteSuspensions),
-            RedCards: list.Sum(r => r.RedCards),
-            Assists: list.Sum(r => r.HbStatzAssists ?? 0),
-            Steals: list.Sum(r => r.HbStatzSteals ?? 0),
-            Blocks: list.Sum(r => r.HbStatzBlocks ?? 0),
-            Saves: list.Sum(r => r.HbStatzSaves ?? 0));
+        return BuildAggregate(list);
     }
 
     public async Task<AggregatedStats?> AggregatePreviousSeasonAsync(
@@ -73,6 +64,13 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
         var list = scoped.ToList();
         if (list.Count == 0) return null;
 
+        return BuildAggregate(list);
+    }
+
+    private static AggregatedStats BuildAggregate(IReadOnlyList<PlayerStat> list)
+    {
+        var saves = list.Sum(r => r.HbStatzSaves ?? 0);
+        var shotsFaced = list.Sum(r => r.HbStatzShotsFaced ?? 0);
         return new AggregatedStats(
             Games: list.Count,
             Goals: list.Sum(r => r.Goals),
@@ -82,6 +80,17 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
             Assists: list.Sum(r => r.HbStatzAssists ?? 0),
             Steals: list.Sum(r => r.HbStatzSteals ?? 0),
             Blocks: list.Sum(r => r.HbStatzBlocks ?? 0),
-            Saves: list.Sum(r => r.HbStatzSaves ?? 0));
+            Saves: saves,
+            Turnovers: list.Sum(r => r.HbStatzTurnovers ?? 0),
+            LegalStops: list.Sum(r => r.HbStatzLegalStops ?? 0),
+            Shots: list.Sum(r => r.HbStatzShots ?? 0),
+            ExpectedGoals: list.Sum(r => r.HbStatzExpectedGoals ?? 0),
+            ShotsFaced: shotsFaced,
+            SavePct: AggregatedStats.ComputeSavePct(saves, shotsFaced),
+            ExpectedSaves: list.Sum(r => r.HbStatzExpectedSaves ?? 0),
+            GradeTotal: AggregatedStats.AverageGrade(list.Select(r => r.HbStatzGradeTotal)),
+            GradeOffense: AggregatedStats.AverageGrade(list.Select(r => r.HbStatzGradeOffense)),
+            GradeDefense: AggregatedStats.AverageGrade(list.Select(r => r.HbStatzGradeDefense)),
+            GradeGoalkeeping: AggregatedStats.AverageGrade(list.Select(r => r.HbStatzGradeGoalkeeping)));
     }
 }

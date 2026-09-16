@@ -57,7 +57,11 @@ public class TablePlayerStatsRepositoryTests
             Goals = 5, YellowCards = 0, TwoMinuteSuspensions = 1, RedCards = 0,
             TournamentId = "8444", Season = "2025-26",
             TeamId = "385-karlar", ClubName = "Stjarnan",
-            HbStatzAssists = 2, HbStatzSteals = 1, HbStatzBlocks = 0, HbStatzSaves = null
+            HbStatzAssists = 2, HbStatzSteals = 1, HbStatzBlocks = 0, HbStatzSaves = null,
+            HbStatzTurnovers = 3, HbStatzLegalStops = 4, HbStatzShots = 6,
+            HbStatzExpectedGoals = 5.5, HbStatzShotsFaced = 7, HbStatzSavePct = 71.4,
+            HbStatzExpectedSaves = 3.2, HbStatzGradeTotal = 7.1, HbStatzGradeOffense = 6.8,
+            HbStatzGradeDefense = 7.4, HbStatzGradeGoalkeeping = 8.0
         });
         SetupTournaments("2025-26", new TournamentEntity
         {
@@ -80,6 +84,17 @@ public class TablePlayerStatsRepositoryTests
         Assert.Equal(1, only.HbStatzSteals);
         Assert.Equal(0, only.HbStatzBlocks);
         Assert.Null(only.HbStatzSaves);
+        Assert.Equal(3, only.HbStatzTurnovers);
+        Assert.Equal(4, only.HbStatzLegalStops);
+        Assert.Equal(6, only.HbStatzShots);
+        Assert.Equal(5.5, only.HbStatzExpectedGoals);
+        Assert.Equal(7, only.HbStatzShotsFaced);
+        Assert.Equal(71.4, only.HbStatzSavePct);
+        Assert.Equal(3.2, only.HbStatzExpectedSaves);
+        Assert.Equal(7.1, only.HbStatzGradeTotal);
+        Assert.Equal(6.8, only.HbStatzGradeOffense);
+        Assert.Equal(7.4, only.HbStatzGradeDefense);
+        Assert.Equal(8.0, only.HbStatzGradeGoalkeeping);
     }
 
     [Fact]

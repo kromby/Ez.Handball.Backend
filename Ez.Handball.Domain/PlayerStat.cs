@@ -15,4 +15,15 @@ public sealed record PlayerStat(
     int? HbStatzAssists = null,
     int? HbStatzSteals = null,
     int? HbStatzBlocks = null,
-    int? HbStatzSaves = null);
+    int? HbStatzSaves = null,
+    int? HbStatzTurnovers = null,
+    int? HbStatzLegalStops = null,
+    int? HbStatzShots = null,
+    double? HbStatzExpectedGoals = null,
+    int? HbStatzShotsFaced = null,
+    double? HbStatzSavePct = null,
+    double? HbStatzExpectedSaves = null,
+    double? HbStatzGradeTotal = null,
+    double? HbStatzGradeOffense = null,
+    double? HbStatzGradeDefense = null,
+    double? HbStatzGradeGoalkeeping = null);

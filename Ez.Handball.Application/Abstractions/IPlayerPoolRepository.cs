@@ -16,7 +16,8 @@ public sealed record PooledPlayer(
     string Position,
     AggregatedStats Stats,
     bool Retired,
-    AggregatedStats? PreviousSeasonStats = null);
+    AggregatedStats? PreviousSeasonStats = null,
+    string? PositionSecondary = null);
 
 // Use case → repository. TournamentIds is the resolved current-season scope:
 // null = whole-season scan; empty = scope matched no tournaments (repository

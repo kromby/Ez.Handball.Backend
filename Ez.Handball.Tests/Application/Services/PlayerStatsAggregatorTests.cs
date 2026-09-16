@@ -160,6 +160,35 @@ public class PlayerStatsAggregatorTests
     }
 
     [Fact]
+    public async Task SumsExtendedHbStatzFields_AndDerivesSavePctAndGradeAverages()
+    {
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>
+              {
+                  new("p1", "m1", "8444", "T", "2025-26", "team", "Club", 0, 0, 0, 0,
+                      HbStatzTurnovers: 1, HbStatzLegalStops: 2, HbStatzShots: 6,
+                      HbStatzExpectedGoals: 4.5, HbStatzSaves: 3, HbStatzShotsFaced: 10,
+                      HbStatzExpectedSaves: 2.5, HbStatzGradeTotal: 7.0, HbStatzGradeOffense: 6.5,
+                      HbStatzGradeDefense: 7.5, HbStatzGradeGoalkeeping: null),
+                  new("p1", "m2", "8444", "T", "2025-26", "team", "Club", 0, 0, 0, 0,
+                      HbStatzSaves: 1, HbStatzShotsFaced: 5, HbStatzGradeTotal: 8.0),
+              });
+
+        var result = await CreateSut().AggregateAsync("p1", "2025-26", null, null, null, default);
+
+        Assert.Equal(1, result.Turnovers);
+        Assert.Equal(2, result.LegalStops);
+        Assert.Equal(6, result.Shots);
+        Assert.Equal(4.5, result.ExpectedGoals);
+        Assert.Equal(15, result.ShotsFaced);
+        Assert.Equal(26.7, result.SavePct); // (3+1)/15 * 100, rounded to 1dp
+        Assert.Equal(2.5, result.ExpectedSaves);
+        Assert.Equal(7.5, result.GradeTotal); // (7.0 + 8.0) / 2
+        Assert.Equal(6.5, result.GradeOffense);
+        Assert.Null(result.GradeGoalkeeping);
+    }
+
+    [Fact]
     public async Task AggregatePreviousSeason_NoPreviousSeasonExists_ReturnsNull()
     {
         // constructor default: only "2025-26" is tracked -> no previous season

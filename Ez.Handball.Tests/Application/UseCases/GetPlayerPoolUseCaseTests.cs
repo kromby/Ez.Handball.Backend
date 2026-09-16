@@ -335,6 +335,44 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_SurfacesHbStatzStatsAndPositionSecondary_OnEntry()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(
+                         Games: 8, Goals: 20, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0,
+                         Assists: 5, Steals: 3, Blocks: 1, Saves: 2, Turnovers: 4, LegalStops: 1,
+                         Shots: 30, ExpectedGoals: 18.2, ShotsFaced: 6, SavePct: 33.3,
+                         ExpectedSaves: 2.1, GradeTotal: 7.4, GradeOffense: 7.6,
+                         GradeDefense: 7.2, GradeGoalkeeping: null),
+                     Retired: false,
+                     PositionSecondary: "LB"),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        Assert.Equal("LB", entry.PositionSecondary);
+        Assert.Equal(5, entry.Assists);
+        Assert.Equal(3, entry.Steals);
+        Assert.Equal(1, entry.Blocks);
+        Assert.Equal(2, entry.Saves);
+        Assert.Equal(4, entry.Turnovers);
+        Assert.Equal(1, entry.LegalStops);
+        Assert.Equal(30, entry.Shots);
+        Assert.Equal(18.2, entry.ExpectedGoals);
+        Assert.Equal(6, entry.ShotsFaced);
+        Assert.Equal(33.3, entry.SavePct);
+        Assert.Equal(2.1, entry.ExpectedSaves);
+        Assert.Equal(7.4, entry.GradeTotal);
+        Assert.Null(entry.GradeGoalkeeping);
+    }
+
+    [Fact]
     public async Task Execute_SortByGoals_OrdersByGoalsDescending()
     {
         SetupResolver();
