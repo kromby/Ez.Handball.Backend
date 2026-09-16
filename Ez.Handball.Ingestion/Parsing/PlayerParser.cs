@@ -82,12 +82,16 @@ public class PlayerParser : IPlayerParser
             _ = int.TryParse(player.TwoMinuteSuspensions, out var twoMinuteSuspensions);
             _ = int.TryParse(player.RedCards, out var redCards);
 
-            // hsi.is's POSITION is unreliable, so it is only a weak fallback for a player we've
-            // never seen before. Once any better source (HBStatz via the position aggregator, or
-            // a manual SetPlayerPosition correction) has written a value, keep it — otherwise
-            // every reparse would revert it. PositionSecondary is deliberately not set at all:
-            // it's nullable, so Merge leaves whatever that other source stored untouched.
-            var existingPlayer = await _tableWriter.GetAsync<PlayerEntity>("Players", teamId, playerId, ct);
+            // Look up every existing row for this playerId, not just the one under teamId:
+            // Table Storage can't rename a PartitionKey in place, so a player who has changed
+            // clubs since we last saw them still has their old row sitting under the old
+            // club's partition. Querying across all partitions lets a transfer both (a) inherit
+            // a previously-known position instead of falling back to hsi.is's unreliable
+            // POSITION field, and (b) get cleaned up below instead of lingering forever.
+            var existingRows = await _tableWriter.QueryAsync<PlayerEntity>(
+                "Players", $"RowKey eq '{Escape(playerId)}'", ct);
+            var existingPlayer = existingRows.FirstOrDefault(p => p.PartitionKey == teamId)
+                ?? existingRows.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Position));
             var position = existingPlayer is not null && !string.IsNullOrWhiteSpace(existingPlayer.Position)
                 ? existingPlayer.Position
                 : player.Position;
@@ -105,6 +109,15 @@ public class PlayerParser : IPlayerParser
                 ClubName = club?.Name
                 // Retired intentionally not set — Merge preserves the maintainer's value.
             }, ct, TableUpdateMode.Merge);
+
+            // hsi.is says this player is on teamId's roster now, so any row left behind under a
+            // different partition is a stale pre-transfer duplicate — delete it so every reader
+            // that resolves a player by RowKey (the public player pool, admin tooling, HBStatz
+            // aggregation) sees exactly one row.
+            foreach (var stale in existingRows.Where(p => p.PartitionKey != teamId))
+            {
+                await _tableWriter.DeleteAsync("Players", stale.PartitionKey, stale.RowKey, ct);
+            }
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
             {
@@ -125,6 +138,8 @@ public class PlayerParser : IPlayerParser
             "Parsed player stats for match {MatchId}, club {ClubId}, team {TeamId}",
             matchId, clubId, teamId);
     }
+
+    private static string Escape(string value) => value.Replace("'", "''");
 
     private static DateTimeOffset? ParseDateOfBirth(string? identifier)
     {

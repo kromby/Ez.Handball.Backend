@@ -178,6 +178,32 @@ It's idempotent and safe to re-run. Going forward, `POST /api/hbstatz/sync`
 keeps both fields current automatically as new matches sync. Players HBStatz
 never reaches can be corrected manually via `POST /api/players/set-position`.
 
+### Duplicate Players rows from club transfers
+
+`PlayerEntity.PartitionKey` is `"{clubId}-{gender}"`, and Table Storage can't
+rename a PartitionKey in place. Before this fix, a player who transferred
+clubs mid-season ended up with two `Players` rows sharing the same `RowKey`
+(playerId): a fresh one under the new club that `PlayerParser` keeps writing,
+and a stale one under the old club that nothing ever touched again — often
+still holding hsi.is's `"Leikmaður"` placeholder position. Any reader that
+resolves a player by `RowKey` alone (the public player pool, the admin
+missing-position worklist) could land on either row depending on table scan
+order, which is why a player could show a stale/placeholder position on
+`/players` even after their real position was set.
+
+`PlayerParser.ParseAsync` now looks up a player by `RowKey` across all
+partitions, inherits a previously-known position instead of falling back to
+hsi.is on a transfer, and deletes any row left behind under a different
+partition — so this self-heals the next time a transferred player is parsed
+in a new match for their current club.
+
+For duplicates that already existed before this fix (and won't self-heal
+until that player's next match), run `POST /api/players/dedupe` once (add
+`?dryRun=false` to actually delete — it defaults to a dry run). For every
+`RowKey` with more than one row, it keeps the one with the latest `Timestamp`
+(the one still receiving ingestion writes) and deletes the rest. Idempotent
+and safe to re-run.
+
 ### Gameweek engine (Backend#60)
 
 The fantasy gameweek engine derives the gameweek calendar on demand from the
