@@ -63,4 +63,63 @@ public class FantasyPricingTests
         Assert.Equal(0, result.Score);
         Assert.Equal(1_000_000, result.Price.Amount);
     }
+
+    [Fact]
+    public void Compute_ZeroCurrentGames_QualifyingPriorSeason_UsesPriorRateFully()
+    {
+        var stats = new AggregatedStats(0, 0, 0, 0, 0);
+        // prior: 5 games, 25 goals -> priorRating = 25*2 + 5*1 = 55, priorRate = 11
+        var prior = new AggregatedStats(Games: 5, Goals: 25, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+
+        var result = CreateSut().Compute("p1", stats, Scoring, Prices, Ctx, prior);
+
+        Assert.Equal(0, result.Rating);          // current-season rating, unaffected
+        Assert.Equal(11, result.Score);          // w=0 -> fully the prior rate
+        Assert.Equal(11_000_000, result.Price.Amount);
+    }
+
+    [Fact]
+    public void Compute_PartialCurrentGames_BlendsCurrentAndPriorRates()
+    {
+        // current: 3 games, 6 goals -> currentRating = 6*2+3*1 = 15, currentRate = 5
+        var stats = new AggregatedStats(Games: 3, Goals: 6, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+        // prior: 5 games, 25 goals -> priorRate = 11 (as above)
+        var prior = new AggregatedStats(Games: 5, Goals: 25, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+
+        var result = CreateSut().Compute("p1", stats, Scoring, Prices, Ctx, prior);
+
+        // Prices.BlendGames = 6 -> w = 3/6 = 0.5 -> score = 0.5*5 + 0.5*11 = 8
+        Assert.Equal(15, result.Rating);
+        Assert.Equal(8, result.Score);
+        Assert.Equal(5_000_000, result.Price.Amount);   // band 5..<10
+    }
+
+    [Fact]
+    public void Compute_CurrentGamesAtBlendGames_MatchesUnblendedFormula()
+    {
+        // current: 6 games (== Prices.BlendGames), 30 goals -> currentRate = (60+6)/6 = 11
+        var stats = new AggregatedStats(Games: 6, Goals: 30, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+        var prior = new AggregatedStats(Games: 5, Goals: 0, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+
+        var withPrior = CreateSut().Compute("p1", stats, Scoring, Prices, Ctx, prior);
+        var withoutPrior = CreateSut().Compute("p1", stats, Scoring, Prices, Ctx);
+
+        Assert.Equal(withoutPrior.Score, withPrior.Score);   // w=1 -> prior fully faded out
+        Assert.Equal(11, withPrior.Score);
+        Assert.Equal(11_000_000, withPrior.Price.Amount);
+    }
+
+    [Fact]
+    public void Compute_PriorSeasonBelowMinGames_TreatedAsNoQualifyingPriorSeason()
+    {
+        // current: 1 game < MinGames(3) -> today's floor-band fallback applies
+        var stats = new AggregatedStats(Games: 1, Goals: 0, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+        // prior: only 2 games < MinGames(3) -> doesn't qualify, even though "juicy"
+        var thinPrior = new AggregatedStats(Games: 2, Goals: 100, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0);
+
+        var result = CreateSut().Compute("p1", stats, Scoring, Prices, Ctx, thinPrior);
+
+        Assert.Equal(0, result.Score);
+        Assert.Equal(1_000_000, result.Price.Amount);
+    }
 }
