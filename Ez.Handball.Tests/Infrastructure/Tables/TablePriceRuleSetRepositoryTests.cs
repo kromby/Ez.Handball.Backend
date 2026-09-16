@@ -65,14 +65,14 @@ public class TablePriceRuleSetRepositoryTests
     [Fact]
     public async Task Get_MissingCurrency_ReturnsNull()
     {
-        Rows(("minGames", "3"), ("band:0", "5000000"));
+        Rows(("minGames", "3"), ("blendGames", "10"), ("band:0", "5000000"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
 
     [Fact]
     public async Task Get_NoBands_ReturnsNull()
     {
-        Rows(("minGames", "3"), ("currency", "ISK"));
+        Rows(("minGames", "3"), ("blendGames", "10"), ("currency", "ISK"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
 
