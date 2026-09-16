@@ -200,7 +200,7 @@ public class TournamentScopeResolverTests
     }
 
     [Fact]
-    public async Task PreviousScope_NoNarrowing_ReturnsNull_NoSingleCompetitionToAnchorOn()
+    public async Task PreviousScope_NoNarrowing_ReturnsNullTournamentIds_WholeSeasonScan()
     {
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
@@ -208,19 +208,30 @@ public class TournamentScopeResolverTests
         var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
             "2025-26", tournamentId: null, competitionId: null, type: null, default);
 
-        Assert.Null(scope);
+        // Unscoped current-season requests (the app's real default player-pool
+        // view) already only ever contain the one actively-ingested competition's
+        // stats — so an unscoped previous-season lookup mirrors that: no id
+        // narrowing, scan the whole previous season by label alone.
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.Null(scope.TournamentIds);
     }
 
     [Fact]
-    public async Task PreviousScope_TypeAlone_ReturnsNull_NoSingleCompetitionToAnchorOn()
+    public async Task PreviousScope_TypeAlone_NarrowsByTypeAcrossCompetitions()
     {
+        SetupSeason("2024-25",
+            T("7777", TournamentType.League, "olis-karla"),
+            T("7778", TournamentType.Playoffs, "olis-karla"));
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
 
         var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
             "2025-26", tournamentId: null, competitionId: null, type: TournamentType.League, default);
 
-        Assert.Null(scope);
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.Equal(new[] { "7777" }, scope.TournamentIds);
     }
 
     [Fact]
