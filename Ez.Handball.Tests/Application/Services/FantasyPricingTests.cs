@@ -18,7 +18,7 @@ public class FantasyPricingTests
             new PriceBand(0, 1_000_000),
             new PriceBand(5, 5_000_000),
             new PriceBand(10, 11_000_000),
-        });
+        }, BlendGames: 6);
 
     private static readonly PlayerRatingContext Ctx = new(null, null, null, null, null, null);
 

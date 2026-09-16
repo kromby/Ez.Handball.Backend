@@ -18,6 +18,7 @@ public class SeedPriceRuleSetsFunctionTests
 
         Assert.All(defs, d => Assert.Equal("fantasy-price-v1", d.Group));
         Assert.Contains(defs, d => d.Key == "minGames" && d.Value == "3");
+        Assert.Contains(defs, d => d.Key == "blendGames" && d.Value == "10");
         Assert.Contains(defs, d => d.Key == "currency" && d.Value == "ISK");
         Assert.Contains(defs, d => d.Key == "band:0" && d.Value == "5000000");
         Assert.Contains(defs, d => d.Key == "band:12" && d.Value == "50000000");

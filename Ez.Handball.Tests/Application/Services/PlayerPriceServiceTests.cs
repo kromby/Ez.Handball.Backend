@@ -25,7 +25,7 @@ public class PlayerPriceServiceTests
         new PriceBand(6, 20000000),
         new PriceBand(9, 35000000),
         new PriceBand(12, 50000000),
-    });
+    }, BlendGames: 10);
 
     private PlayerPriceService CreateSut() =>
         new(_aggregator.Object, _scoring.Object, _prices.Object, new FantasyPricing(new FantasyPlayerRatingFunction()));

@@ -25,6 +25,7 @@ internal sealed class TablePriceRuleSetRepository : IPriceRuleSetRepository
         if (values.Count == 0) return null;
 
         if (!TryGetInt(values, "minGames", out var minGames) ||
+            !TryGetInt(values, "blendGames", out var blendGames) ||
             !values.TryGetValue("currency", out var currency))
             return null;
 
@@ -40,7 +41,7 @@ internal sealed class TablePriceRuleSetRepository : IPriceRuleSetRepository
         if (bands.Count == 0) return null;
         bands.Sort((a, b) => a.Threshold.CompareTo(b.Threshold));
 
-        return new PriceRuleSet(version, minGames, currency, bands);
+        return new PriceRuleSet(version, minGames, currency, bands, blendGames);
     }
 
     private static bool TryGetInt(IReadOnlyDictionary<string, string> values, string key, out int result)

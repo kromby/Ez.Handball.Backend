@@ -9,11 +9,15 @@ namespace Ez.Handball.Ingestion.Functions;
 
 public class SeedPriceRuleSetsFunction
 {
-    // Fantasy ISK price rule set. minGames guards thin samples; bands map points-per-game
-    // to a price. Thresholds/prices are tunable config (scoring calibration: #27).
+    // Fantasy ISK price rule set. minGames guards thin samples; blendGames is the
+    // prior-season fade horizon (in current-season games) — below it, price blends
+    // toward last season's same-competition rate instead of the floor band; bands
+    // map points-per-game to a price. Thresholds/prices are tunable config
+    // (scoring calibration: #27).
     internal static readonly IReadOnlyList<(string Group, string Key, string Value)> RuleSetDefinitions =
     [
         ("fantasy-price-v1", "minGames", "3"),
+        ("fantasy-price-v1", "blendGames", "10"),
         ("fantasy-price-v1", "currency", "ISK"),
         ("fantasy-price-v1", "band:0",   "5000000"),
         ("fantasy-price-v1", "band:3",   "10000000"),
