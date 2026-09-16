@@ -24,6 +24,12 @@ public class TablePlayerPoolRepositoryTests
                   Ez.Handball.Infrastructure.Tables.Players, It.IsAny<string>(), default))
               .Returns(ToAsync(players));
 
+    private void SetupStatsFiltered(string filterContains, params PlayerStatEntity[] rows) =>
+        _query.Setup(q => q.QueryAsync<PlayerStatEntity>(
+                  Ez.Handball.Infrastructure.Tables.PlayerStats,
+                  It.Is<string?>(f => f != null && f.Contains(filterContains)), default))
+              .Returns(ToAsync(rows));
+
     private static PlayerStatEntity Stat(
         string matchId, string playerId, string season, string tournamentId,
         string teamId, string? clubName, int g) =>
@@ -38,8 +44,9 @@ public class TablePlayerPoolRepositoryTests
         new() { PartitionKey = teamId, RowKey = playerId, Name = name, Position = position };
 
     private static PlayerPoolQuery Q(
-        string? season = null, IReadOnlyList<string>? tournamentIds = null, string? gender = null) =>
-        new(season, tournamentIds, gender);
+        string? season = null, IReadOnlyList<string>? tournamentIds = null, string? gender = null,
+        string? previousSeason = null, IReadOnlyList<string>? previousSeasonTournamentIds = null) =>
+        new(season, tournamentIds, gender, previousSeason, previousSeasonTournamentIds);
 
     private static async IAsyncEnumerable<T> ToAsync<T>(IEnumerable<T> items)
     {
@@ -122,5 +129,50 @@ public class TablePlayerPoolRepositoryTests
         var p = Assert.Single(result);
         Assert.Null(p.Name);
         Assert.Equal(string.Empty, p.Position);
+    }
+
+    [Fact]
+    public async Task GetAggregated_PreviousSeasonProvided_JoinsPreviousStatsByPlayer()
+    {
+        SetupStatsFiltered("'2025-26'",
+            Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
+        SetupStatsFiltered("'2024-25'",
+            Stat("m0", "p1", "2024-25", "7777", "385-karlar", "Stjarnan", 8),
+            Stat("m0b", "p1", "2024-25", "7777", "385-karlar", "Stjarnan", 2));
+        SetupPlayers(Plr("p1", "385-karlar", "Aron", "CB"));
+
+        var result = await CreateSut().GetAggregatedAsync(
+            Q(season: "2025-26", tournamentIds: new[] { "8444" },
+              previousSeason: "2024-25", previousSeasonTournamentIds: new[] { "7777" }),
+            CancellationToken.None);
+
+        var p = Assert.Single(result);
+        Assert.NotNull(p.PreviousSeasonStats);
+        Assert.Equal(2, p.PreviousSeasonStats!.Games);
+        Assert.Equal(10, p.PreviousSeasonStats.Goals);
+    }
+
+    [Fact]
+    public async Task GetAggregated_NoPreviousSeason_LeavesPreviousStatsNull()
+    {
+        SetupStats(Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
+        SetupPlayers(Plr("p1", "385-karlar", "Aron", "CB"));
+
+        var result = await CreateSut().GetAggregatedAsync(Q(), CancellationToken.None);
+
+        Assert.Null(Assert.Single(result).PreviousSeasonStats);
+    }
+
+    [Fact]
+    public async Task GetAggregated_PreviousSeasonEmptyTournamentIds_LeavesPreviousStatsNull()
+    {
+        SetupStats(Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
+        SetupPlayers(Plr("p1", "385-karlar", "Aron", "CB"));
+
+        var result = await CreateSut().GetAggregatedAsync(
+            Q(previousSeason: "2024-25", previousSeasonTournamentIds: Array.Empty<string>()),
+            CancellationToken.None);
+
+        Assert.Null(Assert.Single(result).PreviousSeasonStats);
     }
 }

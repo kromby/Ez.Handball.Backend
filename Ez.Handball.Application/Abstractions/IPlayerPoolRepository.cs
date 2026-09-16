@@ -4,6 +4,9 @@ namespace Ez.Handball.Application.Abstractions;
 
 // One player's scope-aggregated stats plus identity + position. The use case
 // turns these into rating + price; the repository does NOT price anything.
+// PreviousSeasonStats is the same-competition, one-season-back aggregate (or
+// null when there isn't a qualifying one) — FantasyPricing.Compute uses it to
+// fade the price toward last season's rate early in the current season.
 public sealed record PooledPlayer(
     string PlayerId,
     string? Name,
@@ -12,14 +15,21 @@ public sealed record PooledPlayer(
     string Gender,
     string Position,
     AggregatedStats Stats,
-    bool Retired);
+    bool Retired,
+    AggregatedStats? PreviousSeasonStats = null);
 
-// Use case → repository. TournamentIds is the resolved scope: null = whole-season
-// scan; empty = scope matched no tournaments (repository returns nothing).
+// Use case → repository. TournamentIds is the resolved current-season scope:
+// null = whole-season scan; empty = scope matched no tournaments (repository
+// returns nothing). PreviousSeason/PreviousSeasonTournamentIds carry the
+// already-resolved "same competition, one season back" scope (see
+// ITournamentScopeResolver.ResolvePreviousSeasonScopeAsync) — null
+// PreviousSeason means no qualifying previous season exists at all.
 public sealed record PlayerPoolQuery(
     string? Season,
     IReadOnlyList<string>? TournamentIds,
-    string? Gender);
+    string? Gender,
+    string? PreviousSeason = null,
+    IReadOnlyList<string>? PreviousSeasonTournamentIds = null);
 
 public interface IPlayerPoolRepository
 {
