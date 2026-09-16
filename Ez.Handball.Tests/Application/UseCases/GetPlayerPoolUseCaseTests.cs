@@ -465,4 +465,31 @@ public class GetPlayerPoolUseCaseTests
         Assert.Equal(0, entry.Rating);   // current-season rating, unaffected by the blend
         Assert.Equal(0, entry.Games);    // reported games stay current-season
     }
+
+    [Fact]
+    public async Task Execute_OneCurrentGameWithPriorSeason_StillMostlyPriorRate()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPreviousScope(new PreviousSeasonScope("2024-25", new[] { "7777" }));
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(Games: 1, Goals: 2, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0),
+                     Retired: false,
+                     PreviousSeasonStats: new AggregatedStats(
+                         Games: 5, Goals: 25, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0)),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        // current: rating = 2*2+1*1=5, currentRate=5. prior: rating=25*2+5*1=55, priorRate=11.
+        // Prices.BlendGames=10, currentGames=1 -> w=0.1 -> score = 0.1*5 + 0.9*11 = 0.5+9.9=10.4
+        // Bands {0->1M,5->5M,10->11M}: highest threshold <= 10.4 is 10 -> 11,000,000
+        Assert.Equal(11_000_000, entry.Price.Amount);
+        Assert.Equal(5, entry.Rating);   // current-season rating only, unaffected by the blend
+        Assert.Equal(1, entry.Games);    // reported games stay current-season
+    }
 }
