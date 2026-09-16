@@ -32,9 +32,10 @@ public sealed class PlayerPriceService : IPlayerPriceService
         if (priceRuleSet is null) return null;
 
         var stats = await _aggregator.AggregateAsync(playerId, season, tournamentId, null, null, ct);
+        var previousStats = await _aggregator.AggregatePreviousSeasonAsync(playerId, season, tournamentId, null, null, ct);
         var ctx = new PlayerRatingContext(season, tournamentId, null, null, null, null);
 
-        var result = _pricing.Compute(playerId, stats, scoring, priceRuleSet, ctx);
+        var result = _pricing.Compute(playerId, stats, scoring, priceRuleSet, ctx, previousStats);
         return new PlayerPricing(
             playerId, result.Price, result.Score, stats.Games, priceRuleSet.Name, result.Rating);
     }

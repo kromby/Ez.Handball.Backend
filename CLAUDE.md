@@ -154,6 +154,13 @@ the preferred backfill after any change to `MatchEntity`, `PlayerEntity`, or
 `PlayerStatEntity`. (Re-running `POST /api/sync` still works but re-fetches every
 match from hsi.is.)
 
+After deploying the prior-season pricing blend (adds `PriceRuleSet.BlendGames`),
+re-run `POST /api/seed/price-rule-sets` before or immediately alongside the
+deploy. The `fantasy-price-v1` Config group now requires a `blendGames` row;
+without it, every pricing-touching endpoint (`/api/players`, squad views,
+buy/sell) returns `invalid_rule_set` until it's reseeded. Safe and idempotent
+to re-run at any time.
+
 After deploying the `Retired` flag, run `POST /api/players/bootstrap-retired`
 once. It marks every player with no `PlayerStats` in the latest season
 (lexical-max `Tournaments` partition key) as `Retired = true`, writing back the

@@ -7,6 +7,17 @@ namespace Ez.Handball.Application.Services;
 // ALREADY-aggregated stats. Pure: no I/O, no rule-set loading. Both the
 // single-player price path and the bulk pool path call this so the formula
 // lives in exactly one place.
+//
+// While currentGames < BlendGames, and a qualifying prior season exists (same
+// competition, prior Games >= MinGames), the price-driving Score fades from
+// last season's rate (w=0) toward the current season's own rate (w=1) as
+// currentGames approaches BlendGames, converging to the pure current-season
+// formula once currentGames >= BlendGames — rather than jumping straight from
+// a forced-zero score to the full current rate. MinGames is a separate
+// threshold: it gates whether a prior season qualifies to blend at all, and,
+// absent a qualifying prior season, whether the fallback score uses the
+// current rate (currentGames >= MinGames) or is forced to zero. Rating stays
+// current-season-only.
 public readonly record struct FantasyPriceResult(double Rating, double Score, PlayerPrice Price);
 
 public sealed class FantasyPricing
@@ -23,10 +34,28 @@ public sealed class FantasyPricing
         AggregatedStats stats,
         ScoringRuleSet scoring,
         PriceRuleSet prices,
-        PlayerRatingContext context)
+        PlayerRatingContext context,
+        AggregatedStats? previousSeasonStats = null)
     {
         var rating = _rating.Compute(new PlayerRatingInputs(playerId, stats, scoring, context)).Rating;
-        var score = stats.Games >= prices.MinGames && stats.Games > 0 ? rating / stats.Games : 0;
+        var currentRate = stats.Games > 0 ? rating / stats.Games : 0;
+
+        double score;
+        if (previousSeasonStats is { Games: var priorGames } prior && priorGames >= prices.MinGames)
+        {
+            // Context is accepted by the rating function but unused by the fantasy
+            // formula (see GetPlayerPoolUseCase) — reusing the caller's context here
+            // is safe for the same reason.
+            var priorRating = _rating.Compute(new PlayerRatingInputs(playerId, prior, scoring, context)).Rating;
+            var priorRate = priorRating / priorGames;
+            var weight = Math.Min((double)stats.Games / prices.BlendGames, 1.0);
+            score = weight * currentRate + (1 - weight) * priorRate;
+        }
+        else
+        {
+            score = stats.Games >= prices.MinGames && stats.Games > 0 ? currentRate : 0;
+        }
+
         var band = prices.BandFor(score);
         return new FantasyPriceResult(rating, score, new PlayerPrice(band.Price, prices.Currency));
     }

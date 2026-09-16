@@ -44,4 +44,43 @@ public sealed class TournamentScopeResolver : ITournamentScopeResolver
         var seasons = await _seasons.ListAsync(ct);
         return seasons.FirstOrDefault(s => s.IsCurrent)?.Label;
     }
+
+    public async Task<PreviousSeasonScope?> ResolvePreviousSeasonScopeAsync(
+        string? season, string? tournamentId, string? competitionId,
+        TournamentType? type, CancellationToken ct)
+    {
+        var currentLabel = await ResolveSeasonLabelAsync(season, ct);
+        if (string.IsNullOrWhiteSpace(currentLabel)) return null;
+
+        // ISeasonRepository.ListAsync returns seasons newest-first (see
+        // TableSeasonRepository) — "previous" is the entry right after current.
+        var seasons = await _seasons.ListAsync(ct);
+        var currentIndex = -1;
+        for (var i = 0; i < seasons.Count; i++)
+        {
+            if (seasons[i].Label == currentLabel) { currentIndex = i; break; }
+        }
+        if (currentIndex < 0 || currentIndex + 1 >= seasons.Count) return null;
+        var previousLabel = seasons[currentIndex + 1].Label;
+
+        var effectiveCompetitionId = competitionId;
+        if (string.IsNullOrWhiteSpace(effectiveCompetitionId) && !string.IsNullOrWhiteSpace(tournamentId))
+        {
+            var currentTournaments = await _tournaments.ListBySeasonAsync(currentLabel, ct);
+            effectiveCompetitionId = currentTournaments
+                .FirstOrDefault(t => t.TournamentId == tournamentId)?.CompetitionId;
+
+            if (effectiveCompetitionId is null)
+                return new PreviousSeasonScope(previousLabel, Array.Empty<string>());
+        }
+
+        // Prior-season blending only applies when the request is pinned to a single
+        // competition — directly, or translated from an explicit tournamentId. An
+        // unscoped or type-only request has no single competition to anchor on, so
+        // it must not blend across competitions/tiers (same-competition-only, per spec).
+        if (string.IsNullOrWhiteSpace(effectiveCompetitionId)) return null;
+
+        var previousIds = await ResolveTournamentIdsAsync(previousLabel, null, effectiveCompetitionId, type, ct);
+        return new PreviousSeasonScope(previousLabel, previousIds);
+    }
 }

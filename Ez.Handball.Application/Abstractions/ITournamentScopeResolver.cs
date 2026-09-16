@@ -20,4 +20,16 @@ public interface ITournamentScopeResolver
     /// current season" default used across all season-scoped reads.
     /// </summary>
     Task<string?> ResolveSeasonLabelAsync(string? season, CancellationToken ct);
+
+    /// <summary>
+    /// Resolves "the same competition, one season back" from the given scope: a
+    /// single explicit <paramref name="tournamentId"/> is translated to that
+    /// tournament's CompetitionId within the current season before looking up the
+    /// previous season's tournament(s) for that competition. Returns null only
+    /// when no previous season exists at all (no current season resolvable, or the
+    /// current season is the oldest one tracked).
+    /// </summary>
+    Task<PreviousSeasonScope?> ResolvePreviousSeasonScopeAsync(
+        string? season, string? tournamentId, string? competitionId,
+        TournamentType? type, CancellationToken ct);
 }

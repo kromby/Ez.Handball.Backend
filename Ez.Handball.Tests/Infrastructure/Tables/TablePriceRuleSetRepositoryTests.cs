@@ -30,6 +30,7 @@ public class TablePriceRuleSetRepositoryTests
     {
         Rows(
             ("minGames", "3"),
+            ("blendGames", "10"),
             ("currency", "ISK"),
             ("band:6", "20000000"),
             ("band:0", "5000000"),
@@ -40,6 +41,7 @@ public class TablePriceRuleSetRepositoryTests
         Assert.NotNull(result);
         Assert.Equal(1, result!.Version);
         Assert.Equal(3, result.MinGames);
+        Assert.Equal(10, result.BlendGames);
         Assert.Equal("ISK", result.Currency);
         Assert.Equal(new[] { 0d, 3d, 6d }, result.Bands.Select(b => b.Threshold));
         Assert.Equal(5000000, result.Bands[0].Price);
@@ -63,14 +65,28 @@ public class TablePriceRuleSetRepositoryTests
     [Fact]
     public async Task Get_MissingCurrency_ReturnsNull()
     {
-        Rows(("minGames", "3"), ("band:0", "5000000"));
+        Rows(("minGames", "3"), ("blendGames", "10"), ("band:0", "5000000"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
 
     [Fact]
     public async Task Get_NoBands_ReturnsNull()
     {
-        Rows(("minGames", "3"), ("currency", "ISK"));
+        Rows(("minGames", "3"), ("blendGames", "10"), ("currency", "ISK"));
+        Assert.Null(await CreateSut().GetAsync(1, default));
+    }
+
+    [Fact]
+    public async Task Get_MissingBlendGames_ReturnsNull()
+    {
+        Rows(("minGames", "3"), ("currency", "ISK"), ("band:0", "5000000"));
+        Assert.Null(await CreateSut().GetAsync(1, default));
+    }
+
+    [Fact]
+    public async Task Get_NonPositiveBlendGames_ReturnsNull()
+    {
+        Rows(("minGames", "3"), ("blendGames", "0"), ("currency", "ISK"), ("band:0", "5000000"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
 }

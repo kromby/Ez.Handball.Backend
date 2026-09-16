@@ -38,6 +38,8 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
         await foreach (var p in _query.QueryAsync<PlayerEntity>(Tables.Players, null, ct))
             playerById[p.RowKey] = p;
 
+        var previousStatsByPlayer = await GetPreviousSeasonStatsByPlayerAsync(q, ct);
+
         var result = rows
             .GroupBy(r => r.RowKey)
             .Select(g =>
@@ -55,6 +57,8 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
                     RedCards: g.Sum(r => r.RedCards));
 
+                previousStatsByPlayer.TryGetValue(g.Key, out var previousStats);
+
                 return new PooledPlayer(
                     PlayerId: g.Key,
                     Name: player?.Name,
@@ -63,11 +67,38 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     Gender: gender,
                     Position: player?.Position ?? string.Empty,
                     Stats: stats,
-                    Retired: player?.Retired == true);
+                    Retired: player?.Retired == true,
+                    PreviousSeasonStats: previousStats);
             })
             .ToList();
 
         return result;
+    }
+
+    // Fetches and aggregates PlayerStats for the already-resolved previous-season
+    // scope. Not gender-filtered: results are only ever looked up by PlayerId
+    // against the current-season roster above, so an unused entry for the other
+    // gender is simply never read.
+    private async Task<Dictionary<string, AggregatedStats>> GetPreviousSeasonStatsByPlayerAsync(
+        PlayerPoolQuery q, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(q.PreviousSeason)) return new Dictionary<string, AggregatedStats>();
+        if (q.PreviousSeasonTournamentIds is { Count: 0 }) return new Dictionary<string, AggregatedStats>();
+
+        var previousFilter = BuildFilter(new PlayerPoolQuery(q.PreviousSeason, q.PreviousSeasonTournamentIds, null));
+
+        var previousRows = new List<PlayerStatEntity>();
+        await foreach (var row in _query.QueryAsync<PlayerStatEntity>(Tables.PlayerStats, previousFilter, ct))
+            previousRows.Add(row);
+
+        return previousRows
+            .GroupBy(r => r.RowKey)
+            .ToDictionary(g => g.Key, g => new AggregatedStats(
+                Games: g.Count(),
+                Goals: g.Sum(r => r.Goals),
+                YellowCards: g.Sum(r => r.YellowCards),
+                TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
+                RedCards: g.Sum(r => r.RedCards)));
     }
 
     private static string? BuildFilter(PlayerPoolQuery q)

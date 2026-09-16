@@ -9,7 +9,7 @@ public class PriceRuleSetTests
         new PriceBand(0, 5000000),
         new PriceBand(3, 10000000),
         new PriceBand(6, 20000000),
-    });
+    }, BlendGames: 10);
 
     [Fact]
     public void Name_IsFantasyPriceVersion()
