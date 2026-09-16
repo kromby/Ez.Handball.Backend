@@ -6,7 +6,7 @@ namespace Ez.Handball.Application.UseCases;
 public abstract record GetPlayerProfileResult
 {
     public sealed record NotFound : GetPlayerProfileResult { public static readonly NotFound Instance = new(); }
-    public sealed record Found(Player Player, PlayerPrice? Price, double? Rating) : GetPlayerProfileResult;
+    public sealed record Found(Player Player, PlayerPrice? Price, double? Rating, AggregatedStats Stats) : GetPlayerProfileResult;
 }
 
 public interface IGetPlayerProfileUseCase
@@ -21,11 +21,13 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
 
     private readonly IPlayerRepository _players;
     private readonly IPlayerPriceService _price;
+    private readonly IPlayerStatsAggregator _stats;
 
-    public GetPlayerProfileUseCase(IPlayerRepository players, IPlayerPriceService price)
+    public GetPlayerProfileUseCase(IPlayerRepository players, IPlayerPriceService price, IPlayerStatsAggregator stats)
     {
         _players = players;
         _price = price;
+        _stats = stats;
     }
 
     public async Task<GetPlayerProfileResult> ExecuteAsync(string playerId, CancellationToken ct)
@@ -36,6 +38,8 @@ public class GetPlayerProfileUseCase : IGetPlayerProfileUseCase
         // Season/tournament null => current-season price. Null when the rule-set
         // is absent; the rest of the profile still returns.
         var price = await _price.GetPriceAsync(playerId, DefaultPriceVersion, null, null, ct);
-        return new GetPlayerProfileResult.Found(player, price?.Price, price?.Rating);
+        // Same current-season, whole-scope aggregate the pool and shortlist use.
+        var stats = await _stats.AggregateAsync(playerId, null, null, null, null, ct);
+        return new GetPlayerProfileResult.Found(player, price?.Price, price?.Rating, stats);
     }
 }

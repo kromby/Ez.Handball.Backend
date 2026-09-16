@@ -79,11 +79,17 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var player = new Player(
             "12345", "Aron Pálmarsson", "23",
             new DateOnly(1990, 7, 19),
-            35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false);
+            35, "385-karlar", "385", "Stjarnan", "karlar", "VS", false, "LB");
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(11_000_000, "ISK"), 128.0));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(
+                player, new PlayerPrice(11_000_000, "ISK"), 128.0,
+                new AggregatedStats(
+                    Games: 10, Goals: 20, YellowCards: 1, TwoMinuteSuspensions: 0, RedCards: 0,
+                    Assists: 5, Steals: 3, Blocks: 1, Saves: 0, Turnovers: 2, LegalStops: 1,
+                    Shots: 30, ExpectedGoals: 18.5, ShotsFaced: 0, SavePct: null, ExpectedSaves: 0,
+                    GradeTotal: 7.2, GradeOffense: 7.5, GradeDefense: 6.9, GradeGoalkeeping: null)));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -95,10 +101,19 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         Assert.Equal("karlar", body.GetProperty("gender").GetString());
         Assert.Equal(35, body.GetProperty("age").GetInt32());
         Assert.Equal("VS", body.GetProperty("position").GetString());
+        Assert.Equal("LB", body.GetProperty("positionSecondary").GetString());
         var price = body.GetProperty("price");
         Assert.Equal(11_000_000, price.GetProperty("amount").GetDouble());
         Assert.Equal("ISK", price.GetProperty("currency").GetString());
         Assert.Equal(128.0, body.GetProperty("rating").GetDouble());
+        Assert.Equal(10, body.GetProperty("games").GetInt32());
+        Assert.Equal(20, body.GetProperty("goals").GetInt32());
+        Assert.Equal(5, body.GetProperty("assists").GetInt32());
+        Assert.Equal(3, body.GetProperty("steals").GetInt32());
+        Assert.Equal(18.5, body.GetProperty("expectedGoals").GetDouble());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("savePct").ValueKind);
+        Assert.Equal(7.2, body.GetProperty("gradeTotal").GetDouble());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("gradeGoalkeeping").ValueKind);
     }
 
     [Fact]
@@ -112,7 +127,8 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(5_000_000, "ISK"), 0.0));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(
+                player, new PlayerPrice(5_000_000, "ISK"), 0.0, new AggregatedStats(0, 0, 0, 0, 0)));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -131,7 +147,8 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, null, null));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(
+                player, null, null, new AggregatedStats(0, 0, 0, 0, 0)));
 
         var response = await _client.GetAsync("/api/players/12345");
 
@@ -150,7 +167,8 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
 
         _factory.Profile
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerProfileResult.Found(player, new PlayerPrice(5_000_000, "ISK"), 50.0));
+            .ReturnsAsync(new GetPlayerProfileResult.Found(
+                player, new PlayerPrice(5_000_000, "ISK"), 50.0, new AggregatedStats(0, 0, 0, 0, 0)));
 
         var response = await _client.GetAsync("/api/players/12345");
 
