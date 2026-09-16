@@ -149,4 +149,105 @@ public class TournamentScopeResolverTests
 
         Assert.Null(label);
     }
+
+    // ── ResolvePreviousSeasonScopeAsync ─────────────────────────────────────────
+
+    [Fact]
+    public async Task PreviousScope_ExplicitCompetitionId_ResolvesPreviousSeasonTournaments()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupSeason("2024-25", T("7777", TournamentType.League, "olis-karla"));
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: null, competitionId: "olis-karla", type: null, default);
+
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.Equal(new[] { "7777" }, scope.TournamentIds);
+    }
+
+    [Fact]
+    public async Task PreviousScope_ExplicitTournamentId_TranslatesToCompetitionIdOfThatSeason()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupSeason("2025-26", T("8444", TournamentType.League, "olis-karla"));
+        SetupSeason("2024-25", T("7777", TournamentType.League, "olis-karla"));
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: "8444", competitionId: null, type: null, default);
+
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.Equal(new[] { "7777" }, scope.TournamentIds);
+    }
+
+    [Fact]
+    public async Task PreviousScope_UnknownTournamentIdInCurrentSeason_ResolvesLabelButEmptyIds()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupSeason("2025-26", T("8444", TournamentType.League, "olis-karla"));
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: "does-not-exist", competitionId: null, type: null, default);
+
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.NotNull(scope.TournamentIds);
+        Assert.Empty(scope.TournamentIds!);
+    }
+
+    [Fact]
+    public async Task PreviousScope_NoNarrowing_ReturnsNullTournamentIds_WholeSeasonScan()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: null, competitionId: null, type: null, default);
+
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+        Assert.Null(scope.TournamentIds);
+    }
+
+    [Fact]
+    public async Task PreviousScope_CurrentSeasonIsOldestTracked_ReturnsNull()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true) });
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: null, competitionId: "olis-karla", type: null, default);
+
+        Assert.Null(scope);
+    }
+
+    [Fact]
+    public async Task PreviousScope_NoCurrentSeasonResolvable_ReturnsNull()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season>());
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            season: null, tournamentId: null, competitionId: "olis-karla", type: null, default);
+
+        Assert.Null(scope);
+    }
+
+    [Fact]
+    public async Task PreviousScope_NullSeason_ResolvesCurrentSeasonFirst()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupSeason("2024-25", T("7777", TournamentType.League, "olis-karla"));
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            season: null, tournamentId: null, competitionId: "olis-karla", type: null, default);
+
+        Assert.NotNull(scope);
+        Assert.Equal("2024-25", scope!.SeasonLabel);
+    }
 }
