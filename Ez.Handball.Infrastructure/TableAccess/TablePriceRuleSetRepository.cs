@@ -26,6 +26,7 @@ internal sealed class TablePriceRuleSetRepository : IPriceRuleSetRepository
 
         if (!TryGetInt(values, "minGames", out var minGames) ||
             !TryGetInt(values, "blendGames", out var blendGames) ||
+            blendGames <= 0 ||
             !values.TryGetValue("currency", out var currency))
             return null;
 

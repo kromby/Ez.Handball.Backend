@@ -82,4 +82,11 @@ public class TablePriceRuleSetRepositoryTests
         Rows(("minGames", "3"), ("currency", "ISK"), ("band:0", "5000000"));
         Assert.Null(await CreateSut().GetAsync(1, default));
     }
+
+    [Fact]
+    public async Task Get_NonPositiveBlendGames_ReturnsNull()
+    {
+        Rows(("minGames", "3"), ("blendGames", "0"), ("currency", "ISK"), ("band:0", "5000000"));
+        Assert.Null(await CreateSut().GetAsync(1, default));
+    }
 }
