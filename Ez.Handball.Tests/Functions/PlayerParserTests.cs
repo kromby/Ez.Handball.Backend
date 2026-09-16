@@ -65,6 +65,10 @@ public class PlayerParserTests
                 Name = "Stjarnan"
             });
 
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity>());
+
         var player = new PlayerStatDto
         {
             PlayerId = "42",
@@ -93,6 +97,10 @@ public class PlayerParserTests
                 e.ClubName == "Stjarnan" &&
                 e.Retired == null),
             default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+
+        // Assert — no stale rows existed, so nothing is deleted
+        _tableWriter.Verify(t => t.DeleteAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default), Times.Never);
 
         // Assert — PlayerStatEntity upsert
         _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
@@ -138,14 +146,17 @@ public class PlayerParserTests
 
         // Existing row already carries an HBStatz-derived (or manually set) position pair.
         _tableWriter
-            .Setup(t => t.GetAsync<PlayerEntity>("Players", teamId, "42", default))
-            .ReturnsAsync(new PlayerEntity
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity>
             {
-                PartitionKey = teamId,
-                RowKey = "42",
-                Name = "Jón Jónsson",
-                Position = "LB",
-                PositionSecondary = "CB"
+                new()
+                {
+                    PartitionKey = teamId,
+                    RowKey = "42",
+                    Name = "Jón Jónsson",
+                    Position = "LB",
+                    PositionSecondary = "CB"
+                }
             });
 
         var player = new PlayerStatDto
@@ -171,6 +182,78 @@ public class PlayerParserTests
                 e.PositionSecondary == null &&
                 e.Retired == null),
             default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+
+        // Assert — the existing row is already under teamId, so nothing is deleted
+        _tableWriter.Verify(t => t.DeleteAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ExistingPlayerHasRowUnderDifferentClub_MovesPositionAndDeletesStaleRow()
+    {
+        // A player who has transferred clubs since we last saw them still has their old row
+        // sitting under the old club's partition (Table Storage can't rename a PartitionKey in
+        // place). The reparse for their new club should inherit the known position instead of
+        // falling back to hsi.is's unreliable POSITION field, and clean up the stale old row.
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+        const string oldTeamId = "453-karlar";
+
+        var match = BuildMatch(matchId: matchId, homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
+
+        var staleRow = new PlayerEntity
+        {
+            PartitionKey = oldTeamId,
+            RowKey = "42",
+            Name = "Jón Jónsson",
+            ClubName = "Valur",
+            Position = "CB"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity> { staleRow });
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Leikmaður", // hsi.is's unreliable placeholder for the new club
+            Player = "1",
+            Goals = "1"
+        };
+
+        var blobContent = BuildPlayerStatsJson(new[] { player });
+
+        // Act
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
+
+        // Assert — the known position (CB) is carried over to the new club's row, not the
+        // hsi.is placeholder
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e =>
+                e.PartitionKey == teamId &&
+                e.RowKey == "42" &&
+                e.Position == "CB" &&
+                e.ClubName == "Stjarnan"),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+
+        // Assert — the stale row under the old club's partition is deleted
+        _tableWriter.Verify(t => t.DeleteAsync("Players", oldTeamId, "42", default), Times.Once);
     }
 
     [Fact]
@@ -190,13 +273,16 @@ public class PlayerParserTests
             .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
 
         _tableWriter
-            .Setup(t => t.GetAsync<PlayerEntity>("Players", teamId, "42", default))
-            .ReturnsAsync(new PlayerEntity
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity>
             {
-                PartitionKey = teamId,
-                RowKey = "42",
-                Name = "Jón Jónsson",
-                Position = "   "
+                new()
+                {
+                    PartitionKey = teamId,
+                    RowKey = "42",
+                    Name = "Jón Jónsson",
+                    Position = "   "
+                }
             });
 
         var player = new PlayerStatDto
@@ -244,6 +330,10 @@ public class PlayerParserTests
                 RowKey = clubId,
                 Name = "Breiðablik"
             });
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '99'", default))
+            .ReturnsAsync(new List<PlayerEntity>());
 
         var player = new PlayerStatDto
         {
@@ -380,6 +470,10 @@ public class PlayerParserTests
             .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
             .ReturnsAsync((ClubEntity?)null);
 
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity>());
+
         var player = new PlayerStatDto
         {
             PlayerId = "42",
@@ -431,6 +525,10 @@ public class PlayerParserTests
         _tableWriter
             .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
             .ReturnsAsync(new List<TournamentEntity>());
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity>());
 
         var player = new PlayerStatDto
         {
