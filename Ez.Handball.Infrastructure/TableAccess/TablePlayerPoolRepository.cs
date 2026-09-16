@@ -50,12 +50,7 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     _logger.LogWarning(
                         "Player {PlayerId} not found in Players table while building pool", g.Key);
 
-                var stats = new AggregatedStats(
-                    Games: g.Count(),
-                    Goals: g.Sum(r => r.Goals),
-                    YellowCards: g.Sum(r => r.YellowCards),
-                    TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
-                    RedCards: g.Sum(r => r.RedCards));
+                var stats = BuildAggregatedStats(g);
 
                 previousStatsByPlayer.TryGetValue(g.Key, out var previousStats);
 
@@ -93,13 +88,20 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
 
         return previousRows
             .GroupBy(r => r.RowKey)
-            .ToDictionary(g => g.Key, g => new AggregatedStats(
-                Games: g.Count(),
-                Goals: g.Sum(r => r.Goals),
-                YellowCards: g.Sum(r => r.YellowCards),
-                TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
-                RedCards: g.Sum(r => r.RedCards)));
+            .ToDictionary(g => g.Key, BuildAggregatedStats);
     }
+
+    private static AggregatedStats BuildAggregatedStats(IEnumerable<PlayerStatEntity> rows) =>
+        new(
+            Games: rows.Count(),
+            Goals: rows.Sum(r => r.Goals),
+            YellowCards: rows.Sum(r => r.YellowCards),
+            TwoMinuteSuspensions: rows.Sum(r => r.TwoMinuteSuspensions),
+            RedCards: rows.Sum(r => r.RedCards),
+            Assists: rows.Sum(r => r.HbStatzAssists ?? 0),
+            Steals: rows.Sum(r => r.HbStatzSteals ?? 0),
+            Blocks: rows.Sum(r => r.HbStatzBlocks ?? 0),
+            Saves: rows.Sum(r => r.HbStatzSaves ?? 0));
 
     private static string? BuildFilter(PlayerPoolQuery q)
     {
