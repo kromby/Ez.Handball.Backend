@@ -50,29 +50,7 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     _logger.LogWarning(
                         "Player {PlayerId} not found in Players table while building pool", g.Key);
 
-                var saves = g.Sum(r => r.HbStatzSaves ?? 0);
-                var shotsFaced = g.Sum(r => r.HbStatzShotsFaced ?? 0);
-                var stats = new AggregatedStats(
-                    Games: g.Count(),
-                    Goals: g.Sum(r => r.Goals),
-                    YellowCards: g.Sum(r => r.YellowCards),
-                    TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
-                    RedCards: g.Sum(r => r.RedCards),
-                    Assists: g.Sum(r => r.HbStatzAssists ?? 0),
-                    Steals: g.Sum(r => r.HbStatzSteals ?? 0),
-                    Blocks: g.Sum(r => r.HbStatzBlocks ?? 0),
-                    Saves: saves,
-                    Turnovers: g.Sum(r => r.HbStatzTurnovers ?? 0),
-                    LegalStops: g.Sum(r => r.HbStatzLegalStops ?? 0),
-                    Shots: g.Sum(r => r.HbStatzShots ?? 0),
-                    ExpectedGoals: g.Sum(r => r.HbStatzExpectedGoals ?? 0),
-                    ShotsFaced: shotsFaced,
-                    SavePct: AggregatedStats.ComputeSavePct(saves, shotsFaced),
-                    ExpectedSaves: g.Sum(r => r.HbStatzExpectedSaves ?? 0),
-                    GradeTotal: AggregatedStats.AverageGrade(g.Select(r => r.HbStatzGradeTotal)),
-                    GradeOffense: AggregatedStats.AverageGrade(g.Select(r => r.HbStatzGradeOffense)),
-                    GradeDefense: AggregatedStats.AverageGrade(g.Select(r => r.HbStatzGradeDefense)),
-                    GradeGoalkeeping: AggregatedStats.AverageGrade(g.Select(r => r.HbStatzGradeGoalkeeping)));
+                var stats = BuildAggregatedStats(g);
 
                 previousStatsByPlayer.TryGetValue(g.Key, out var previousStats);
 
@@ -111,12 +89,34 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
 
         return previousRows
             .GroupBy(r => r.RowKey)
-            .ToDictionary(g => g.Key, g => new AggregatedStats(
-                Games: g.Count(),
-                Goals: g.Sum(r => r.Goals),
-                YellowCards: g.Sum(r => r.YellowCards),
-                TwoMinuteSuspensions: g.Sum(r => r.TwoMinuteSuspensions),
-                RedCards: g.Sum(r => r.RedCards)));
+            .ToDictionary(g => g.Key, BuildAggregatedStats);
+    }
+
+    private static AggregatedStats BuildAggregatedStats(IEnumerable<PlayerStatEntity> rows)
+    {
+        var saves = rows.Sum(r => r.HbStatzSaves ?? 0);
+        var shotsFaced = rows.Sum(r => r.HbStatzShotsFaced ?? 0);
+        return new AggregatedStats(
+            Games: rows.Count(),
+            Goals: rows.Sum(r => r.Goals),
+            YellowCards: rows.Sum(r => r.YellowCards),
+            TwoMinuteSuspensions: rows.Sum(r => r.TwoMinuteSuspensions),
+            RedCards: rows.Sum(r => r.RedCards),
+            Assists: rows.Sum(r => r.HbStatzAssists ?? 0),
+            Steals: rows.Sum(r => r.HbStatzSteals ?? 0),
+            Blocks: rows.Sum(r => r.HbStatzBlocks ?? 0),
+            Saves: saves,
+            Turnovers: rows.Sum(r => r.HbStatzTurnovers ?? 0),
+            LegalStops: rows.Sum(r => r.HbStatzLegalStops ?? 0),
+            Shots: rows.Sum(r => r.HbStatzShots ?? 0),
+            ExpectedGoals: rows.Sum(r => r.HbStatzExpectedGoals ?? 0),
+            ShotsFaced: shotsFaced,
+            SavePct: AggregatedStats.ComputeSavePct(saves, shotsFaced),
+            ExpectedSaves: rows.Sum(r => r.HbStatzExpectedSaves ?? 0),
+            GradeTotal: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeTotal)),
+            GradeOffense: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeOffense)),
+            GradeDefense: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeDefense)),
+            GradeGoalkeeping: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeGoalkeeping)));
     }
 
     private static string? BuildFilter(PlayerPoolQuery q)

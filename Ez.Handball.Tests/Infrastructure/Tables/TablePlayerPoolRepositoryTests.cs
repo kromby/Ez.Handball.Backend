@@ -32,12 +32,14 @@ public class TablePlayerPoolRepositoryTests
 
     private static PlayerStatEntity Stat(
         string matchId, string playerId, string season, string tournamentId,
-        string teamId, string? clubName, int g) =>
+        string teamId, string? clubName, int g,
+        int? assists = null, int? steals = null, int? blocks = null, int? saves = null) =>
         new()
         {
             PartitionKey = matchId, RowKey = playerId,
             Goals = g, YellowCards = 0, TwoMinuteSuspensions = 0, RedCards = 0,
-            TournamentId = tournamentId, Season = season, TeamId = teamId, ClubName = clubName
+            TournamentId = tournamentId, Season = season, TeamId = teamId, ClubName = clubName,
+            HbStatzAssists = assists, HbStatzSteals = steals, HbStatzBlocks = blocks, HbStatzSaves = saves
         };
 
     private static PlayerEntity Plr(string playerId, string teamId, string name, string position) =>
@@ -225,5 +227,47 @@ public class TablePlayerPoolRepositoryTests
             CancellationToken.None);
 
         Assert.Null(Assert.Single(result).PreviousSeasonStats);
+    }
+
+    [Fact]
+    public async Task GetAggregated_SumsHbStatzFields_DefaultingNullToZero()
+    {
+        SetupStats(
+            Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5,
+                assists: 2, steals: 1, blocks: null, saves: null),
+            Stat("m2", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 3,
+                assists: null, steals: 3, blocks: 1, saves: 8));
+        SetupPlayers(Plr("p1", "385-karlar", "Aron", "CB"));
+
+        var result = await CreateSut().GetAggregatedAsync(Q(), CancellationToken.None);
+
+        var p = Assert.Single(result);
+        Assert.Equal(2, p.Stats.Assists);
+        Assert.Equal(4, p.Stats.Steals);
+        Assert.Equal(1, p.Stats.Blocks);
+        Assert.Equal(8, p.Stats.Saves);
+    }
+
+    [Fact]
+    public async Task GetAggregated_PreviousSeasonStats_SumHbStatzFields()
+    {
+        SetupStatsFiltered("'2025-26'",
+            Stat("m1", "p1", "2025-26", "8444", "385-karlar", "Stjarnan", 5));
+        SetupStatsFiltered("'2024-25'",
+            Stat("m0", "p1", "2024-25", "7777", "385-karlar", "Stjarnan", 8,
+                assists: 3, steals: 2, blocks: 1, saves: 0));
+        SetupPlayers(Plr("p1", "385-karlar", "Aron", "CB"));
+
+        var result = await CreateSut().GetAggregatedAsync(
+            Q(season: "2025-26", tournamentIds: new[] { "8444" },
+              previousSeason: "2024-25", previousSeasonTournamentIds: new[] { "7777" }),
+            CancellationToken.None);
+
+        var p = Assert.Single(result);
+        Assert.NotNull(p.PreviousSeasonStats);
+        Assert.Equal(3, p.PreviousSeasonStats!.Assists);
+        Assert.Equal(2, p.PreviousSeasonStats.Steals);
+        Assert.Equal(1, p.PreviousSeasonStats.Blocks);
+        Assert.Equal(0, p.PreviousSeasonStats.Saves);
     }
 }
