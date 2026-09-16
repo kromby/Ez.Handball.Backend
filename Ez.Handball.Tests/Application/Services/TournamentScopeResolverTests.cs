@@ -200,7 +200,7 @@ public class TournamentScopeResolverTests
     }
 
     [Fact]
-    public async Task PreviousScope_NoNarrowing_ReturnsNullTournamentIds_WholeSeasonScan()
+    public async Task PreviousScope_NoNarrowing_ReturnsNull_NoSingleCompetitionToAnchorOn()
     {
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
@@ -208,9 +208,19 @@ public class TournamentScopeResolverTests
         var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
             "2025-26", tournamentId: null, competitionId: null, type: null, default);
 
-        Assert.NotNull(scope);
-        Assert.Equal("2024-25", scope!.SeasonLabel);
-        Assert.Null(scope.TournamentIds);
+        Assert.Null(scope);
+    }
+
+    [Fact]
+    public async Task PreviousScope_TypeAlone_ReturnsNull_NoSingleCompetitionToAnchorOn()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+
+        var scope = await CreateSut().ResolvePreviousSeasonScopeAsync(
+            "2025-26", tournamentId: null, competitionId: null, type: TournamentType.League, default);
+
+        Assert.Null(scope);
     }
 
     [Fact]

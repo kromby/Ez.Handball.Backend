@@ -74,6 +74,12 @@ public sealed class TournamentScopeResolver : ITournamentScopeResolver
                 return new PreviousSeasonScope(previousLabel, Array.Empty<string>());
         }
 
+        // Prior-season blending only applies when the request is pinned to a single
+        // competition — directly, or translated from an explicit tournamentId. An
+        // unscoped or type-only request has no single competition to anchor on, so
+        // it must not blend across competitions/tiers (same-competition-only, per spec).
+        if (string.IsNullOrWhiteSpace(effectiveCompetitionId)) return null;
+
         var previousIds = await ResolveTournamentIdsAsync(previousLabel, null, effectiveCompetitionId, type, ct);
         return new PreviousSeasonScope(previousLabel, previousIds);
     }
