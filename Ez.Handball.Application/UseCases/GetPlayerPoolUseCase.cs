@@ -77,8 +77,12 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         var season = await _scope.ResolveSeasonLabelAsync(request.Season, ct);
         var tournamentIds = await _scope.ResolveTournamentIdsAsync(
             season, request.TournamentId, request.CompetitionId, request.Type, ct);
+        var previousScope = await _scope.ResolvePreviousSeasonScopeAsync(
+            season, request.TournamentId, request.CompetitionId, request.Type, ct);
 
-        var query = new PlayerPoolQuery(season, tournamentIds, request.Gender);
+        var query = new PlayerPoolQuery(
+            season, tournamentIds, request.Gender,
+            previousScope?.SeasonLabel, previousScope?.TournamentIds);
         var players = await _repo.GetAggregatedAsync(query, ct);
 
         // Context is accepted by the rating function but unused by the fantasy
@@ -101,7 +105,7 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                 || (p.Name is not null && p.Name.Contains(nameNeedle!, StringComparison.OrdinalIgnoreCase)))
             .Select(p =>
             {
-                var priced = _pricing.Compute(p.PlayerId, p.Stats, scoring, prices, ctx);
+                var priced = _pricing.Compute(p.PlayerId, p.Stats, scoring, prices, ctx, p.PreviousSeasonStats);
                 return new PlayerPoolEntry(
                     Rank: 0,
                     PlayerId: p.PlayerId,

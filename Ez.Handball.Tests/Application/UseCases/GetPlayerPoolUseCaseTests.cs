@@ -50,6 +50,12 @@ public class GetPlayerPoolUseCaseTests
                   It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync(ids);
 
+    private void SetupPreviousScope(PreviousSeasonScope? scope) =>
+        _scope.Setup(s => s.ResolvePreviousSeasonScopeAsync(
+                  It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
+                  It.IsAny<TournamentType?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(scope);
+
     private void SetupPool(params PooledPlayer[] players) =>
         _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(players);
@@ -433,5 +439,30 @@ public class GetPlayerPoolUseCaseTests
         await CreateSut().ExecuteAsync(Req(), offset: 0, limit: 50, CancellationToken.None);
 
         Assert.Equal("2025-26", captured!.Season);
+    }
+
+    [Fact]
+    public async Task Execute_ZeroCurrentGamesWithPriorSeason_PricesFromPriorRate_RatingStaysCurrentSeason()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPreviousScope(new PreviousSeasonScope("2024-25", new[] { "7777" }));
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(Games: 0, Goals: 0, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0),
+                     Retired: false,
+                     PreviousSeasonStats: new AggregatedStats(
+                         Games: 5, Goals: 25, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0)),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        // Prices.BlendGames = 10, currentGames = 0 -> w = 0 -> score = priorRate = 11 -> top band
+        Assert.Equal(11_000_000, entry.Price.Amount);
+        Assert.Equal(0, entry.Rating);   // current-season rating, unaffected by the blend
+        Assert.Equal(0, entry.Games);    // reported games stay current-season
     }
 }
