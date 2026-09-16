@@ -158,4 +158,52 @@ public class PlayerStatsAggregatorTests
         Assert.Equal(1, result.Blocks);
         Assert.Equal(8, result.Saves);
     }
+
+    [Fact]
+    public async Task AggregatePreviousSeason_NoPreviousSeasonExists_ReturnsNull()
+    {
+        // constructor default: only "2025-26" is tracked -> no previous season
+        var result = await CreateSut().AggregatePreviousSeasonAsync("p1", "2025-26", "8444", null, null, default);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AggregatePreviousSeason_SameCompetitionPriorSeason_SumsScopedRows()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupTournamentsBySeason("2025-26", Trn("8444", TournamentType.League, "olis-karla"));
+        SetupTournamentsBySeason("2024-25",
+            Trn("7777", TournamentType.League, "olis-karla"),
+            Trn("6666", TournamentType.Cup, "bikar-karla"));
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>
+              {
+                  Stat("2024-25", "7777", 5),
+                  Stat("2024-25", "7777", 3),
+                  Stat("2024-25", "6666", 99),   // decoy: different competition, must be excluded
+              });
+
+        var result = await CreateSut().AggregatePreviousSeasonAsync("p1", "2025-26", "8444", null, null, default);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result!.Games);
+        Assert.Equal(8, result.Goals);
+    }
+
+    [Fact]
+    public async Task AggregatePreviousSeason_NoQualifyingRows_ReturnsNull()
+    {
+        _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Season> { new("2025-26", true), new("2024-25", false) });
+        SetupTournamentsBySeason("2025-26", Trn("8444", TournamentType.League, "olis-karla"));
+        SetupTournamentsBySeason("2024-25", Trn("7777", TournamentType.League, "olis-karla"));
+        _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new List<PlayerStat>());
+
+        var result = await CreateSut().AggregatePreviousSeasonAsync("p1", "2025-26", "8444", null, null, default);
+
+        Assert.Null(result);
+    }
 }

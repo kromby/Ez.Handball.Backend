@@ -40,4 +40,32 @@ public sealed class PlayerStatsAggregator : IPlayerStatsAggregator
             Blocks: list.Sum(r => r.HbStatzBlocks ?? 0),
             Saves: list.Sum(r => r.HbStatzSaves ?? 0));
     }
+
+    public async Task<AggregatedStats?> AggregatePreviousSeasonAsync(
+        string playerId, string? season, string? tournamentId, string? competitionId,
+        TournamentType? type, CancellationToken ct)
+    {
+        var previous = await _scope.ResolvePreviousSeasonScopeAsync(season, tournamentId, competitionId, type, ct);
+        if (previous is null) return null;
+        if (previous.TournamentIds is { Count: 0 }) return null;
+
+        var rows = await _stats.GetByPlayerAsync(playerId, ct);
+        var scoped = rows.Where(r => r.Season == previous.SeasonLabel);
+        if (previous.TournamentIds is not null)
+            scoped = scoped.Where(r => previous.TournamentIds.Contains(r.TournamentId));
+
+        var list = scoped.ToList();
+        if (list.Count == 0) return null;
+
+        return new AggregatedStats(
+            Games: list.Count,
+            Goals: list.Sum(r => r.Goals),
+            YellowCards: list.Sum(r => r.YellowCards),
+            TwoMinuteSuspensions: list.Sum(r => r.TwoMinuteSuspensions),
+            RedCards: list.Sum(r => r.RedCards),
+            Assists: list.Sum(r => r.HbStatzAssists ?? 0),
+            Steals: list.Sum(r => r.HbStatzSteals ?? 0),
+            Blocks: list.Sum(r => r.HbStatzBlocks ?? 0),
+            Saves: list.Sum(r => r.HbStatzSaves ?? 0));
+    }
 }
