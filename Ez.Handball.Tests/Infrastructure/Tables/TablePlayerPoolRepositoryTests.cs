@@ -77,6 +77,57 @@ public class TablePlayerPoolRepositoryTests
     }
 
     [Fact]
+    public async Task GetAggregated_SumsHbStatzStats_AndJoinsPositionSecondary()
+    {
+        _query.Setup(q => q.QueryAsync<PlayerStatEntity>(
+                  Ez.Handball.Infrastructure.Tables.PlayerStats, It.IsAny<string?>(), default))
+              .Returns(ToAsync(new[]
+              {
+                  new PlayerStatEntity
+                  {
+                      PartitionKey = "m1", RowKey = "p1", Goals = 5,
+                      TournamentId = "8444", Season = "2025-26", TeamId = "385-karlar", ClubName = "Stjarnan",
+                      HbStatzAssists = 2, HbStatzSteals = 1, HbStatzBlocks = 1, HbStatzSaves = 3,
+                      HbStatzTurnovers = 1, HbStatzLegalStops = 2, HbStatzShots = 6,
+                      HbStatzExpectedGoals = 4.5, HbStatzShotsFaced = 10,
+                      HbStatzExpectedSaves = 2.5, HbStatzGradeTotal = 7.0, HbStatzGradeOffense = 6.5,
+                      HbStatzGradeDefense = 7.5, HbStatzGradeGoalkeeping = null,
+                  },
+                  new PlayerStatEntity
+                  {
+                      PartitionKey = "m2", RowKey = "p1", Goals = 3,
+                      TournamentId = "8444", Season = "2025-26", TeamId = "385-karlar", ClubName = "Stjarnan",
+                      HbStatzAssists = 1, HbStatzSteals = null, HbStatzBlocks = 2, HbStatzSaves = 1,
+                      HbStatzShotsFaced = 5, HbStatzGradeTotal = 8.0,
+                  },
+              }));
+        SetupPlayers(new PlayerEntity
+        {
+            PartitionKey = "385-karlar", RowKey = "p1", Name = "Aron", Position = "CB", PositionSecondary = "LB",
+        });
+
+        var result = await CreateSut().GetAggregatedAsync(Q(), CancellationToken.None);
+
+        var p = Assert.Single(result);
+        Assert.Equal("LB", p.PositionSecondary);
+        Assert.Equal(3, p.Stats.Assists);
+        Assert.Equal(1, p.Stats.Steals);
+        Assert.Equal(3, p.Stats.Blocks);
+        Assert.Equal(4, p.Stats.Saves);
+        Assert.Equal(1, p.Stats.Turnovers);
+        Assert.Equal(2, p.Stats.LegalStops);
+        Assert.Equal(6, p.Stats.Shots);
+        Assert.Equal(4.5, p.Stats.ExpectedGoals);
+        Assert.Equal(15, p.Stats.ShotsFaced);
+        Assert.Equal(26.7, p.Stats.SavePct); // 4/15 * 100, rounded to 1dp
+        Assert.Equal(2.5, p.Stats.ExpectedSaves);
+        Assert.Equal(7.5, p.Stats.GradeTotal); // (7.0 + 8.0) / 2
+        Assert.Equal(6.5, p.Stats.GradeOffense); // single non-null value
+        Assert.Equal(7.5, p.Stats.GradeDefense);
+        Assert.Null(p.Stats.GradeGoalkeeping); // no non-null values
+    }
+
+    [Fact]
     public async Task GetAggregated_GenderFilter_DropsOtherGender()
     {
         SetupStats(

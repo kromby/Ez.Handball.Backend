@@ -67,7 +67,18 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 HbStatzAssists: s.HbStatzAssists,
                 HbStatzSteals: s.HbStatzSteals,
                 HbStatzBlocks: s.HbStatzBlocks,
-                HbStatzSaves: s.HbStatzSaves));
+                HbStatzSaves: s.HbStatzSaves,
+                HbStatzTurnovers: s.HbStatzTurnovers,
+                HbStatzLegalStops: s.HbStatzLegalStops,
+                HbStatzShots: s.HbStatzShots,
+                HbStatzExpectedGoals: s.HbStatzExpectedGoals,
+                HbStatzShotsFaced: s.HbStatzShotsFaced,
+                HbStatzSavePct: s.HbStatzSavePct,
+                HbStatzExpectedSaves: s.HbStatzExpectedSaves,
+                HbStatzGradeTotal: s.HbStatzGradeTotal,
+                HbStatzGradeOffense: s.HbStatzGradeOffense,
+                HbStatzGradeDefense: s.HbStatzGradeDefense,
+                HbStatzGradeGoalkeeping: s.HbStatzGradeGoalkeeping));
         }
 
         return result;
@@ -94,7 +105,18 @@ internal sealed class TablePlayerStatsRepository : IPlayerStatsRepository
                 HbStatzAssists: s.HbStatzAssists,
                 HbStatzSteals: s.HbStatzSteals,
                 HbStatzBlocks: s.HbStatzBlocks,
-                HbStatzSaves: s.HbStatzSaves));
+                HbStatzSaves: s.HbStatzSaves,
+                HbStatzTurnovers: s.HbStatzTurnovers,
+                HbStatzLegalStops: s.HbStatzLegalStops,
+                HbStatzShots: s.HbStatzShots,
+                HbStatzExpectedGoals: s.HbStatzExpectedGoals,
+                HbStatzShotsFaced: s.HbStatzShotsFaced,
+                HbStatzSavePct: s.HbStatzSavePct,
+                HbStatzExpectedSaves: s.HbStatzExpectedSaves,
+                HbStatzGradeTotal: s.HbStatzGradeTotal,
+                HbStatzGradeOffense: s.HbStatzGradeOffense,
+                HbStatzGradeDefense: s.HbStatzGradeDefense,
+                HbStatzGradeGoalkeeping: s.HbStatzGradeGoalkeeping));
         }
         return result;
     }

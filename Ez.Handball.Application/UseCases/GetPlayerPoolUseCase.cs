@@ -114,6 +114,7 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                     ClubName: p.ClubName,
                     Gender: p.Gender,
                     Position: p.Position,
+                    PositionSecondary: p.PositionSecondary,
                     Games: p.Stats.Games,
                     Goals: p.Stats.Goals,
                     YellowCards: p.Stats.YellowCards,
@@ -124,7 +125,22 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                         : 0,
                     Price: priced.Price,
                     Rating: priced.Rating,
-                    PickPercentage: null); // deferred — ownership aggregation follow-up
+                    PickPercentage: null, // deferred — ownership aggregation follow-up
+                    Assists: p.Stats.Assists,
+                    Steals: p.Stats.Steals,
+                    Blocks: p.Stats.Blocks,
+                    Saves: p.Stats.Saves,
+                    Turnovers: p.Stats.Turnovers,
+                    LegalStops: p.Stats.LegalStops,
+                    Shots: p.Stats.Shots,
+                    ExpectedGoals: p.Stats.ExpectedGoals,
+                    ShotsFaced: p.Stats.ShotsFaced,
+                    SavePct: p.Stats.SavePct,
+                    ExpectedSaves: p.Stats.ExpectedSaves,
+                    GradeTotal: p.Stats.GradeTotal,
+                    GradeOffense: p.Stats.GradeOffense,
+                    GradeDefense: p.Stats.GradeDefense,
+                    GradeGoalkeeping: p.Stats.GradeGoalkeeping);
             });
 
         var sorted = Sort(computed, request.Sort).ToList();
