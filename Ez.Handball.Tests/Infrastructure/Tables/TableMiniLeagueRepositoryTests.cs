@@ -112,4 +112,17 @@ public class TableMiniLeagueRepositoryTests : IAsyncLifetime
         Assert.Single(leagues);
         Assert.Equal("lg-1", leagues[0].LeagueId);
     }
+
+    [Fact]
+    public async Task GetAllMembers_ReturnsRowsAcrossAllLeagues()
+    {
+        await Sut().AddMemberAsync("lg-1", new MiniLeagueMember("u-1", "creator", T0), default);
+        await Sut().AddMemberAsync("lg-2", new MiniLeagueMember("u-2", "creator", T0), default);
+
+        var all = await Sut().GetAllMembersAsync(default);
+
+        Assert.Equal(2, all.Count);
+        Assert.Contains(all, r => r.LeagueId == "lg-1" && r.Member.UserId == "u-1");
+        Assert.Contains(all, r => r.LeagueId == "lg-2" && r.Member.UserId == "u-2");
+    }
 }
