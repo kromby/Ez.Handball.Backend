@@ -25,6 +25,7 @@ public static class Tables
     public const string GameweekScores = "GameweekScores";
     public const string MiniLeagues = "MiniLeagues";
     public const string MiniLeagueMembers = "MiniLeagueMembers";
+    public const string MiniLeagueMembersByUser = "MiniLeagueMembersByUser";
     public const string MiniLeagueInvites = "MiniLeagueInvites";
     public const string NotificationPreferences = "NotificationPreferences";
     public const string Config = "Config";

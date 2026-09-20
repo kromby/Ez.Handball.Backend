@@ -179,6 +179,7 @@ builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();
 builder.Services.AddScoped<ICreateMiniLeagueUseCase, CreateMiniLeagueUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueUseCase, GetMiniLeagueUseCase>();
+builder.Services.AddScoped<IGetMyMiniLeaguesUseCase, GetMyMiniLeaguesUseCase>();
 builder.Services.AddScoped<IGenerateInviteUseCase, GenerateInviteUseCase>();
 builder.Services.AddScoped<IGetInviteUseCase, GetInviteUseCase>();
 builder.Services.AddScoped<IPreviewInviteUseCase, PreviewInviteUseCase>();

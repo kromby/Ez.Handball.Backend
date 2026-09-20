@@ -23,6 +23,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         public Mock<ICreateMiniLeagueUseCase> Create { get; } = new();
         public Mock<IGetMiniLeagueUseCase> Get { get; } = new();
         public Mock<IGetMiniLeagueStandingsUseCase> Standings { get; } = new();
+        public Mock<IGetMyMiniLeaguesUseCase> Mine { get; } = new();
 
         static Factory()
         {
@@ -49,6 +50,8 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
                 services.AddSingleton(Get.Object);
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetMiniLeagueStandingsUseCase)));
                 services.AddSingleton(Standings.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetMyMiniLeaguesUseCase)));
+                services.AddSingleton(Mine.Object);
             });
             return base.CreateHost(builder);
         }
@@ -65,6 +68,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         _factory.Create.Reset();
         _factory.Get.Reset();
         _factory.Standings.Reset();
+        _factory.Mine.Reset();
         _client = factory.CreateClient();
     }
 
@@ -250,5 +254,48 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_pagination", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Mine_WithoutToken_Returns401()
+    {
+        var resp = await _client.GetAsync("/api/mini-leagues/mine");
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Mine_HappyPath_ReturnsCallersLeagues()
+    {
+        _factory.Mine.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string uid, CancellationToken _) => new[]
+            {
+                new MyMiniLeagueSummary(new MiniLeague("lg-1", "Office League", "2025-26", uid, T0), MiniLeagueRoles.Creator, 3),
+            });
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/mine", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var league = Assert.Single(body.EnumerateArray());
+        Assert.Equal("lg-1", league.GetProperty("id").GetString());
+        Assert.Equal("Office League", league.GetProperty("name").GetString());
+        Assert.Equal("2025-26", league.GetProperty("season").GetString());
+        Assert.Equal("creator", league.GetProperty("role").GetString());
+        Assert.Equal(3, league.GetProperty("memberCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Mine_NoLeagues_ReturnsEmptyArray()
+    {
+        _factory.Mine.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MyMiniLeagueSummary>());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/mine", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Empty(body.EnumerateArray());
     }
 }
