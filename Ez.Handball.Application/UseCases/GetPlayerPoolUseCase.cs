@@ -28,7 +28,8 @@ public sealed record PlayerPoolRequest(
     string? Name,
     string? ClubId,
     PlayerPoolSort Sort,
-    int PriceVersion);
+    int PriceVersion,
+    IReadOnlyList<string>? PlayerIds = null);
 
 public abstract record PlayerPoolResult
 {
@@ -94,9 +95,13 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         // whitespace from the client never narrows the list to nothing.
         var nameNeedle = request.Name?.Trim();
         var hasName = !string.IsNullOrEmpty(nameNeedle);
+        var playerIdFilter = request.PlayerIds is { Count: > 0 } ids
+            ? new HashSet<string>(ids, StringComparer.Ordinal)
+            : null;
 
         var computed = players
             .Where(p => !p.Retired)
+            .Where(p => playerIdFilter is null || playerIdFilter.Contains(p.PlayerId))
             .Where(p => string.IsNullOrWhiteSpace(request.Position)
                 || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
             .Where(p => string.IsNullOrWhiteSpace(request.ClubId)

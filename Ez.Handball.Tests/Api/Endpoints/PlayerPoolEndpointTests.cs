@@ -120,6 +120,38 @@ public class PlayerPoolEndpointTests : IClassFixture<PlayerPoolEndpointTests.Fac
     }
 
     [Fact]
+    public async Task Get_PlayerIds_ParsedAsCommaSeparatedList()
+    {
+        PlayerPoolRequest? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<PlayerPoolRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<PlayerPoolRequest, int, int, CancellationToken>((r, _, _, _) => captured = r)
+            .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool()));
+
+        var response = await _client.GetAsync("/api/players?playerIds=a,b,%20c");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(new[] { "a", "b", "c" }, captured!.PlayerIds);
+    }
+
+    [Fact]
+    public async Task Get_NoPlayerIds_LeavesFilterNull()
+    {
+        PlayerPoolRequest? captured = null;
+        _factory.Uc
+            .Setup(s => s.ExecuteAsync(
+                It.IsAny<PlayerPoolRequest>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<PlayerPoolRequest, int, int, CancellationToken>((r, _, _, _) => captured = r)
+            .ReturnsAsync(new PlayerPoolResult.Found(EmptyPool()));
+
+        var response = await _client.GetAsync("/api/players");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(captured!.PlayerIds);
+    }
+
+    [Fact]
     public async Task Get_SortPickPercentage_Accepted()
     {
         SetupFound(EmptyPool("PickPercentage"));
