@@ -105,4 +105,14 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
         }
         return memberships;
     }
+
+    public async Task<IReadOnlyList<MiniLeagueMemberRow>> GetAllMembersAsync(CancellationToken ct)
+    {
+        var rows = new List<MiniLeagueMemberRow>();
+        await foreach (var e in _query.QueryAsync<MiniLeagueMemberEntity>(Tables.MiniLeagueMembers, filter: null, ct))
+        {
+            rows.Add(new MiniLeagueMemberRow(e.PartitionKey, new MiniLeagueMember(e.RowKey, e.Role, e.JoinedAt)));
+        }
+        return rows;
+    }
 }

@@ -23,4 +23,7 @@ public interface IMiniLeagueRepository
 
     // All leagues a user belongs to, from the reverse-index table.
     Task<IReadOnlyList<MiniLeagueMembership>> GetLeaguesForUserAsync(string userId, CancellationToken ct);
+
+    // Every membership row across every league (unscoped scan) — used to backfill the reverse-index table.
+    Task<IReadOnlyList<MiniLeagueMemberRow>> GetAllMembersAsync(CancellationToken ct);
 }
