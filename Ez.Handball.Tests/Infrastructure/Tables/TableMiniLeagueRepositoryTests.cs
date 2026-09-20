@@ -22,12 +22,14 @@ public class TableMiniLeagueRepositoryTests : IAsyncLifetime
     {
         await _client.GetTableClient(Tables.MiniLeagues).CreateIfNotExistsAsync();
         await _client.GetTableClient(Tables.MiniLeagueMembers).CreateIfNotExistsAsync();
+        await _client.GetTableClient(Tables.MiniLeagueMembersByUser).CreateIfNotExistsAsync();
     }
 
     public async Task DisposeAsync()
     {
         await _client.GetTableClient(Tables.MiniLeagues).DeleteAsync();
         await _client.GetTableClient(Tables.MiniLeagueMembers).DeleteAsync();
+        await _client.GetTableClient(Tables.MiniLeagueMembersByUser).DeleteAsync();
     }
 
     [Fact]
@@ -84,5 +86,30 @@ public class TableMiniLeagueRepositoryTests : IAsyncLifetime
 
         Assert.Single(members);
         Assert.Equal("u-1", members[0].UserId);
+    }
+
+    [Fact]
+    public async Task AddMember_ThenGetLeaguesForUser_ReturnsMembership()
+    {
+        await Sut().AddMemberAsync("lg-1", new MiniLeagueMember("u-1", "creator", T0), default);
+
+        var leagues = await Sut().GetLeaguesForUserAsync("u-1", default);
+
+        var m = Assert.Single(leagues);
+        Assert.Equal("lg-1", m.LeagueId);
+        Assert.Equal("creator", m.Role);
+        Assert.Equal(T0, m.JoinedAt);
+    }
+
+    [Fact]
+    public async Task GetLeaguesForUser_IsScopedByUser()
+    {
+        await Sut().AddMemberAsync("lg-1", new MiniLeagueMember("u-1", "creator", T0), default);
+        await Sut().AddMemberAsync("lg-2", new MiniLeagueMember("u-2", "creator", T0), default);
+
+        var leagues = await Sut().GetLeaguesForUserAsync("u-1", default);
+
+        Assert.Single(leagues);
+        Assert.Equal("lg-1", leagues[0].LeagueId);
     }
 }

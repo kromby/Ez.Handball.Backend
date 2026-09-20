@@ -31,6 +31,24 @@ public static class MiniLeagueEndpoints
             };
         });
 
+        group.MapGet("/mine", async (
+            HttpContext http, IGetMyMiniLeaguesUseCase uc, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var leagues = await uc.ExecuteAsync(userId, ct);
+            return Results.Ok(leagues.Select(l => new
+            {
+                id          = l.League.Id,
+                name        = l.League.Name,
+                season      = l.League.Season,
+                role        = l.Role,
+                memberCount = l.MemberCount
+            }));
+        });
+
         group.MapGet("/{id}", async (
             string id, HttpContext http, IGetMiniLeagueUseCase uc, CancellationToken ct) =>
         {
