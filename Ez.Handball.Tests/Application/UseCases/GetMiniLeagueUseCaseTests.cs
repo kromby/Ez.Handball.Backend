@@ -8,9 +8,12 @@ namespace Ez.Handball.Tests.Application.UseCases;
 public class GetMiniLeagueUseCaseTests
 {
     private readonly Mock<IMiniLeagueRepository> _leagues = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
     private static readonly DateTimeOffset T0 = DateTimeOffset.UnixEpoch;
 
-    private GetMiniLeagueUseCase CreateSut() => new(_leagues.Object);
+    private GetMiniLeagueUseCase CreateSut() => new(_leagues.Object, _teams.Object);
+
+    private static GameTeam Team(string name) => new("ignored", name, "#abcdef", DateTimeOffset.UnixEpoch);
 
     [Fact]
     public async Task MissingLeague_ReturnsNotFound_AndDoesNotQueryMembers()
@@ -30,6 +33,8 @@ public class GetMiniLeagueUseCaseTests
         _leagues.Setup(r => r.GetAsync("lg-1", It.IsAny<CancellationToken>())).ReturnsAsync(league);
         _leagues.Setup(r => r.GetMembersAsync("lg-1", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new[] { new MiniLeagueMember("u-1", MiniLeagueRoles.Creator, T0) });
+        _teams.Setup(t => t.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(Team("Alpha"));
 
         var result = await CreateSut().ExecuteAsync("lg-1", CancellationToken.None);
 
@@ -38,5 +43,22 @@ public class GetMiniLeagueUseCaseTests
         var member = Assert.Single(found.View.Members);
         Assert.Equal("u-1", member.UserId);
         Assert.Equal(MiniLeagueRoles.Creator, member.Role);
+        Assert.Equal("Alpha", found.View.MemberTeamNames?.GetValueOrDefault("u-1"));
+    }
+
+    [Fact]
+    public async Task MemberWithNoTeamYet_IsOmittedFromTeamNames()
+    {
+        var league = new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0);
+        _leagues.Setup(r => r.GetAsync("lg-1", It.IsAny<CancellationToken>())).ReturnsAsync(league);
+        _leagues.Setup(r => r.GetMembersAsync("lg-1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[] { new MiniLeagueMember("u-1", MiniLeagueRoles.Creator, T0) });
+        _teams.Setup(t => t.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+              .ReturnsAsync((GameTeam?)null);
+
+        var result = await CreateSut().ExecuteAsync("lg-1", CancellationToken.None);
+
+        var found = Assert.IsType<GetMiniLeagueResult.Found>(result);
+        Assert.Null(found.View.MemberTeamNames?.GetValueOrDefault("u-1"));
     }
 }

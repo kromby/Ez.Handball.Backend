@@ -9,9 +9,10 @@ public class JoinMiniLeagueUseCaseTests
 {
     private readonly Mock<IMiniLeagueRepository> _leagues = new();
     private readonly Mock<IMiniLeagueInviteRepository> _invites = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch.AddDays(100);
 
-    private JoinMiniLeagueUseCase CreateSut() => new(_leagues.Object, _invites.Object, () => Now);
+    private JoinMiniLeagueUseCase CreateSut() => new(_leagues.Object, _invites.Object, _teams.Object, () => Now);
 
     private void InviteFor(string token, string leagueId, DateTimeOffset? expiresAt = null) =>
         _invites.Setup(r => r.GetByTokenAsync(token, It.IsAny<CancellationToken>()))
@@ -62,11 +63,14 @@ public class JoinMiniLeagueUseCaseTests
         InviteFor("tok-1", "lg-1");
         LeagueExists("lg-1");
         Members("lg-1", "creator-x", "u-2");
+        _teams.Setup(t => t.GetAsync("u-2", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new GameTeam("u-2:fantasy", "Bravo", "#abcdef", Now));
 
         var result = await CreateSut().ExecuteAsync("u-2", "tok-1", CancellationToken.None);
 
         var already = Assert.IsType<JoinMiniLeagueResult.AlreadyMember>(result);
         Assert.Equal(2, already.View.Members.Count);
+        Assert.Equal("Bravo", already.View.MemberTeamNames?.GetValueOrDefault("u-2"));
         _leagues.Verify(r => r.AddMemberAsync(It.IsAny<string>(), It.IsAny<MiniLeagueMember>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -76,6 +80,8 @@ public class JoinMiniLeagueUseCaseTests
         InviteFor("tok-1", "lg-1");
         LeagueExists("lg-1");
         Members("lg-1", "creator-x");
+        _teams.Setup(t => t.GetAsync("u-2", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new GameTeam("u-2:fantasy", "Bravo", "#abcdef", Now));
 
         var result = await CreateSut().ExecuteAsync("u-2", "tok-1", CancellationToken.None);
 
@@ -85,5 +91,6 @@ public class JoinMiniLeagueUseCaseTests
             It.IsAny<CancellationToken>()), Times.Once);
         Assert.Contains(joined.View.Members, m => m.UserId == "u-2" && m.Role == MiniLeagueRoles.Member);
         Assert.Equal(2, joined.View.Members.Count);
+        Assert.Equal("Bravo", joined.View.MemberTeamNames?.GetValueOrDefault("u-2"));
     }
 }

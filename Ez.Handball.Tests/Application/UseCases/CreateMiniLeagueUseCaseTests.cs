@@ -9,9 +9,10 @@ public class CreateMiniLeagueUseCaseTests
 {
     private readonly Mock<IMiniLeagueRepository> _leagues = new();
     private readonly Mock<ISeasonRepository> _seasons = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch.AddDays(100);
 
-    private CreateMiniLeagueUseCase CreateSut() => new(_leagues.Object, _seasons.Object, () => Now);
+    private CreateMiniLeagueUseCase CreateSut() => new(_leagues.Object, _seasons.Object, _teams.Object, () => Now);
 
     private void SeasonsReturn(params Season[] s) =>
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(s);
@@ -57,6 +58,8 @@ public class CreateMiniLeagueUseCaseTests
         _leagues.Setup(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()))
                 .Callback<MiniLeague, CancellationToken>((l, _) => captured = l)
                 .Returns(Task.CompletedTask);
+        _teams.Setup(t => t.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new GameTeam("u-1:fantasy", "Alpha", "#abcdef", Now));
 
         var result = await CreateSut().ExecuteAsync("u-1", "  Office League  ", CancellationToken.None);
 
@@ -78,6 +81,7 @@ public class CreateMiniLeagueUseCaseTests
         var member = Assert.Single(created.View.Members);
         Assert.Equal("u-1", member.UserId);
         Assert.Equal(MiniLeagueRoles.Creator, member.Role);
+        Assert.Equal("Alpha", created.View.MemberTeamNames?.GetValueOrDefault("u-1"));
     }
 
     [Fact]
