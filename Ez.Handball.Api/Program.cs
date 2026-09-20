@@ -467,6 +467,7 @@ app.MapGet("/api/players", async Task<IResult> (
     string? name,
     string? clubId,
     string? sort,
+    string? playerIds,
     int? offset,
     int? limit,
     int? version,
@@ -490,9 +491,13 @@ app.MapGet("/api/players", async Task<IResult> (
     if (off < 0 || lim < 1 || lim > 200)
         return Results.BadRequest(new { error = "invalid_pagination" });
 
+    var parsedPlayerIds = string.IsNullOrWhiteSpace(playerIds)
+        ? null
+        : playerIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     var request = new PlayerPoolRequest(
         season, tournamentId, competitionId, parsedType, parsedGender, position,
-        name, clubId, parsedSort, version ?? 1);
+        name, clubId, parsedSort, version ?? 1, parsedPlayerIds);
 
     var result = await uc.ExecuteAsync(request, off, lim, ct);
     return result switch
