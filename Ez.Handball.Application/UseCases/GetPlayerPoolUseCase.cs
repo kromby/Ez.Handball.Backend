@@ -28,7 +28,8 @@ public sealed record PlayerPoolRequest(
     string? Name,
     string? ClubId,
     PlayerPoolSort Sort,
-    int PriceVersion);
+    int PriceVersion,
+    IReadOnlyList<string>? PlayerIds = null);
 
 public abstract record PlayerPoolResult
 {
@@ -94,9 +95,13 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         // whitespace from the client never narrows the list to nothing.
         var nameNeedle = request.Name?.Trim();
         var hasName = !string.IsNullOrEmpty(nameNeedle);
+        var playerIdFilter = request.PlayerIds is { Count: > 0 } ids
+            ? new HashSet<string>(ids, StringComparer.Ordinal)
+            : null;
 
         var computed = players
             .Where(p => !p.Retired)
+            .Where(p => playerIdFilter is null || playerIdFilter.Contains(p.PlayerId))
             .Where(p => string.IsNullOrWhiteSpace(request.Position)
                 || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
             .Where(p => string.IsNullOrWhiteSpace(request.ClubId)
@@ -114,6 +119,7 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                     ClubName: p.ClubName,
                     Gender: p.Gender,
                     Position: p.Position,
+                    PositionSecondary: p.PositionSecondary,
                     Games: p.Stats.Games,
                     Goals: p.Stats.Goals,
                     YellowCards: p.Stats.YellowCards,
@@ -124,7 +130,22 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
                         : 0,
                     Price: priced.Price,
                     Rating: priced.Rating,
-                    PickPercentage: null); // deferred — ownership aggregation follow-up
+                    PickPercentage: null, // deferred — ownership aggregation follow-up
+                    Assists: p.Stats.Assists,
+                    Steals: p.Stats.Steals,
+                    Blocks: p.Stats.Blocks,
+                    Saves: p.Stats.Saves,
+                    Turnovers: p.Stats.Turnovers,
+                    LegalStops: p.Stats.LegalStops,
+                    Shots: p.Stats.Shots,
+                    ExpectedGoals: p.Stats.ExpectedGoals,
+                    ShotsFaced: p.Stats.ShotsFaced,
+                    SavePct: p.Stats.SavePct,
+                    ExpectedSaves: p.Stats.ExpectedSaves,
+                    GradeTotal: p.Stats.GradeTotal,
+                    GradeOffense: p.Stats.GradeOffense,
+                    GradeDefense: p.Stats.GradeDefense,
+                    GradeGoalkeeping: p.Stats.GradeGoalkeeping);
             });
 
         var sorted = Sort(computed, request.Sort).ToList();

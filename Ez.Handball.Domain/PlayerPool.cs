@@ -19,7 +19,24 @@ public sealed record PlayerPoolEntry(
     double AvgGoals,
     PlayerPrice Price,
     double Rating,
-    double? PickPercentage);
+    double? PickPercentage,
+    string? PositionSecondary = null,
+    // HBStatz-derived season aggregates — null/0 for players HBStatz hasn't observed yet.
+    int Assists = 0,
+    int Steals = 0,
+    int Blocks = 0,
+    int Saves = 0,
+    int Turnovers = 0,
+    int LegalStops = 0,
+    int Shots = 0,
+    double ExpectedGoals = 0,
+    int ShotsFaced = 0,
+    double? SavePct = null,
+    double ExpectedSaves = 0,
+    double? GradeTotal = null,
+    double? GradeOffense = null,
+    double? GradeDefense = null,
+    double? GradeGoalkeeping = null);
 
 public sealed record PlayerPool(
     string Sort,

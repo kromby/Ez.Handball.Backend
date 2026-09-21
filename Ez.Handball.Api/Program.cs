@@ -179,6 +179,8 @@ builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();
 builder.Services.AddScoped<ICreateMiniLeagueUseCase, CreateMiniLeagueUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueUseCase, GetMiniLeagueUseCase>();
+builder.Services.AddScoped<IGetMyMiniLeaguesUseCase, GetMyMiniLeaguesUseCase>();
+builder.Services.AddScoped<IBackfillMiniLeagueMembershipIndexUseCase, BackfillMiniLeagueMembershipIndexUseCase>();
 builder.Services.AddScoped<IGenerateInviteUseCase, GenerateInviteUseCase>();
 builder.Services.AddScoped<IGetInviteUseCase, GetInviteUseCase>();
 builder.Services.AddScoped<IPreviewInviteUseCase, PreviewInviteUseCase>();
@@ -260,9 +262,30 @@ app.MapGet("/api/players/{playerId}", async (
             f.Player.ClubName,
             f.Player.Gender,
             f.Player.Position,
+            f.Player.PositionSecondary,
             f.Player.Retired,
             price = f.Price,
-            rating = f.Rating
+            rating = f.Rating,
+            games = f.Stats.Games,
+            goals = f.Stats.Goals,
+            yellowCards = f.Stats.YellowCards,
+            twoMinuteSuspensions = f.Stats.TwoMinuteSuspensions,
+            redCards = f.Stats.RedCards,
+            assists = f.Stats.Assists,
+            steals = f.Stats.Steals,
+            blocks = f.Stats.Blocks,
+            saves = f.Stats.Saves,
+            turnovers = f.Stats.Turnovers,
+            legalStops = f.Stats.LegalStops,
+            shots = f.Stats.Shots,
+            expectedGoals = f.Stats.ExpectedGoals,
+            shotsFaced = f.Stats.ShotsFaced,
+            savePct = f.Stats.SavePct,
+            expectedSaves = f.Stats.ExpectedSaves,
+            gradeTotal = f.Stats.GradeTotal,
+            gradeOffense = f.Stats.GradeOffense,
+            gradeDefense = f.Stats.GradeDefense,
+            gradeGoalkeeping = f.Stats.GradeGoalkeeping
         }),
         _                                     => Results.Problem()
     };
@@ -446,6 +469,7 @@ app.MapGet("/api/players", async Task<IResult> (
     string? name,
     string? clubId,
     string? sort,
+    string? playerIds,
     int? offset,
     int? limit,
     int? version,
@@ -469,9 +493,13 @@ app.MapGet("/api/players", async Task<IResult> (
     if (off < 0 || lim < 1 || lim > 200)
         return Results.BadRequest(new { error = "invalid_pagination" });
 
+    var parsedPlayerIds = string.IsNullOrWhiteSpace(playerIds)
+        ? null
+        : playerIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     var request = new PlayerPoolRequest(
         season, tournamentId, competitionId, parsedType, parsedGender, position,
-        name, clubId, parsedSort, version ?? 1);
+        name, clubId, parsedSort, version ?? 1, parsedPlayerIds);
 
     var result = await uc.ExecuteAsync(request, off, lim, ct);
     return result switch

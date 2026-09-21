@@ -63,7 +63,8 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
                     Position: player?.Position ?? string.Empty,
                     Stats: stats,
                     Retired: player?.Retired == true,
-                    PreviousSeasonStats: previousStats);
+                    PreviousSeasonStats: previousStats,
+                    PositionSecondary: player?.PositionSecondary);
             })
             .ToList();
 
@@ -91,8 +92,11 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
             .ToDictionary(g => g.Key, BuildAggregatedStats);
     }
 
-    private static AggregatedStats BuildAggregatedStats(IEnumerable<PlayerStatEntity> rows) =>
-        new(
+    private static AggregatedStats BuildAggregatedStats(IEnumerable<PlayerStatEntity> rows)
+    {
+        var saves = rows.Sum(r => r.HbStatzSaves ?? 0);
+        var shotsFaced = rows.Sum(r => r.HbStatzShotsFaced ?? 0);
+        return new AggregatedStats(
             Games: rows.Count(),
             Goals: rows.Sum(r => r.Goals),
             YellowCards: rows.Sum(r => r.YellowCards),
@@ -101,7 +105,19 @@ internal sealed class TablePlayerPoolRepository : IPlayerPoolRepository
             Assists: rows.Sum(r => r.HbStatzAssists ?? 0),
             Steals: rows.Sum(r => r.HbStatzSteals ?? 0),
             Blocks: rows.Sum(r => r.HbStatzBlocks ?? 0),
-            Saves: rows.Sum(r => r.HbStatzSaves ?? 0));
+            Saves: saves,
+            Turnovers: rows.Sum(r => r.HbStatzTurnovers ?? 0),
+            LegalStops: rows.Sum(r => r.HbStatzLegalStops ?? 0),
+            Shots: rows.Sum(r => r.HbStatzShots ?? 0),
+            ExpectedGoals: rows.Sum(r => r.HbStatzExpectedGoals ?? 0),
+            ShotsFaced: shotsFaced,
+            SavePct: AggregatedStats.ComputeSavePct(saves, shotsFaced),
+            ExpectedSaves: rows.Sum(r => r.HbStatzExpectedSaves ?? 0),
+            GradeTotal: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeTotal)),
+            GradeOffense: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeOffense)),
+            GradeDefense: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeDefense)),
+            GradeGoalkeeping: AggregatedStats.AverageGrade(rows.Select(r => r.HbStatzGradeGoalkeeping)));
+    }
 
     private static string? BuildFilter(PlayerPoolQuery q)
     {

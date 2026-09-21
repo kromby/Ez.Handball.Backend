@@ -146,6 +146,16 @@ Parsing logic lives in injectable services (`MatchParser` / `PlayerParser`, behi
 
 See `docs/runbook.md` for the specific one-time backfills each past schema change required (pricing blend, `Retired` flag, HBStatz positions).
 
+After deploying the mini-league "your leagues" reverse index (Web#56,
+Backend#128), run `POST /api/admin/mini-leagues/backfill-membership-index`
+once (add `?dryRun=false` to actually write — it defaults to a dry run) to
+populate `MiniLeagueMembersByUser` for leagues/members created before that
+deploy. Without it, `GET /api/mini-leagues/mine` silently omits any
+membership older than the deploy, since the reverse-index row is only ever
+written going forward, inside `AddMemberAsync`. Idempotent and safe to re-run
+(replays every `MiniLeagueMembers` row through the same upsert `AddMemberAsync`
+already uses).
+
 ### Duplicate Players rows from club transfers
 
 `PlayerEntity.PartitionKey` is `"{clubId}-{gender}"`, and Table Storage can't

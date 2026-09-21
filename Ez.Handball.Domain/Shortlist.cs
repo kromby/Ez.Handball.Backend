@@ -18,7 +18,30 @@ public sealed record ShortlistPlayer(
     string? Gender,
     decimal? Price,
     double? PickPercentage,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? PositionSecondary = null,
+    // Current-season HBStatz-derived aggregates. Null when the player can't be
+    // resolved this season (same condition that nulls Position/Gender above).
+    int? Games = null,
+    int? Goals = null,
+    int? YellowCards = null,
+    int? TwoMinuteSuspensions = null,
+    int? RedCards = null,
+    int? Assists = null,
+    int? Steals = null,
+    int? Blocks = null,
+    int? Saves = null,
+    int? Turnovers = null,
+    int? LegalStops = null,
+    int? Shots = null,
+    double? ExpectedGoals = null,
+    int? ShotsFaced = null,
+    double? SavePct = null,
+    double? ExpectedSaves = null,
+    double? GradeTotal = null,
+    double? GradeOffense = null,
+    double? GradeDefense = null,
+    double? GradeGoalkeeping = null);
 
 public sealed record ShortlistView(
     IReadOnlyList<ShortlistPlayer> Items,

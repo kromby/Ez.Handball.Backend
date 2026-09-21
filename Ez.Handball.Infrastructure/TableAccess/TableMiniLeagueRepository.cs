@@ -58,6 +58,16 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
             Role = member.Role,
             JoinedAt = member.JoinedAt
         }, TableUpdateMode.Replace, ct);
+
+        var byUser = _client.GetTableClient(Tables.MiniLeagueMembersByUser);
+        await byUser.CreateIfNotExistsAsync(cancellationToken: ct);
+        await byUser.UpsertEntityAsync(new MiniLeagueMembershipEntity
+        {
+            PartitionKey = member.UserId,
+            RowKey = leagueId,
+            Role = member.Role,
+            JoinedAt = member.JoinedAt
+        }, TableUpdateMode.Replace, ct);
     }
 
     public async Task<MiniLeague?> GetAsync(string leagueId, CancellationToken ct)
@@ -83,5 +93,26 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
             members.Add(new MiniLeagueMember(e.RowKey, e.Role, e.JoinedAt));
         }
         return members;
+    }
+
+    public async Task<IReadOnlyList<MiniLeagueMembership>> GetLeaguesForUserAsync(string userId, CancellationToken ct)
+    {
+        var memberships = new List<MiniLeagueMembership>();
+        await foreach (var e in _query.QueryAsync<MiniLeagueMembershipEntity>(
+                           Tables.MiniLeagueMembersByUser, $"PartitionKey eq '{ODataFilter.Escape(userId)}'", ct))
+        {
+            memberships.Add(new MiniLeagueMembership(e.RowKey, e.Role, e.JoinedAt));
+        }
+        return memberships;
+    }
+
+    public async Task<IReadOnlyList<MiniLeagueMemberRow>> GetAllMembersAsync(CancellationToken ct)
+    {
+        var rows = new List<MiniLeagueMemberRow>();
+        await foreach (var e in _query.QueryAsync<MiniLeagueMemberEntity>(Tables.MiniLeagueMembers, filter: null, ct))
+        {
+            rows.Add(new MiniLeagueMemberRow(e.PartitionKey, new MiniLeagueMember(e.RowKey, e.Role, e.JoinedAt)));
+        }
+        return rows;
     }
 }

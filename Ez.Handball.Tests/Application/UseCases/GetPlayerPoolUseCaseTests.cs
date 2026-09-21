@@ -69,8 +69,9 @@ public class GetPlayerPoolUseCaseTests
     private static PlayerPoolRequest Req(
         PlayerPoolSort sort = PlayerPoolSort.Rating, string? position = null,
         string? season = null, string? gender = null,
-        string? name = null, string? clubId = null) =>
-        new(season, null, null, null, gender, position, name, clubId, sort, PriceVersion: 1);
+        string? name = null, string? clubId = null,
+        IReadOnlyList<string>? playerIds = null) =>
+        new(season, null, null, null, gender, position, name, clubId, sort, PriceVersion: 1, PlayerIds: playerIds);
 
     [Fact]
     public async Task Execute_ComputesRatingAndPrice_PickPercentageNull()
@@ -244,6 +245,50 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_PlayerIdsFilter_NarrowsToGivenPlayers()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(Pooled("a", goals: 50), Pooled("b", goals: 40), Pooled("c", goals: 30));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(playerIds: new[] { "a", "c" }), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a", "c" }, pool.Entries.Select(e => e.PlayerId));
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_EmptyPlayerIdsList_BehavesAsNoFilter()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(Pooled("a", goals: 50), Pooled("b", goals: 40));
+
+        var result = await CreateSut().ExecuteAsync(
+            Req(playerIds: Array.Empty<string>()), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
+    public async Task Execute_NoPlayerIds_DefaultRequestShapeUnaffected()
+    {
+        // Guards the default /players page-load shape (no playerIds filter) —
+        // must behave exactly as before this filter was added.
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(Pooled("a", goals: 50), Pooled("b", goals: 40));
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(2, pool.Total);
+    }
+
+    [Fact]
     public async Task Execute_PagesOverFullSortedSet_ReportsFullTotal()
     {
         SetupResolver();
@@ -332,6 +377,44 @@ public class GetPlayerPoolUseCaseTests
 
         var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
         Assert.Equal(0, entry.AvgGoals); // Games == 0 => guarded to 0, no divide-by-zero
+    }
+
+    [Fact]
+    public async Task Execute_SurfacesHbStatzStatsAndPositionSecondary_OnEntry()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        _repo.Setup(r => r.GetAggregatedAsync(It.IsAny<PlayerPoolQuery>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 new PooledPlayer("a", "Pa", "385", "Stjarnan", "karlar", "CB",
+                     new AggregatedStats(
+                         Games: 8, Goals: 20, YellowCards: 0, TwoMinuteSuspensions: 0, RedCards: 0,
+                         Assists: 5, Steals: 3, Blocks: 1, Saves: 2, Turnovers: 4, LegalStops: 1,
+                         Shots: 30, ExpectedGoals: 18.2, ShotsFaced: 6, SavePct: 33.3,
+                         ExpectedSaves: 2.1, GradeTotal: 7.4, GradeOffense: 7.6,
+                         GradeDefense: 7.2, GradeGoalkeeping: null),
+                     Retired: false,
+                     PositionSecondary: "LB"),
+             });
+
+        var result = await CreateSut().ExecuteAsync(Req(), 0, 50, CancellationToken.None);
+
+        var entry = Assert.Single(Assert.IsType<PlayerPoolResult.Found>(result).Pool.Entries);
+        Assert.Equal("LB", entry.PositionSecondary);
+        Assert.Equal(5, entry.Assists);
+        Assert.Equal(3, entry.Steals);
+        Assert.Equal(1, entry.Blocks);
+        Assert.Equal(2, entry.Saves);
+        Assert.Equal(4, entry.Turnovers);
+        Assert.Equal(1, entry.LegalStops);
+        Assert.Equal(30, entry.Shots);
+        Assert.Equal(18.2, entry.ExpectedGoals);
+        Assert.Equal(6, entry.ShotsFaced);
+        Assert.Equal(33.3, entry.SavePct);
+        Assert.Equal(2.1, entry.ExpectedSaves);
+        Assert.Equal(7.4, entry.GradeTotal);
+        Assert.Null(entry.GradeGoalkeeping);
     }
 
     [Fact]
