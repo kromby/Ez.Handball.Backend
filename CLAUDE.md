@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Read `AGENTS.md` too — it sets the engineering persona and principles (security,
+reliability, cost, monitoring) this repo expects on every change. This file
+covers architecture, commands, and schema. See `docs/runbook.md` for one-time
+backfills and post-deploy actions.
+
 ## Commands
 
 ```bash
@@ -129,16 +134,7 @@ The `?season=` parameter is the integer **start year**; it is stored as the
 `YYYY-YY` label (e.g. `?season=2025` → PartitionKey `"2025-26"`). The label is
 the canonical value, denormalized onto `PlayerStatEntity.Season`.
 
-#### Re-labelling an existing season (local)
-
-The parse step looks up tournaments by `RowKey eq '{tournamentId}'` with no
-partition filter, so a stale `"2025"` partition alongside a new `"2025-26"`
-partition makes season resolution ambiguous. To re-label cleanly:
-
-1. Clear the `Tournaments` table (drop the old partition).
-2. Re-seed: `POST /api/seed/tournaments?season=2025`.
-3. Re-run `POST /api/sync` — the parse step replaces `PlayerStats.Season`
-   in place (rows are keyed by matchId/playerId, so no duplicates).
+See `docs/runbook.md` for how to re-label an existing season locally.
 
 ### Testing approach
 
@@ -146,37 +142,9 @@ Parsing logic lives in injectable services (`MatchParser` / `PlayerParser`, behi
 
 ### Backfill after schema changes
 
-`PlayerEntity` and `PlayerStatEntity` carry denormalized lookup fields (`Gender`, `ClubId`, `ClubName`, `TournamentId`, `Season`). After deploying any change that adds or alters these fields, re-trigger the parse step so already-ingested matches pick them up. The blob archive is the source of truth and re-parses are idempotent (`TableUpdateMode.Replace`).
+`PlayerEntity` and `PlayerStatEntity` carry denormalized lookup fields (`Gender`, `ClubId`, `ClubName`, `TournamentId`, `Season`). After deploying any change that adds or alters these fields, re-trigger the parse step (`POST /api/reparse`, optionally scoped with `?matchId=`) so already-ingested matches pick them up — the blob archive is the source of truth and re-parses are idempotent (`TableUpdateMode.Replace`).
 
-Use `POST /api/reparse` to replay the parse step over the existing `raw/` blobs
-without re-fetching from hsi.is. Scope to one match with `?matchId={id}`. This is
-the preferred backfill after any change to `MatchEntity`, `PlayerEntity`, or
-`PlayerStatEntity`. (Re-running `POST /api/sync` still works but re-fetches every
-match from hsi.is.)
-
-After deploying the prior-season pricing blend (adds `PriceRuleSet.BlendGames`),
-re-run `POST /api/seed/price-rule-sets` before or immediately alongside the
-deploy. The `fantasy-price-v1` Config group now requires a `blendGames` row;
-without it, every pricing-touching endpoint (`/api/players`, squad views,
-buy/sell) returns `invalid_rule_set` until it's reseeded. Safe and idempotent
-to re-run at any time.
-
-After deploying the `Retired` flag, run `POST /api/players/bootstrap-retired`
-once. It marks every player with no `PlayerStats` in the latest season
-(lexical-max `Tournaments` partition key) as `Retired = true`, writing back the
-full row via `Merge`. It only ever sets `true`, so it is safe to re-run and never
-clobbers manual edits. Curate further by editing the `Retired` column directly in
-the `Players` table — use `Edm.Boolean`, not String (a String value causes a 500
-on read). `POST /api/reparse` preserves all `Retired` values because the Players
-upsert uses `Merge`.
-
-After deploying the HBStatz position backfill (Backend#106), run
-`POST /api/players/backfill-positions` once (add `?dryRun=false` to actually
-write — it defaults to a dry run) to derive `Position`/`PositionSecondary` for
-every player observed in an already-archived `hbstatz/matches/*.json` blob.
-It's idempotent and safe to re-run. Going forward, `POST /api/hbstatz/sync`
-keeps both fields current automatically as new matches sync. Players HBStatz
-never reaches can be corrected manually via `POST /api/players/set-position`.
+See `docs/runbook.md` for the specific one-time backfills each past schema change required (pricing blend, `Retired` flag, HBStatz positions).
 
 After deploying the mini-league "your leagues" reverse index (Web#56,
 Backend#128), run `POST /api/admin/mini-leagues/backfill-membership-index`
@@ -207,12 +175,8 @@ hsi.is on a transfer, and deletes any row left behind under a different
 partition — so this self-heals the next time a transferred player is parsed
 in a new match for their current club.
 
-For duplicates that already existed before this fix (and won't self-heal
-until that player's next match), run `POST /api/players/dedupe` once (add
-`?dryRun=false` to actually delete — it defaults to a dry run). For every
-`RowKey` with more than one row, it keeps the one with the latest `Timestamp`
-(the one still receiving ingestion writes) and deletes the rest. Idempotent
-and safe to re-run.
+For duplicates that predate this fix, see `docs/runbook.md` for the one-time
+dedupe op.
 
 ### Gameweek engine (Backend#60)
 
