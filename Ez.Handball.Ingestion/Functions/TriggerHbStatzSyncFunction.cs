@@ -197,8 +197,10 @@ public class TriggerHbStatzSyncFunction
             return MatchSyncOutcome.Unmatched;
         }
 
-        var homeReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.HomeTeamId, game.Players.Home, logger, ct);
-        var awayReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.AwayTeamId, game.Players.Away, logger, ct);
+        var matchStats = await _tableWriter.QueryAsync<PlayerStatEntity>(
+            "PlayerStats", $"PartitionKey eq '{Escape(match.RowKey)}'", ct);
+        var homeReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.HomeTeamId, game.Players.Home, matchStats, logger, ct);
+        var awayReconciled = await MergePlayerStatsAsync(match.RowKey, match.Date, match.AwayTeamId, game.Players.Away, matchStats, logger, ct);
         if (!homeReconciled || !awayReconciled)
         {
             // Leave HbStatzSyncedAt unset so the default sweep retries this match — e.g. once the
@@ -226,9 +228,9 @@ public class TriggerHbStatzSyncFunction
     // eligible for a retry instead of marking a partially-synced match as done.
     private async Task<bool> MergePlayerStatsAsync(
         string matchId, DateTimeOffset matchDate, string teamId, IReadOnlyList<HbStatzPlayerLine> lines,
-        ILogger? logger, CancellationToken ct)
+        IList<PlayerStatEntity> matchStats, ILogger? logger, CancellationToken ct)
     {
-        var roster = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"PartitionKey eq '{Escape(teamId)}'", ct);
+        var roster = await BuildMatchRosterAsync(teamId, matchStats, ct);
         var allReconciled = true;
 
         foreach (var line in lines)
@@ -294,6 +296,26 @@ public class TriggerHbStatzSyncFunction
         }
 
         return allReconciled;
+    }
+
+    // The team's Players partition, plus anyone hsi.is's stat lines for this match put on this
+    // team whose Players row is filed elsewhere. The Players row only tracks a player's latest
+    // club (and can lag behind or be misplaced by a reparse), while the match's own PlayerStats
+    // TeamId says who actually played for whom in this game.
+    private async Task<List<PlayerEntity>> BuildMatchRosterAsync(
+        string teamId, IList<PlayerStatEntity> matchStats, CancellationToken ct)
+    {
+        var roster = (await _tableWriter.QueryAsync<PlayerEntity>(
+            "Players", $"PartitionKey eq '{Escape(teamId)}'", ct)).ToList();
+        var onRoster = roster.Select(p => p.RowKey).ToHashSet();
+
+        foreach (var stat in matchStats.Where(s => s.TeamId == teamId && !onRoster.Contains(s.RowKey)))
+        {
+            var rows = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"RowKey eq '{Escape(stat.RowKey)}'", ct);
+            if (rows.FirstOrDefault() is { } player) roster.Add(player);
+        }
+
+        return roster;
     }
 
     private static string Escape(string value) => value.Replace("'", "''");
