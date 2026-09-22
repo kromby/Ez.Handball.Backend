@@ -21,32 +21,30 @@ public interface ISettleRoundForAllTeamsUseCase
 
 public sealed class SettleRoundForAllTeamsUseCase : ISettleRoundForAllTeamsUseCase
 {
-    // Matches GameTeamId.For(userId, GameFlavor.Fantasy) == "{userId}:fantasy".
-    private static readonly string FantasySuffix = ":" + GameFlavor.Fantasy.ToString().ToLowerInvariant();
-
-    private readonly ILineupRepository _lineups;
+    private readonly IGameTeamRepository _teams;
     private readonly ISettleGameweekUseCase _settle;
 
-    public SettleRoundForAllTeamsUseCase(ILineupRepository lineups, ISettleGameweekUseCase settle)
+    public SettleRoundForAllTeamsUseCase(IGameTeamRepository teams, ISettleGameweekUseCase settle)
     {
-        _lineups = lineups;
+        _teams = teams;
         _settle = settle;
     }
 
     public async Task<SettleRoundForAllTeamsResult> ExecuteAsync(
         string roundLabel, int? configVersion, CancellationToken ct)
     {
-        // Length guard before the EndsWith so a malformed bare ":fantasy" id (which would slice to an
-        // empty userId) is excluded rather than settled — validate at the boundary.
-        var teamIds = (await _lineups.ListTeamIdsAsync(ct))
-            .Where(t => t.Length > FantasySuffix.Length && t.EndsWith(FantasySuffix, StringComparison.Ordinal))
+        // Every fantasy team, not just those with a saved lineup: without a lineup editor in the Web,
+        // lineup rows are rare, and a team without one still plays its default lineup (#142).
+        // Malformed ids (e.g. a bare ":fantasy" that would slice to an empty userId) are excluded.
+        var teams = (await _teams.ListByFlavorAsync(GameFlavor.Fantasy, ct))
+            .Select(t => (TeamId: t.TeamId, UserId: GameTeamId.UserIdOf(t.TeamId, GameFlavor.Fantasy)))
+            .Where(t => t.UserId is not null)
             .ToList();
 
         int settled = 0, notReady = 0, skipped = 0;
-        foreach (var teamId in teamIds)
+        foreach (var (teamId, userId) in teams)
         {
-            var userId = teamId[..^FantasySuffix.Length];
-            var r = await _settle.ExecuteAsync(userId, teamId, roundLabel, configVersion, ct);
+            var r = await _settle.ExecuteAsync(userId!, teamId, roundLabel, configVersion, ct);
             switch (r)
             {
                 case SettleGameweekResult.Settled:
@@ -75,6 +73,6 @@ public sealed class SettleRoundForAllTeamsUseCase : ISettleRoundForAllTeamsUseCa
         }
 
         return new SettleRoundForAllTeamsResult.Completed(
-            new SettleRoundReport(roundLabel, teamIds.Count, settled, notReady, skipped));
+            new SettleRoundReport(roundLabel, teams.Count, settled, notReady, skipped));
     }
 }

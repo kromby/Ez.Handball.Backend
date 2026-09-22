@@ -8,14 +8,15 @@ namespace Ez.Handball.Tests.Application.UseCases;
 
 public class SettleRoundForAllTeamsUseCaseTests
 {
-    private readonly Mock<ILineupRepository> _lineups = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
     private readonly Mock<ISettleGameweekUseCase> _settle = new();
 
-    private SettleRoundForAllTeamsUseCase Sut() => new(_lineups.Object, _settle.Object);
+    private SettleRoundForAllTeamsUseCase Sut() => new(_teams.Object, _settle.Object);
 
+    // Every fantasy team is considered — whether or not it has ever saved a lineup (#142).
     private void SetupTeams(params string[] teamIds) =>
-        _lineups.Setup(l => l.ListTeamIdsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(teamIds);
+        _teams.Setup(t => t.ListByFlavorAsync(GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(teamIds.Select(id => new GameTeam(id, id, "#abcdef", DateTimeOffset.UnixEpoch)).ToList());
 
     private void SetupSettle(string userId, string teamId, SettleGameweekResult result) =>
         _settle.Setup(s => s.ExecuteAsync(userId, teamId, "1", null, It.IsAny<CancellationToken>()))
