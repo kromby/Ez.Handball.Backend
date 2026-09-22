@@ -168,4 +168,35 @@ public class SettleGameweekUseCaseTests
 
         Assert.IsType<SettleGameweekResult.SquadNotFound>(result);
     }
+
+    [Fact]
+    public async Task NoSavedLineup_ScoresTheDefaultLineup()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: false);
+        _liveLineup.Setup(s => s.GetAsync(Team, It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        // Constraints start 2 (GK max 1): equal ratings tie-break by id → fp1, fp2 start; gk1 benched.
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(result);
+        _snapshots.Verify(s => s.SaveSnapshotAsync(Team, "1",
+            It.Is<Lineup>(l => l.Slots.Count == 3 && l.Slots.All(slot => slot.Role != LineupRole.Captain)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _scores.Verify(s => s.SaveAsync(settled.Score, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task NoSavedLineup_EmptySquad_ReturnsNoSnapshotPossible()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: false);
+        _liveLineup.Setup(s => s.GetAsync(Team, It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _squad.Setup(s => s.ExecuteAsync("user", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSquadResult.Found(new SquadView(
+                Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"))));
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        Assert.IsType<SettleGameweekResult.NoSnapshotPossible>(result);
+        _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

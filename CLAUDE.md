@@ -213,6 +213,11 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   Returns `not_ready` (409) until every member match is final.
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
   authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
+- **Default lineup (Backend#142):** the Web has no lineup editor, so most managers never save a
+  lineup. Such a manager plays `DefaultLineup.From(squad, constraints)`: highest-rated players
+  start (up to `starterCount`, within each position's max), the rest are benched by rating, no
+  captain. The snapshot guard freezes it at the deadline and settlement falls back to it, and the
+  settle fan-out walks every fantasy team (`GameTeams`), not just teams with lineup rows.
 - **All-teams settlement (Backend#136):** the Api's `AutoSettlementService` (hosted
   `BackgroundService`) runs `SettleCompletedRoundsUseCase` every `Settlement:Interval`
   (default 1h, first run after `Settlement:StartupDelay`, default 2 min). Each tick re-settles

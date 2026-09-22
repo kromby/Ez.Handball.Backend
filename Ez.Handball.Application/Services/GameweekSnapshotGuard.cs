@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 
 namespace Ez.Handball.Application.Services;
@@ -21,17 +22,22 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
     private readonly IGameweekLockRepository _locks;
     private readonly IGameweekLineupRepository _snapshots;
     private readonly ILineupRepository _liveLineup;
+    private readonly IGetSquadUseCase _squad;
+    private readonly ILineupConstraintsRepository _constraints;
     private readonly TimeProvider _clock;
 
     public GameweekSnapshotGuard(
         IGameweekConfigRepository config, IGameweekCalendarService calendar, IGameweekLockRepository locks,
-        IGameweekLineupRepository snapshots, ILineupRepository liveLineup, TimeProvider clock)
+        IGameweekLineupRepository snapshots, ILineupRepository liveLineup, IGetSquadUseCase squad,
+        ILineupConstraintsRepository constraints, TimeProvider clock)
     {
         _config = config;
         _calendar = calendar;
         _locks = locks;
         _snapshots = snapshots;
         _liveLineup = liveLineup;
+        _squad = squad;
+        _constraints = constraints;
         _clock = clock;
     }
 
@@ -61,7 +67,7 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
             if (!liveLoaded)
             {
-                live = await _liveLineup.GetAsync(teamId, ct);
+                live = await EffectiveLineupAsync(teamId, config, ct);
                 liveLoaded = true;
             }
             if (live is not null)
@@ -70,5 +76,24 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
         var current = calendar.FirstOrDefault(g => g.Status == GameweekStatus.Open);
         return new SnapshotGuardResult(current, anyLocked);
+    }
+
+    // The saved lineup, or — for a manager who never saved one — the default lineup from the squad
+    // as it stands now, i.e. before the mutation this guard runs ahead of (#142).
+    private async Task<Lineup?> EffectiveLineupAsync(string teamId, GameweekConfig config, CancellationToken ct)
+    {
+        var saved = await _liveLineup.GetAsync(teamId, ct);
+        if (saved is not null) return saved;
+
+        var userId = GameTeamId.UserIdOf(teamId, GameFlavor.Fantasy);
+        if (userId is null) return null;
+
+        var constraints = await _constraints.GetAsync(config.LineupConstraintsVersion, ct);
+        if (constraints is null) return null;
+
+        if (await _squad.ExecuteAsync(userId, null, null, null, ct) is not GetSquadResult.Found found) return null;
+
+        var fallback = DefaultLineup.From(found.View.Players, constraints);
+        return fallback.Slots.Count == 0 ? null : fallback;
     }
 }

@@ -84,19 +84,21 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         var constraints = await _constraints.GetAsync(config.LineupConstraintsVersion, ct);
         if (constraints is null) return SettleGameweekResult.RuleSetMissing.Instance;
 
+        var squadResult = await _squad.ExecuteAsync(userId, null, null, null, ct);
+        if (squadResult is not GetSquadResult.Found found)
+            return SettleGameweekResult.SquadNotFound.Instance;
+
         // Snapshot-if-missing: freeze the live lineup (unchanged since the deadline) before scoring.
+        // A manager who never saved a lineup plays their default one (#142).
         var snapshot = await _snapshots.GetSnapshotAsync(teamId, roundLabel, ct);
         if (snapshot is null)
         {
             var live = await _liveLineup.GetAsync(teamId, ct);
-            if (live is null) return SettleGameweekResult.NoSnapshotPossible.Instance;
-            await _snapshots.SaveSnapshotAsync(teamId, roundLabel, live, ct);
-            snapshot = live;
+            var effective = live ?? DefaultLineup.From(found.View.Players, constraints);
+            if (effective.Slots.Count == 0) return SettleGameweekResult.NoSnapshotPossible.Instance;
+            await _snapshots.SaveSnapshotAsync(teamId, roundLabel, effective, ct);
+            snapshot = effective;
         }
-
-        var squadResult = await _squad.ExecuteAsync(userId, null, null, null, ct);
-        if (squadResult is not GetSquadResult.Found found)
-            return SettleGameweekResult.SquadNotFound.Instance;
 
         // Build playerId → aggregated stats across the gameweek's member matches (presence = played).
         var played = await BuildPlayedStatsAsync(gw, ct);
