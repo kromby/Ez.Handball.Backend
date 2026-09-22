@@ -587,8 +587,9 @@ app.MapGet("/api/clubs/{clubId}/roster", async Task<IResult> (
     var result = await uc.ExecuteAsync(clubId, ct);
     return result switch
     {
-        GetClubRosterResult.NotFound => Results.NotFound(new { error = "club_not_found" }),
-        GetClubRosterResult.Found f  => Results.Ok(f.Roster),
+        GetClubRosterResult.NotFound        => Results.NotFound(new { error = "club_not_found" }),
+        GetClubRosterResult.RuleSetNotFound => Results.Problem("Fantasy rule-set missing"),
+        GetClubRosterResult.Found f         => Results.Ok(f.Roster),
         _ => Results.Problem()
     };
 });
