@@ -18,7 +18,8 @@ internal static class MiniLeagueResponse
         {
             userId   = m.UserId,
             role     = m.Role,
-            joinedAt = m.JoinedAt
+            joinedAt = m.JoinedAt,
+            teamName = view.MemberTeamNames?.GetValueOrDefault(m.UserId)
         })
     };
 }

@@ -20,13 +20,15 @@ public sealed class CreateMiniLeagueUseCase : ICreateMiniLeagueUseCase
 {
     private readonly IMiniLeagueRepository _leagues;
     private readonly ISeasonRepository _seasons;
+    private readonly IGameTeamRepository _teams;
     private readonly Func<DateTimeOffset> _now;
 
     public CreateMiniLeagueUseCase(
-        IMiniLeagueRepository leagues, ISeasonRepository seasons, Func<DateTimeOffset> now)
+        IMiniLeagueRepository leagues, ISeasonRepository seasons, IGameTeamRepository teams, Func<DateTimeOffset> now)
     {
         _leagues = leagues;
         _seasons = seasons;
+        _teams = teams;
         _now = now;
     }
 
@@ -60,6 +62,7 @@ public sealed class CreateMiniLeagueUseCase : ICreateMiniLeagueUseCase
             throw;
         }
 
-        return new CreateMiniLeagueResult.Created(new MiniLeagueView(league, new[] { creator }));
+        var teamNames = await MiniLeagueMemberTeamNames.ResolveAsync(_teams, new[] { creator }, ct);
+        return new CreateMiniLeagueResult.Created(new MiniLeagueView(league, new[] { creator }, teamNames));
     }
 }

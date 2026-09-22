@@ -20,13 +20,16 @@ public sealed class JoinMiniLeagueUseCase : IJoinMiniLeagueUseCase
 {
     private readonly IMiniLeagueRepository _leagues;
     private readonly IMiniLeagueInviteRepository _invites;
+    private readonly IGameTeamRepository _teams;
     private readonly Func<DateTimeOffset> _now;
 
     public JoinMiniLeagueUseCase(
-        IMiniLeagueRepository leagues, IMiniLeagueInviteRepository invites, Func<DateTimeOffset> now)
+        IMiniLeagueRepository leagues, IMiniLeagueInviteRepository invites, IGameTeamRepository teams,
+        Func<DateTimeOffset> now)
     {
         _leagues = leagues;
         _invites = invites;
+        _teams = teams;
         _now = now;
     }
 
@@ -41,12 +44,16 @@ public sealed class JoinMiniLeagueUseCase : IJoinMiniLeagueUseCase
 
         var members = await _leagues.GetMembersAsync(invite.LeagueId, ct);
         if (members.Any(m => m.UserId == userId))
-            return new JoinMiniLeagueResult.AlreadyMember(new MiniLeagueView(league, members));
+        {
+            var existingTeamNames = await MiniLeagueMemberTeamNames.ResolveAsync(_teams, members, ct);
+            return new JoinMiniLeagueResult.AlreadyMember(new MiniLeagueView(league, members, existingTeamNames));
+        }
 
         var newMember = new MiniLeagueMember(userId, MiniLeagueRoles.Member, _now());
         await _leagues.AddMemberAsync(invite.LeagueId, newMember, ct);
 
         var updated = new List<MiniLeagueMember>(members) { newMember };
-        return new JoinMiniLeagueResult.Joined(new MiniLeagueView(league, updated));
+        var teamNames = await MiniLeagueMemberTeamNames.ResolveAsync(_teams, updated, ct);
+        return new JoinMiniLeagueResult.Joined(new MiniLeagueView(league, updated, teamNames));
     }
 }

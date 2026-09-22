@@ -17,8 +17,13 @@ public interface IGetMiniLeagueUseCase
 public sealed class GetMiniLeagueUseCase : IGetMiniLeagueUseCase
 {
     private readonly IMiniLeagueRepository _leagues;
+    private readonly IGameTeamRepository _teams;
 
-    public GetMiniLeagueUseCase(IMiniLeagueRepository leagues) => _leagues = leagues;
+    public GetMiniLeagueUseCase(IMiniLeagueRepository leagues, IGameTeamRepository teams)
+    {
+        _leagues = leagues;
+        _teams = teams;
+    }
 
     public async Task<GetMiniLeagueResult> ExecuteAsync(string leagueId, CancellationToken ct)
     {
@@ -26,6 +31,7 @@ public sealed class GetMiniLeagueUseCase : IGetMiniLeagueUseCase
         if (league is null) return new GetMiniLeagueResult.NotFound();
 
         var members = await _leagues.GetMembersAsync(leagueId, ct);
-        return new GetMiniLeagueResult.Found(new MiniLeagueView(league, members));
+        var teamNames = await MiniLeagueMemberTeamNames.ResolveAsync(_teams, members, ct);
+        return new GetMiniLeagueResult.Found(new MiniLeagueView(league, members, teamNames));
     }
 }
