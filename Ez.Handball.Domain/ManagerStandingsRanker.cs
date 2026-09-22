@@ -3,16 +3,20 @@ namespace Ez.Handball.Domain;
 // Pure ranking core. Given settled-score summaries (already scoped to the desired
 // manager set) and a teamId → (name, color) map, produces the full ranked standings
 // with movement vs the previous round. Ties share a rank (FPL-style); display order
-// within a tie is by team name then teamId.
+// within a tie is by team name then teamId. Teams in the optional roster are ranked even
+// without a settled score (0 points, no previous rank) — a mini-league lists every member.
 public static class ManagerStandingsRanker
 {
     public static RankedManagers Rank(
         IEnumerable<GameweekScoreSummary> summaries,
-        IReadOnlyDictionary<string, (string Name, string Color)> names)
+        IReadOnlyDictionary<string, (string Name, string Color)> names,
+        IEnumerable<string>? roster = null)
     {
         var byTeam = summaries
             .GroupBy(s => s.TeamId)
             .ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var teamId in roster ?? Enumerable.Empty<string>())
+            byTeam.TryAdd(teamId, new List<GameweekScoreSummary>());
 
         if (byTeam.Count == 0)
             return new RankedManagers(null, Array.Empty<ManagerStanding>());
@@ -24,7 +28,7 @@ public static class ManagerStandingsRanker
             .ThenBy(r => r, StringComparer.Ordinal)
             .ToList();
 
-        var latestRound = rounds[^1];
+        string? latestRound = rounds.Count > 0 ? rounds[^1] : null;
         string? previousRound = rounds.Count > 1 ? rounds[^2] : null;
 
         var totals = byTeam.ToDictionary(kv => kv.Key, kv => kv.Value.Sum(r => r.Points));

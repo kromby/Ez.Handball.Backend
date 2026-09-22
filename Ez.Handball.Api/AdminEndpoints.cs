@@ -115,6 +115,26 @@ public static class AdminEndpoints
             });
         });
 
+        // Production settlement (#136): settles every team for one round, or — with no round — for every
+        // complete gameweek. Idempotent, so it doubles as the backfill for rounds that were never settled.
+        admin.MapPost("/gameweeks/settle", async (
+            string? round, int? version,
+            ISettleRoundForAllTeamsUseCase settleRound, ISettleCompletedRoundsUseCase settleCompleted,
+            CancellationToken ct) =>
+        {
+            if (!string.IsNullOrWhiteSpace(round))
+                return DebugReplayEndpoints.MapSettle(await settleRound.ExecuteAsync(round, version, ct));
+
+            return await settleCompleted.ExecuteAsync(null, version, ct) switch
+            {
+                SettleCompletedRoundsResult.ConfigMissing       => Results.BadRequest(new { error = "gameweek_config_missing" }),
+                SettleCompletedRoundsResult.CalendarUnavailable => Results.NotFound(new { error = "tournament_not_found" }),
+                SettleCompletedRoundsResult.RoundFailed f       => DebugReplayEndpoints.MapSettle(f.Reason),
+                SettleCompletedRoundsResult.Completed c         => Results.Ok(new { rounds = c.Rounds }),
+                _                                               => Results.Problem()
+            };
+        });
+
         admin.MapPost("/players/{playerId}/position", async (
             string playerId, SetPlayerPositionRequest body,
             ISetPlayerPositionUseCase uc, CancellationToken ct) =>

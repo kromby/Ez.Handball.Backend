@@ -57,4 +57,56 @@ public class GetMiniLeagueStandingsUseCaseTests
         Assert.Equal(2, found.Standings.Total);
         Assert.Equal("b:fantasy", found.Standings.Entries[0].TeamId);
     }
+
+    [Fact]
+    public async Task MembersWithoutSettledScores_AreRankedWithZeroPoints()
+    {
+        _leagues.Setup(l => l.GetAsync("lg-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MiniLeague("lg-1", "Office", "2025-26", "a", DateTimeOffset.UnixEpoch));
+        _leagues.Setup(l => l.GetMembersAsync("lg-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new MiniLeagueMember("a", MiniLeagueRoles.Creator, DateTimeOffset.UnixEpoch),
+                new MiniLeagueMember("b", MiniLeagueRoles.Member, DateTimeOffset.UnixEpoch),
+                new MiniLeagueMember("no-team", MiniLeagueRoles.Member, DateTimeOffset.UnixEpoch),
+            });
+        _scores.Setup(s => s.ListSummariesByTeamsAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { new GameweekScoreSummary("b:fantasy", "1", 40) });
+        _teams.Setup(t => t.ListByFlavorAsync(GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Team("a", "Alpha"), Team("b", "Bravo") });
+
+        var result = await CreateSut().ExecuteAsync("lg-1", 0, 50, default);
+
+        var found = Assert.IsType<GetMiniLeagueStandingsResult.Found>(result);
+        // A member with no fantasy team at all has nothing to rank and is left out.
+        Assert.Equal(2, found.Standings.Total);
+        Assert.Equal(("b:fantasy", 1, 40.0), (found.Standings.Entries[0].TeamId, found.Standings.Entries[0].Rank, found.Standings.Entries[0].TotalPoints));
+        var alpha = found.Standings.Entries[1];
+        Assert.Equal(("a:fantasy", "Alpha", 2, 0.0, 0.0), (alpha.TeamId, alpha.TeamName, alpha.Rank, alpha.TotalPoints, alpha.RoundPoints));
+        Assert.Null(alpha.PreviousRank);
+    }
+
+    [Fact]
+    public async Task NoSettledScoresYet_RanksEveryMemberAtZero()
+    {
+        _leagues.Setup(l => l.GetAsync("lg-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MiniLeague("lg-1", "Office", "2025-26", "a", DateTimeOffset.UnixEpoch));
+        _leagues.Setup(l => l.GetMembersAsync("lg-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new MiniLeagueMember("a", MiniLeagueRoles.Creator, DateTimeOffset.UnixEpoch),
+                new MiniLeagueMember("b", MiniLeagueRoles.Member, DateTimeOffset.UnixEpoch),
+            });
+        _scores.Setup(s => s.ListSummariesByTeamsAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<GameweekScoreSummary>());
+        _teams.Setup(t => t.ListByFlavorAsync(GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Team("a", "Alpha"), Team("b", "Bravo") });
+
+        var result = await CreateSut().ExecuteAsync("lg-1", 0, 50, default);
+
+        var found = Assert.IsType<GetMiniLeagueStandingsResult.Found>(result);
+        Assert.Null(found.Standings.LatestRoundLabel);
+        Assert.Equal(new[] { "Alpha", "Bravo" }, found.Standings.Entries.Select(e => e.TeamName));
+        Assert.All(found.Standings.Entries, e => Assert.Equal((1, 0.0), (e.Rank, e.TotalPoints)));
+    }
 }

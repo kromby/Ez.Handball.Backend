@@ -142,4 +142,24 @@ public class ManagerStandingsRankerTests
         Assert.Equal("ghost:fantasy", result.Entries[0].TeamName);
         Assert.Equal("", result.Entries[0].Color);
     }
+
+    [Fact]
+    public void RosterTeamWithoutScores_RanksAtZero_WithoutPreviousRank()
+    {
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "1", 10),
+            new GameweekScoreSummary("a:fantasy", "2", 5),
+        };
+
+        var result = ManagerStandingsRanker.Rank(
+            summaries, Names(("a:fantasy", "Alpha"), ("b:fantasy", "Bravo")), new[] { "a:fantasy", "b:fantasy" });
+
+        Assert.Equal("2", result.LatestRoundLabel);
+        var bravo = Assert.Single(result.Entries, e => e.TeamId == "b:fantasy");
+        Assert.Equal((2, 0.0, 0.0), (bravo.Rank, bravo.TotalPoints, bravo.RoundPoints));
+        Assert.Null(bravo.PreviousRank);
+        Assert.Null(bravo.RankDelta);
+        Assert.Equal(1, result.Entries.Single(e => e.TeamId == "a:fantasy").PreviousRank);
+    }
 }

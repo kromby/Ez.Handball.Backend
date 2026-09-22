@@ -29,7 +29,7 @@ public class SettlementTrigger : ISettlementTrigger
         try
         {
             _httpFactory.CreateClient();
-            // V0: the Api decides readiness; the round + team fan-out is a follow-up. This logs intent.
+            // V0: logs intent only. The Api settles complete rounds itself on a timer (AutoSettlementService, #136).
             _logger.LogInformation("Match {MatchId} synced; settlement poke target {BaseUrl} (fan-out deferred).", matchId, baseUrl);
             await Task.CompletedTask;
         }

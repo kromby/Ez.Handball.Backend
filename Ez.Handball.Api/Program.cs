@@ -3,6 +3,7 @@ using Ez.Handball.Api;
 using Ez.Handball.Api.Auth;
 using Ez.Handball.Api.Middleware;
 using Ez.Handball.Api.Serialization;
+using Ez.Handball.Api.Settlement;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
@@ -216,6 +217,14 @@ builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCa
 builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueStandingsUseCase, GetMiniLeagueStandingsUseCase>();
 builder.Services.AddScoped<ISettleRoundForAllTeamsUseCase, SettleRoundForAllTeamsUseCase>();
+builder.Services.AddScoped<ISettleCompletedRoundsUseCase>(sp => new SettleCompletedRoundsUseCase(
+    sp.GetRequiredService<IGameweekConfigRepository>(),
+    sp.GetRequiredService<IGameweekCalendarService>(),
+    sp.GetRequiredService<ISettleRoundForAllTeamsUseCase>(),
+    sp.GetRequiredService<GameClock>()));
+builder.Services.AddSingleton(
+    builder.Configuration.GetSection(AutoSettlementOptions.Section).Get<AutoSettlementOptions>() ?? new AutoSettlementOptions());
+builder.Services.AddHostedService<AutoSettlementService>();
 builder.Services.AddScoped<IAdvanceClockUseCase>(sp => new AdvanceClockUseCase(
     sp.GetRequiredService<IClockOverrideStore>(),
     sp.GetRequiredService<IGameweekConfigRepository>(),

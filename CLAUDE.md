@@ -213,10 +213,13 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   Returns `not_ready` (409) until every member match is final.
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
   authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
-- **V0 limitation:** settlement runs per team. There is no all-teams fan-out yet —
-  `ISettlementTrigger`/`SettlementTrigger` (`Ez.Handball.Ingestion/Services`) is a logging stub
-  establishing the trigger point; the per-team POST loop is a follow-up. It's poked from
-  `TriggerHbStatzSyncFunction` once a match's HBStatz enrichment sync succeeds — not from the
-  raw hsi.is ingestion path — so settlement waits for HBStatz's richer stats rather than firing
-  on the first hsi.is pass. Scoring point values come from the configured `ScoringRuleSet`
-  version (#27 calibration plugs in there).
+- **All-teams settlement (Backend#136):** the Api's `AutoSettlementService` (hosted
+  `BackgroundService`) runs `SettleCompletedRoundsUseCase` every `Settlement:Interval`
+  (default 1h, first run after `Settlement:StartupDelay`, default 2 min). Each tick re-settles
+  every complete gameweek (all member matches final) whose last match started within
+  `Settlement:RecentWindow` (default 7 days), so late HBStatz enrichment and stat corrections
+  flow into scores. Disable with `Settlement:Enabled=false`. Admins can settle on demand with
+  `POST /api/admin/gameweeks/settle?round={label}`, or omit `round` to settle *every* complete
+  gameweek (the backfill for rounds older than the window). The ingestion
+  `ISettlementTrigger`/`SettlementTrigger` is still only a logging stub. Scoring point values
+  come from the configured `ScoringRuleSet` version (#27 calibration plugs in there).
