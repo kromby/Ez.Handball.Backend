@@ -241,4 +241,25 @@ public class TablePlayerHistoryRepositoryTests
         Assert.Equal(15.0 / 3, result.Totals.AvgGoals);
         Assert.Equal(1.0  / 3, result.Totals.AvgYellowCards);
     }
+
+    [Fact]
+    public async Task GetByPlayerAsync_SumsHbStatzCounts_TreatingMissingAsZero()
+    {
+        var synced = Stat("m1", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 5, 0, 0, 0);
+        synced.HbStatzAssists = 4;
+        synced.HbStatzSteals = 2;
+        synced.HbStatzBlocks = 1;
+        synced.HbStatzSaves = 3;
+        var unsynced = Stat("m2", "12345", "2025-26", "8444", "385-karlar", "Stjarnan", 2, 0, 0, 0);
+        SetupStats("12345", synced, unsynced);
+        SetupTournaments("2025-26", Tour("2025-26", "8444", "Olís deild karla", 10));
+
+        var result = await CreateSut().GetByPlayerAsync("12345", default);
+
+        var entry = Assert.Single(result.Entries);
+        Assert.Equal((4, 2, 1, 3), (entry.TotalAssists, entry.TotalSteals, entry.TotalBlocks, entry.TotalSaves));
+        var totals = result.Totals!;
+        Assert.Equal((4, 2, 1, 3), (totals.TotalAssists, totals.TotalSteals, totals.TotalBlocks, totals.TotalSaves));
+        Assert.Null(entry.Points);
+    }
 }

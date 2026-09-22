@@ -159,6 +159,7 @@ builder.Services.AddScoped<IPlayerStatsAggregator, PlayerStatsAggregator>();
 builder.Services.AddScoped<IGetPlayerRatingUseCase, GetPlayerRatingUseCase>();
 builder.Services.AddScoped<FantasyPlayerRatingFunction>();
 builder.Services.AddScoped<FantasyPricing>();
+builder.Services.AddScoped<FantasyPointsCalculator>();
 builder.Services.AddScoped<IPlayerPriceService, PlayerPriceService>();
 builder.Services.AddScoped<IBuyPlayerFunction, FantasyBuyPlayerFunction>();
 builder.Services.AddScoped<IBuyPlayerFunction, ManagerBuyPlayerFunction>();
@@ -314,7 +315,43 @@ app.MapGet("/api/players/{playerId}/stats", async Task<IResult> (
     return result switch
     {
         GetPlayerStatsResult.NotFound         => Results.NotFound(new { error = "player_not_found" }),
-        GetPlayerStatsResult.Found f          => Results.Ok(new { playerId = f.PlayerId, stats = f.Stats }),
+        GetPlayerStatsResult.Found f          => Results.Ok(new
+        {
+            playerId = f.PlayerId,
+            stats = f.Stats.Select(line => new
+            {
+                line.Stat.PlayerId,
+                line.Stat.MatchId,
+                line.Stat.TournamentId,
+                line.Stat.TournamentName,
+                line.Stat.Season,
+                line.Stat.TeamId,
+                line.Stat.ClubName,
+                line.Stat.Goals,
+                line.Stat.YellowCards,
+                line.Stat.TwoMinuteSuspensions,
+                line.Stat.RedCards,
+                line.Stat.HbStatzAssists,
+                line.Stat.HbStatzSteals,
+                line.Stat.HbStatzBlocks,
+                line.Stat.HbStatzSaves,
+                line.Stat.HbStatzTurnovers,
+                line.Stat.HbStatzLegalStops,
+                line.Stat.HbStatzShots,
+                line.Stat.HbStatzExpectedGoals,
+                line.Stat.HbStatzShotsFaced,
+                line.Stat.HbStatzSavePct,
+                line.Stat.HbStatzExpectedSaves,
+                line.Stat.HbStatzGradeTotal,
+                line.Stat.HbStatzGradeOffense,
+                line.Stat.HbStatzGradeDefense,
+                line.Stat.HbStatzGradeGoalkeeping,
+                date = line.Date,
+                opponentClubId = line.Opponent?.ClubId,
+                opponentClubName = line.Opponent?.ClubName,
+                points = line.Points
+            })
+        }),
         _                                     => Results.Problem()
     };
 });
