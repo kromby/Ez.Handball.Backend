@@ -175,6 +175,17 @@ hsi.is on a transfer, and deletes any row left behind under a different
 partition — so this self-heals the next time a transferred player is parsed
 in a new match for their current club.
 
+Only the player's **newest** match may move them (Backend#132). Parse order is
+not match order: blob listing is lexical, so a full reparse used to replay
+5-digit (older-season) matchIds after 6-digit current-season ones and moved
+every transferred player back to a former club. `PlayerEntity.LastMatchDate`
+records the date of the match that placed the row; `PlayerParser` skips the
+Players write (and the stale-row deletes) for any match older than it and only
+writes that match's `PlayerStats` line. `ReparseFunction` also replays in
+numeric matchId order. `TransferPlayers` writes a fresh row without
+`LastMatchDate`, so the player's next parsed match always wins over a manual
+transfer.
+
 For duplicates that predate this fix, see `docs/runbook.md` for the one-time
 dedupe op.
 

@@ -52,6 +52,13 @@ public class ReparseFunction
                 players.Add(name);
         }
 
+        // Blob listing is lexical, so 5-digit (older) matchIds sort after 6-digit (newer) ones.
+        // Replay in numeric matchId order — roughly chronological — so old seasons don't run
+        // last. PlayerParser guards on match date anyway; this keeps the first reparse after
+        // LastMatchDate was introduced from stamping stale dates.
+        details = OrderByMatchId(details);
+        players = OrderByMatchId(players);
+
         var errors = new List<ReparseError>();
         var matchesReparsed = 0;
         var playerFilesReparsed = 0;
@@ -90,6 +97,11 @@ public class ReparseFunction
 
         return new ReparseResult(matchesReparsed, playerFilesReparsed, errors);
     }
+
+    // Non-numeric matchIds (none expected from hsi.is) sort last, in their listed order.
+    private static List<string> OrderByMatchId(List<string> blobs) => blobs
+        .OrderBy(b => long.TryParse(ExtractMatchId(b), out var id) ? id : long.MaxValue)
+        .ToList();
 
     // "matches/{matchId}/details.json" or "matches/{matchId}/players-{clubId}.json"
     private static string ExtractMatchId(string blobPath)

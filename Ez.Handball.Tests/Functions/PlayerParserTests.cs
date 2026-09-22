@@ -25,15 +25,47 @@ public class PlayerParserTests
         string matchId = "5001",
         string tournamentId = "8444",
         string homeTeamId = "385-karlar",
-        string awayTeamId = "390-karlar")
+        string awayTeamId = "390-karlar",
+        DateTimeOffset date = default)
     {
         return new MatchEntity
         {
             PartitionKey = tournamentId,
             RowKey = matchId,
             HomeTeamId = homeTeamId,
-            AwayTeamId = awayTeamId
+            AwayTeamId = awayTeamId,
+            Date = date
         };
+    }
+
+    // Arranges a home-side parse of match 5001 for club 385 played on matchDate, with the
+    // given pre-existing Players rows for player 42, and returns the blob to parse.
+    private string ArrangeTransferScenario(DateTimeOffset matchDate, params PlayerEntity[] existingRows)
+    {
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", "RowKey eq '5001'", default))
+            .ReturnsAsync(new List<MatchEntity> { BuildMatch(date: matchDate) });
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "385", default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = "385", Name = "Stjarnan" });
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(existingRows.ToList());
+
+        return BuildPlayerStatsJson(new[]
+        {
+            new PlayerStatDto
+            {
+                PlayerId = "42", Name = "Jón Jónsson", Position = "CB", Player = "1", Goals = "2",
+                PlayerJerseyNumber = "7"
+            }
+        });
     }
 
     [Fact]
@@ -557,5 +589,84 @@ public class PlayerParserTests
         _tableWriter.Verify(t => t.UpsertAsync("Players",
             It.IsAny<PlayerEntity>(),
             default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MatchNewerThanPlayersLastMatch_MovesPlayer_AndStampsLastMatchDate()
+    {
+        var matchDate = new DateTimeOffset(2026, 9, 16, 19, 15, 0, TimeSpan.Zero);
+        var blob = ArrangeTransferScenario(matchDate, new PlayerEntity
+        {
+            PartitionKey = "166-karlar", RowKey = "42", Name = "Jón Jónsson", Position = "CB",
+            LastMatchDate = new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero)
+        });
+
+        await CreateSut().ParseAsync(blob, "5001", "385");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.PartitionKey == "385-karlar" && e.RowKey == "42" && e.LastMatchDate == matchDate),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+        _tableWriter.Verify(t => t.DeleteAsync("Players", "166-karlar", "42", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MatchOlderThanPlayersLastMatchAtAnotherClub_LeavesPlayerRowsAlone_ButWritesStats()
+    {
+        // A full reparse replays old-season matches after current-season ones (blob listing is
+        // lexical, and 5-digit matchIds sort after 6-digit ones). That old match must not move
+        // the player back to a former club or delete their current row — it only contributes
+        // its stat line.
+        var blob = ArrangeTransferScenario(new DateTimeOffset(2024, 2, 1, 19, 30, 0, TimeSpan.Zero), new PlayerEntity
+        {
+            PartitionKey = "96-karlar", RowKey = "42", Name = "Jón Jónsson", Position = "RB",
+            LastMatchDate = new DateTimeOffset(2026, 9, 16, 19, 15, 0, TimeSpan.Zero)
+        });
+
+        await CreateSut().ParseAsync(blob, "5001", "385");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players", It.IsAny<PlayerEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<Azure.Data.Tables.TableUpdateMode>()), Times.Never);
+        _tableWriter.Verify(t => t.DeleteAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default), Times.Never);
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
+            It.Is<PlayerStatEntity>(e => e.PartitionKey == "5001" && e.RowKey == "42" && e.TeamId == "385-karlar" && e.Goals == 2),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MatchOlderThanPlayersLastMatchAtSameClub_DoesNotOverwriteCurrentDetails()
+    {
+        // Same club, older match: the stored row already reflects a newer match (e.g. a newer
+        // jersey number), so the older match's roster details must not overwrite it.
+        var blob = ArrangeTransferScenario(new DateTimeOffset(2025, 10, 1, 19, 30, 0, TimeSpan.Zero), new PlayerEntity
+        {
+            PartitionKey = "385-karlar", RowKey = "42", Name = "Jón Jónsson", Position = "CB", JerseyNumber = "10",
+            LastMatchDate = new DateTimeOffset(2026, 9, 16, 19, 15, 0, TimeSpan.Zero)
+        });
+
+        await CreateSut().ParseAsync(blob, "5001", "385");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players", It.IsAny<PlayerEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<Azure.Data.Tables.TableUpdateMode>()), Times.Never);
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats", It.IsAny<PlayerStatEntity>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ExistingRowsHaveNoLastMatchDate_TreatsParsedMatchAsNewest()
+    {
+        // Rows written before LastMatchDate existed carry no date; the parsed match wins, as it
+        // did before, so the first chronological reparse after deploy backfills the column.
+        var matchDate = new DateTimeOffset(2024, 2, 1, 19, 30, 0, TimeSpan.Zero);
+        var blob = ArrangeTransferScenario(matchDate, new PlayerEntity
+        {
+            PartitionKey = "166-karlar", RowKey = "42", Name = "Jón Jónsson", Position = "CB"
+        });
+
+        await CreateSut().ParseAsync(blob, "5001", "385");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.PartitionKey == "385-karlar" && e.LastMatchDate == matchDate),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+        _tableWriter.Verify(t => t.DeleteAsync("Players", "166-karlar", "42", default), Times.Once);
     }
 }

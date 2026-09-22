@@ -90,33 +90,43 @@ public class PlayerParser : IPlayerParser
             // POSITION field, and (b) get cleaned up below instead of lingering forever.
             var existingRows = await _tableWriter.QueryAsync<PlayerEntity>(
                 "Players", $"RowKey eq '{Escape(playerId)}'", ct);
-            var existingPlayer = existingRows.FirstOrDefault(p => p.PartitionKey == teamId)
-                ?? existingRows.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Position));
-            var position = existingPlayer is not null && !string.IsNullOrWhiteSpace(existingPlayer.Position)
-                ? existingPlayer.Position
-                : player.Position;
 
-            await _tableWriter.UpsertAsync("Players", new PlayerEntity
+            // The Players row records where the player is *now*, so only the newest match may
+            // place them. Parse order isn't match order — a full reparse replays old seasons
+            // after the current one — so an older match only contributes its stat line below
+            // and never moves the player back to a former club.
+            var isNewestMatch = !existingRows.Any(p => p.LastMatchDate > match.Date);
+            if (isNewestMatch)
             {
-                PartitionKey = teamId,
-                RowKey = playerId,
-                Name = player.Name,
-                Position = position,
-                JerseyNumber = player.PlayerJerseyNumber,
-                DateOfBirth = ParseDateOfBirth(player.Identifier),
-                Gender = derivedGender,
-                ClubId = derivedClubId,
-                ClubName = club?.Name
-                // Retired intentionally not set — Merge preserves the maintainer's value.
-            }, ct, TableUpdateMode.Merge);
+                var existingPlayer = existingRows.FirstOrDefault(p => p.PartitionKey == teamId)
+                    ?? existingRows.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Position));
+                var position = existingPlayer is not null && !string.IsNullOrWhiteSpace(existingPlayer.Position)
+                    ? existingPlayer.Position
+                    : player.Position;
 
-            // hsi.is says this player is on teamId's roster now, so any row left behind under a
-            // different partition is a stale pre-transfer duplicate — delete it so every reader
-            // that resolves a player by RowKey (the public player pool, admin tooling, HBStatz
-            // aggregation) sees exactly one row.
-            foreach (var stale in existingRows.Where(p => p.PartitionKey != teamId))
-            {
-                await _tableWriter.DeleteAsync("Players", stale.PartitionKey, stale.RowKey, ct);
+                await _tableWriter.UpsertAsync("Players", new PlayerEntity
+                {
+                    PartitionKey = teamId,
+                    RowKey = playerId,
+                    Name = player.Name,
+                    Position = position,
+                    JerseyNumber = player.PlayerJerseyNumber,
+                    DateOfBirth = ParseDateOfBirth(player.Identifier),
+                    Gender = derivedGender,
+                    ClubId = derivedClubId,
+                    ClubName = club?.Name,
+                    LastMatchDate = match.Date
+                    // Retired intentionally not set — Merge preserves the maintainer's value.
+                }, ct, TableUpdateMode.Merge);
+
+                // hsi.is says this player is on teamId's roster as of their newest match, so any
+                // row left behind under a different partition is a stale pre-transfer duplicate —
+                // delete it so every reader that resolves a player by RowKey (the public player
+                // pool, admin tooling, HBStatz aggregation) sees exactly one row.
+                foreach (var stale in existingRows.Where(p => p.PartitionKey != teamId))
+                {
+                    await _tableWriter.DeleteAsync("Players", stale.PartitionKey, stale.RowKey, ct);
+                }
             }
 
             await _tableWriter.UpsertAsync("PlayerStats", new PlayerStatEntity
