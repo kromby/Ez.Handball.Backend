@@ -16,6 +16,14 @@ public class TriggerHbStatzSyncFunctionTests
     private readonly Mock<IHbStatzPlayerPositionAggregator> _positionAggregator = new();
     private readonly Mock<ISettlementTrigger> _settlementTrigger = new();
 
+    public TriggerHbStatzSyncFunctionTests()
+    {
+        // The match's PlayerStats rows only widen the roster for misfiled players; most tests
+        // don't exercise that, so default to none.
+        _tableWriter.Setup(t => t.QueryAsync<PlayerStatEntity>("PlayerStats", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerStatEntity>());
+    }
+
     private TriggerHbStatzSyncFunction CreateSut() =>
         new(_tableWriter.Object, _blobArchiver.Object, _hbStatzClient.Object, _positionAggregator.Object, _settlementTrigger.Object);
 
@@ -220,6 +228,46 @@ public class TriggerHbStatzSyncFunctionTests
             It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
         Assert.Null(match.HbStatzSyncedAt); // stays eligible for the next default sweep
         _settlementTrigger.Verify(s => s.PokeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SyncAsync_PlayerRowFiledUnderAnotherClub_ReconcilesViaTheMatchsOwnStatLine()
+    {
+        SetupTournamentQuery("IngestHbStatz eq true", Tournament());
+        _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FixturesJson);
+        _hbStatzClient.Setup(c => c.GetGameJsonAsync(12924, It.IsAny<CancellationToken>())).ReturnsAsync(GameJson);
+        var match = Match("103414");
+        SetupMatches(match);
+        SetupClubs();
+        _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
+        // The player's Players row sits under a former club (e.g. left there by an out-of-order
+        // reparse), so the 385-karlar roster doesn't have him...
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '385-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '390-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq 'hsi-1'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity> { new() { PartitionKey = "101-karlar", RowKey = "hsi-1", Name = "Arnór Snær Óskarsson", JerseyNumber = "6" } });
+        // ...but hsi.is's stat line for this very match puts him on 385-karlar.
+        var stat = new PlayerStatEntity
+        {
+            PartitionKey = "103414", RowKey = "hsi-1", Goals = 9,
+            TournamentId = "9142", Season = "2025-26", TeamId = "385-karlar", ClubName = "Stjarnan"
+        };
+        _tableWriter.Setup(t => t.QueryAsync<PlayerStatEntity>("PlayerStats", "PartitionKey eq '103414'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerStatEntity> { stat });
+        _tableWriter.Setup(t => t.GetAsync<PlayerStatEntity>("PlayerStats", "103414", "hsi-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stat);
+
+        var result = await CreateSut().SyncAsync(null);
+
+        Assert.Equal(1, result.MatchesSynced);
+        Assert.Empty(result.Failed);
+        _tableWriter.Verify(t => t.UpsertAsync("PlayerStats",
+            It.Is<PlayerStatEntity>(e => e.RowKey == "hsi-1" && e.HbStatzAssists == 2),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
     }
 
     [Fact]
