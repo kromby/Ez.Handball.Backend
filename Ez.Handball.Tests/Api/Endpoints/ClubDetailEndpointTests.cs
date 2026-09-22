@@ -98,7 +98,11 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
         _factory.Roster
             .Setup(s => s.ExecuteAsync("385", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetClubRosterResult.Found(new ClubRoster("385", "2025-2026",
-                new List<ClubRosterPlayer> { new("p1", "Aron", "23", "VS", 35) })));
+                new List<ClubRosterPlayer>
+                {
+                    new(new PlayerPoolEntry(1, "p1", "Aron", "385", "KR", "karlar", "VS", 3, 12, 0, 1, 0, 4,
+                        new PlayerPrice(2_000_000, "ISK"), 42, null, Assists: 5), "23", 35)
+                })));
 
         var response = await _client.GetAsync("/api/clubs/385/roster");
 
@@ -112,6 +116,24 @@ public class ClubDetailEndpointTests : IClassFixture<ClubDetailEndpointTests.Fac
         Assert.Equal("23", players[0].GetProperty("jerseyNumber").GetString());
         Assert.Equal("VS", players[0].GetProperty("position").GetString());
         Assert.Equal(35, players[0].GetProperty("age").GetInt32());
+        // Same per-player data as /api/players.
+        Assert.Equal(12, players[0].GetProperty("goals").GetInt32());
+        Assert.Equal(5, players[0].GetProperty("assists").GetInt32());
+        Assert.Equal(42, players[0].GetProperty("rating").GetDouble());
+        Assert.Equal(2_000_000, players[0].GetProperty("price").GetProperty("amount").GetDouble());
+        Assert.Equal("KR", players[0].GetProperty("clubName").GetString());
+    }
+
+    [Fact]
+    public async Task GetRoster_RuleSetMissing_Returns500()
+    {
+        _factory.Roster
+            .Setup(s => s.ExecuteAsync("385", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetClubRosterResult.RuleSetNotFound());
+
+        var response = await _client.GetAsync("/api/clubs/385/roster");
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
     [Fact]
