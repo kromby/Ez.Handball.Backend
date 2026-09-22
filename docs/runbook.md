@@ -61,3 +61,19 @@ For `Players` rows that duplicated across a club transfer before
 defaults to a dry run). For every `RowKey` with more than one row, it keeps
 the one with the latest `Timestamp` (the one still receiving ingestion writes)
 and deletes the rest. Idempotent and safe to re-run.
+
+## Players moved back to former clubs by reparse (Backend#132)
+
+Before `PlayerEntity.LastMatchDate` existed, a full `POST /api/reparse` could
+leave transferred players under their old club (the match page showed them as
+"Óþekktur leikmaður"). After deploying the fix, run a full `POST /api/reparse`
+once. It now replays in numeric matchId order, so each player's newest match is
+parsed last, and it stamps `LastMatchDate` on every row, which guards all later
+reparses. Check a known case afterwards: `GET /api/players/177119` should show
+`teamId` `96-karlar` (FH), and every line in `GET /api/matches/111452` should
+have a `jerseyNumber`.
+
+Reparse rewrites `Matches` rows, which clears `HbStatzSyncedAt`, and rewrites
+`PlayerStats` rows, which clears their HBStatz columns. Any full reparse does
+this. Run `POST /api/hbstatz/sync` afterwards: the default sweep re-syncs every
+match whose `HbStatzSyncedAt` is empty.
