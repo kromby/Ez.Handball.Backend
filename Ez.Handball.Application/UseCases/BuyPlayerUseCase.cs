@@ -32,11 +32,13 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
     private readonly Func<DateTimeOffset> _now;
     private readonly IGameweekSnapshotGuard _guard;
     private readonly ITransferLedgerRecorder _ledger;
+    private readonly ILineupRepository _lineup;
 
     public BuyPlayerUseCase(
         IGetBuyDecisionUseCase decision, IGetSquadUseCase squadView, IPlayerRepository players,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger,
+        ILineupRepository lineup)
     {
         _decision = decision;
         _squadView = squadView;
@@ -47,6 +49,7 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         _now = now;
         _guard = guard;
         _ledger = ledger;
+        _lineup = lineup;
     }
 
     public async Task<BuyPlayerResult> ExecuteAsync(
@@ -98,6 +101,9 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
             return BuyPlayerResult.Duplicate.Instance;
         }
 
+        // The new player starts in a saved lineup (#144); see SellPlayerUseCase.
+        await SyncLineupAsync(teamId, playerId, ct);
+
         await _ledger.RecordAsync(
             new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Buy, cost, context.Season, now), ct);
 
@@ -105,5 +111,12 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         return view is GetSquadResult.Found f
             ? new BuyPlayerResult.Committed(f.View)
             : BuyPlayerResult.RuleSetNotFound.Instance;
+    }
+
+    private async Task SyncLineupAsync(string teamId, string playerId, CancellationToken ct)
+    {
+        var saved = await _lineup.GetAsync(teamId, ct);
+        if (saved is not null)
+            await _lineup.ReplaceAsync(teamId, LineupSync.WithStarter(saved, playerId), ct);
     }
 }

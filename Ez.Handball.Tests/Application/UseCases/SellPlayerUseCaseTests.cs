@@ -16,6 +16,7 @@ public class SellPlayerUseCaseTests
     private readonly Mock<IGameBudgetRepository> _budget = new();
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private readonly Mock<ITransferLedgerRecorder> _ledger = new();
+    private readonly Mock<ILineupRepository> _lineup = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public SellPlayerUseCaseTests()
@@ -26,7 +27,7 @@ public class SellPlayerUseCaseTests
 
     private SellPlayerUseCase Sut() => new(
         _squadView.Object, _price.Object, _constraints.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
@@ -135,5 +136,68 @@ public class SellPlayerUseCaseTests
     {
         _teams.Setup(t => t.ExistsAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         Assert.IsType<SellPlayerResult.NoTeam>(await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None));
+    }
+
+    private void SellSucceeds()
+    {
+        TeamExists(); Owns("p-1", 40_000_000); Constraints(0.5); ViewReturns();
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 50_000_000));
+    }
+
+    [Fact]
+    public async Task Sold_Captain_WithSavedLineup_RemovesSlotAndLeavesNoCaptain()
+    {
+        SellSucceeds();
+        _lineup.Setup(l => l.GetAsync("u-1:fantasy", It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Lineup(new[]
+               {
+                   new LineupSlot("p-1", LineupRole.Captain, null),
+                   new LineupSlot("p-2", LineupRole.Starter, null),
+               }));
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync("u-1:fantasy", It.Is<Lineup>(x =>
+            x.Slots.Count == 1 && x.Slots[0].PlayerId == "p-2" && x.Slots.All(s => s.Role != LineupRole.Captain)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sold_WithoutSavedLineup_WritesNoLineup()
+    {
+        SellSucceeds();
+        _lineup.Setup(l => l.GetAsync("u-1:fantasy", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Sold_UpdatesLineupOnlyAfterSnapshotGuard()
+    {
+        SellSucceeds();
+        var order = new List<string>();
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .Callback(() => order.Add("guard")).ReturnsAsync(new SnapshotGuardResult(null, false));
+        _lineup.Setup(l => l.GetAsync("u-1:fantasy", It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Lineup(new[] { new LineupSlot("p-1", LineupRole.Starter, null) }));
+        _lineup.Setup(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()))
+               .Callback(() => order.Add("lineup")).Returns(Task.CompletedTask);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        Assert.Equal(new[] { "guard", "lineup" }, order);
+    }
+
+    [Fact]
+    public async Task NotInSquad_LeavesLineupUntouched()
+    {
+        TeamExists();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
