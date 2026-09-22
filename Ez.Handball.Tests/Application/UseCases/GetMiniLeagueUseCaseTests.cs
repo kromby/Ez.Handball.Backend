@@ -1,6 +1,7 @@
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
+using Ez.Handball.Shared.Entities;
 using Moq;
 
 namespace Ez.Handball.Tests.Application.UseCases;
@@ -9,9 +10,10 @@ public class GetMiniLeagueUseCaseTests
 {
     private readonly Mock<IMiniLeagueRepository> _leagues = new();
     private readonly Mock<IGameTeamRepository> _teams = new();
+    private readonly Mock<IUserRepository> _users = new();
     private static readonly DateTimeOffset T0 = DateTimeOffset.UnixEpoch;
 
-    private GetMiniLeagueUseCase CreateSut() => new(_leagues.Object, _teams.Object);
+    private GetMiniLeagueUseCase CreateSut() => new(_leagues.Object, _teams.Object, _users.Object);
 
     private static GameTeam Team(string name) => new("ignored", name, "#abcdef", DateTimeOffset.UnixEpoch);
 
@@ -60,5 +62,33 @@ public class GetMiniLeagueUseCaseTests
 
         var found = Assert.IsType<GetMiniLeagueResult.Found>(result);
         Assert.Null(found.View.MemberTeamNames?.GetValueOrDefault("u-1"));
+    }
+
+    [Fact]
+    public async Task ResolvesMemberFavoriteClubs_OmittingUnset()
+    {
+        var league = new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0);
+        _leagues.Setup(r => r.GetAsync("lg-1", It.IsAny<CancellationToken>())).ReturnsAsync(league);
+        _leagues.Setup(r => r.GetMembersAsync("lg-1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[]
+                {
+                    new MiniLeagueMember("u-1", MiniLeagueRoles.Creator, T0),
+                    new MiniLeagueMember("u-2", MiniLeagueRoles.Member, T0),
+                    new MiniLeagueMember("u-3", MiniLeagueRoles.Member, T0),
+                });
+        _users.Setup(u => u.GetByIdAsync("u-1", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new UserEntity { RowKey = "u-1", FavoriteClubId = "385" });
+        _users.Setup(u => u.GetByIdAsync("u-2", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new UserEntity { RowKey = "u-2", FavoriteClubId = "" });
+        _users.Setup(u => u.GetByIdAsync("u-3", It.IsAny<CancellationToken>()))
+              .ReturnsAsync((UserEntity?)null);
+
+        var result = await CreateSut().ExecuteAsync("lg-1", CancellationToken.None);
+
+        var found = Assert.IsType<GetMiniLeagueResult.Found>(result);
+        var clubIds = Assert.IsAssignableFrom<IReadOnlyDictionary<string, string>>(found.View.MemberFavoriteClubIds);
+        Assert.Equal("385", clubIds["u-1"]);
+        Assert.False(clubIds.ContainsKey("u-2"));
+        Assert.False(clubIds.ContainsKey("u-3"));
     }
 }
