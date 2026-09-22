@@ -77,3 +77,19 @@ Reparse rewrites `Matches` rows, which clears `HbStatzSyncedAt`, and rewrites
 `PlayerStats` rows, which clears their HBStatz columns. Any full reparse does
 this. Run `POST /api/hbstatz/sync` afterwards: the default sweep re-syncs every
 match whose `HbStatzSyncedAt` is empty.
+
+## Settle gameweeks that were never scored (Backend#136)
+
+Before Backend#136 nothing settled gameweeks in production, so no `GameweekScores` rows
+existed and every leaderboard/mini-league showed no points. After deploying it, backfill
+once as an admin:
+
+```bash
+curl -X POST -H "Authorization: Bearer <admin token>" \
+  "https://ez-handball-api.azurewebsites.net/api/admin/gameweeks/settle"
+```
+
+With no `round` it settles every complete gameweek and returns one report per round
+(`teamsConsidered`, `settled`, `notReady`, `skipped`). Idempotent — safe to re-run. From then
+on `AutoSettlementService` keeps recent rounds settled automatically.
+
