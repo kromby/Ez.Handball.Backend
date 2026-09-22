@@ -195,7 +195,8 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
             .ReturnsAsync(new GetMiniLeagueResult.Found(new MiniLeagueView(
                 new MiniLeague("lg-1", "Office League", "2025-26", "someone-else", T0),
                 new[] { new MiniLeagueMember("someone-else", MiniLeagueRoles.Creator, T0) },
-                new Dictionary<string, string> { ["someone-else"] = "Alpha" })));
+                new Dictionary<string, string> { ["someone-else"] = "Alpha" },
+                new Dictionary<string, string> { ["someone-else"] = "385" })));
         var token = await TokenAsync();
 
         var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1", token));
@@ -204,6 +205,24 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         var member = body.GetProperty("members")[0];
         Assert.Equal("Alpha", member.GetProperty("teamName").GetString());
+        Assert.Equal("someone-else:fantasy", member.GetProperty("teamId").GetString());
+        Assert.Equal("385", member.GetProperty("favoriteClubId").GetString());
+    }
+
+    [Fact]
+    public async Task Get_Found_MemberWithoutFavoriteClub_HasNullFavoriteClubId()
+    {
+        _factory.Get.Setup(u => u.ExecuteAsync("lg-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetMiniLeagueResult.Found(new MiniLeagueView(
+                new MiniLeague("lg-1", "Office League", "2025-26", "someone-else", T0),
+                new[] { new MiniLeagueMember("someone-else", MiniLeagueRoles.Creator, T0) })));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1", token));
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var member = body.GetProperty("members")[0];
+        Assert.Equal(JsonValueKind.Null, member.GetProperty("favoriteClubId").ValueKind);
     }
 
     [Fact]

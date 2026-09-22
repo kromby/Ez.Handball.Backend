@@ -43,7 +43,9 @@ public sealed class GetMiniLeagueStandingsUseCase : IGetMiniLeagueStandingsUseCa
 
         var summaries = await _scores.ListSummariesByTeamsAsync(teamIds, ct);
         var names = await ManagerStandingsAssembly.NameMapAsync(_teams, ct);
-        var ranked = ManagerStandingsRanker.Rank(summaries, names);
+        // Every member with a fantasy team is ranked, even before their first settled score.
+        var roster = teamIds.Where(names.ContainsKey);
+        var ranked = ManagerStandingsRanker.Rank(summaries, names, roster);
         return new GetMiniLeagueStandingsResult.Found(ManagerStandingsAssembly.Paginate(ranked, offset, limit));
     }
 }
