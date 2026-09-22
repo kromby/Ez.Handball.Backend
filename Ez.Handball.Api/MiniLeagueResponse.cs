@@ -16,10 +16,13 @@ internal static class MiniLeagueResponse
         createdAt     = view.League.CreatedAt,
         members       = view.Members.Select(m => new
         {
-            userId   = m.UserId,
-            role     = m.Role,
-            joinedAt = m.JoinedAt,
-            teamName = view.MemberTeamNames?.GetValueOrDefault(m.UserId)
+            userId         = m.UserId,
+            role           = m.Role,
+            joinedAt       = m.JoinedAt,
+            // Matches standings entries' teamId, so clients join points by id rather than by name.
+            teamId         = GameTeamId.For(m.UserId, GameFlavor.Fantasy),
+            teamName       = view.MemberTeamNames?.GetValueOrDefault(m.UserId),
+            favoriteClubId = view.MemberFavoriteClubIds?.GetValueOrDefault(m.UserId)
         })
     };
 }
