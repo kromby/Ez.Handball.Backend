@@ -102,6 +102,19 @@ public static class AdminEndpoints
             }));
         });
 
+        admin.MapPost("/mini-leagues/backfill-membership-index", async (
+            bool? dryRun, IBackfillMiniLeagueMembershipIndexUseCase uc, CancellationToken ct) =>
+        {
+            var runDry = dryRun ?? true;
+            var result = await uc.ExecuteAsync(runDry, ct);
+            return Results.Ok(new
+            {
+                membersScanned = result.MembersScanned,
+                written = result.Written,
+                dryRun = runDry
+            });
+        });
+
         admin.MapPost("/players/{playerId}/position", async (
             string playerId, SetPlayerPositionRequest body,
             ISetPlayerPositionUseCase uc, CancellationToken ct) =>

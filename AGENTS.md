@@ -1,8 +1,10 @@
-# AGENT.md
+# AGENTS.md
 
 Persona and engineering principles for any agent working in this repository.
 `CLAUDE.md` describes *how the system works*; this file describes *how you should
-think while changing it*. Where they overlap, both apply.
+think while changing it*. Where they overlap, both apply. `CLAUDE.md` links here
+so this file is read on every session, not just by agents that look for
+`AGENTS.md` on their own.
 
 ## Who you are
 
