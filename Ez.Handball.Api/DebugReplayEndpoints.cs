@@ -67,7 +67,8 @@ public static class DebugReplayEndpoints
         _ => Results.Problem()
     };
 
-    private static IResult MapSettle(SettleRoundForAllTeamsResult result) => result switch
+    // Shared with the admin settle endpoint (#136).
+    internal static IResult MapSettle(SettleRoundForAllTeamsResult result) => result switch
     {
         SettleRoundForAllTeamsResult.ConfigMissing => Results.BadRequest(new { error = "gameweek_config_missing" }),
         SettleRoundForAllTeamsResult.RoundNotFound => Results.NotFound(new { error = "round_not_found" }),
