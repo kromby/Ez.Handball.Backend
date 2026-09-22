@@ -24,4 +24,8 @@ public class PlayerEntity : ITableEntity
     // Out-of-band, maintainer-owned flag. Nullable so a Merge upsert that doesn't
     // set it leaves the stored value untouched (same trick as LogoSrc on Clubs).
     public bool? Retired { get; set; }
+    // Date of the newest match PlayerParser has placed this player by. A parse of an older
+    // match (e.g. an old season replayed by a full reparse) must not move the player back to
+    // a former club. Null on rows written before this column existed.
+    public DateTimeOffset? LastMatchDate { get; set; }
 }

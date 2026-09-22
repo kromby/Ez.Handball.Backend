@@ -68,6 +68,36 @@ public class ReparseFunctionTests
     }
 
     [Fact]
+    public async Task ReparseAsync_ParsesPlayerFilesInNumericMatchIdOrder_NotLexicalBlobOrder()
+    {
+        // Blob listing is lexical, so 5-digit (older) matchIds sort after 6-digit (newer) ones.
+        // Replaying in that order would parse old seasons last.
+        SetupList("matches/",
+            "matches/111452/details.json",
+            "matches/111452/players-96.json",
+            "matches/95763/details.json",
+            "matches/95763/players-166.json",
+            "matches/98630/details.json",
+            "matches/98630/players-166.json");
+        _blob.Setup(b => b.ReadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync("{}");
+
+        var matchOrder = new List<string>();
+        var playerOrder = new List<string>();
+        _matchParser.Setup(p => p.ParseAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .Callback<string, string, CancellationToken>((_, id, _) => matchOrder.Add(id))
+                    .Returns(Task.CompletedTask);
+        _playerParser.Setup(p => p.ParseAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                     .Callback<string, string, string, CancellationToken>((_, id, _, _) => playerOrder.Add(id))
+                     .Returns(Task.CompletedTask);
+
+        await CreateSut().ReparseAsync(null);
+
+        Assert.Equal(new[] { "95763", "98630", "111452" }, matchOrder);
+        Assert.Equal(new[] { "95763", "98630", "111452" }, playerOrder);
+    }
+
+    [Fact]
     public async Task ReparseAsync_WithMatchId_ScopesTheListingPrefix()
     {
         SetupList("matches/100/",
