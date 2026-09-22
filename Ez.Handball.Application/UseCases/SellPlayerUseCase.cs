@@ -30,11 +30,13 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
     private readonly Func<DateTimeOffset> _now;
     private readonly IGameweekSnapshotGuard _guard;
     private readonly ITransferLedgerRecorder _ledger;
+    private readonly ILineupRepository _lineup;
 
     public SellPlayerUseCase(
         IGetSquadUseCase squadView, IPlayerPriceService price, ISquadConstraintsRepository constraints,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
-        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger)
+        Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger,
+        ILineupRepository lineup)
     {
         _squadView = squadView;
         _price = price;
@@ -45,6 +47,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         _now = now;
         _guard = guard;
         _ledger = ledger;
+        _lineup = lineup;
     }
 
     public async Task<SellPlayerResult> ExecuteAsync(
@@ -74,6 +77,10 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         await _roster.SoftDeleteAsync(teamId, playerId, now, ct);
         await _budget.TryCreditAsync(teamId, credit, now, ct);
 
+        // Keep a saved lineup in step with the squad (#144). Runs after the snapshot guard, so
+        // locked rounds keep their frozen lineup; no saved lineup means settlement uses the default.
+        await SyncLineupAsync(teamId, playerId, ct);
+
         await _ledger.RecordAsync(
             new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Sell, credit, context.Season, now), ct);
 
@@ -81,5 +88,12 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         return view is GetSquadResult.Found f
             ? new SellPlayerResult.Sold(f.View)
             : SellPlayerResult.RuleSetNotFound.Instance;
+    }
+
+    private async Task SyncLineupAsync(string teamId, string playerId, CancellationToken ct)
+    {
+        var saved = await _lineup.GetAsync(teamId, ct);
+        if (saved is not null)
+            await _lineup.ReplaceAsync(teamId, LineupSync.WithoutPlayer(saved, playerId), ct);
     }
 }

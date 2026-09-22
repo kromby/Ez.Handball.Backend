@@ -16,6 +16,7 @@ public class BuyPlayerUseCaseTests
     private readonly Mock<IGameBudgetRepository> _budget = new();
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private readonly Mock<ITransferLedgerRecorder> _ledger = new();
+    private readonly Mock<ILineupRepository> _lineup = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public BuyPlayerUseCaseTests()
@@ -26,7 +27,7 @@ public class BuyPlayerUseCaseTests
 
     private BuyPlayerUseCase Sut() => new(
         _decision.Object, _squadView.Object, _players.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object);
 
     private static Player AnyPlayer(string id, string position) =>
         new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
@@ -206,5 +207,53 @@ public class BuyPlayerUseCaseTests
 
         _guard.Verify(g => g.EnsureSnapshotsAsync(
             GameTeamId.For("u-1", GameFlavor.Fantasy), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private void BuySucceeds()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); DecisionReturns(Allowed("p-1", 42_000_000)); SquadViewReturns();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+        _budget.Setup(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.Added);
+    }
+
+    [Fact]
+    public async Task Committed_WithSavedLineup_AddsPlayerAsStarter()
+    {
+        BuySucceeds();
+        _lineup.Setup(l => l.GetAsync("u-1:fantasy", It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Lineup(new[] { new LineupSlot("vice", LineupRole.Vice, null) }));
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync("u-1:fantasy", It.Is<Lineup>(x =>
+            x.Slots.Count == 2 && x.Slots.Any(s => s.PlayerId == "p-1" && s.Role == LineupRole.Starter && s.BenchOrder == null)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Committed_WithoutSavedLineup_WritesNoLineup()
+    {
+        BuySucceeds();
+        _lineup.Setup(l => l.GetAsync("u-1:fantasy", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddRacesToAlreadyActive_LeavesLineupUntouched()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); DecisionReturns(Allowed("p-1", 42_000_000));
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+        _budget.Setup(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.AlreadyActive);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
