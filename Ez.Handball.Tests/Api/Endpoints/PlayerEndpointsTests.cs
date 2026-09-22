@@ -211,7 +211,7 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
     {
         _factory.Stats
             .Setup(s => s.ExecuteAsync("12345", It.IsAny<PlayerStatsQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetPlayerStatsResult.Found("12345", Array.Empty<PlayerStat>()));
+            .ReturnsAsync(new GetPlayerStatsResult.Found("12345", Array.Empty<PlayerMatchStat>()));
 
         var response = await _client.GetAsync("/api/players/12345/stats");
 
@@ -219,6 +219,31 @@ public class PlayerEndpointsTests : IClassFixture<PlayerEndpointsTests.Factory>
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("12345", body.GetProperty("playerId").GetString());
         Assert.Equal(0, body.GetProperty("stats").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetStats_Line_IncludesStatFieldsOpponentDateAndPoints()
+    {
+        var stat = new PlayerStat("12345", "m1", "8444", "Olís deild karla", "2025-26", "453-karlar", "Valur",
+            5, 0, 1, 0, HbStatzAssists: 3);
+        var line = new PlayerMatchStat(stat, new DateTimeOffset(2025, 9, 1, 19, 30, 0, TimeSpan.Zero),
+            new MatchListTeam("143-karlar", "143", "Haukar", null, 28), 12);
+        _factory.Stats
+            .Setup(s => s.ExecuteAsync("12345", It.IsAny<PlayerStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetPlayerStatsResult.Found("12345", new[] { line }));
+
+        var response = await _client.GetAsync("/api/players/12345/stats");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var row = body.GetProperty("stats")[0];
+        Assert.Equal("m1", row.GetProperty("matchId").GetString());
+        Assert.Equal(5, row.GetProperty("goals").GetInt32());
+        Assert.Equal(3, row.GetProperty("hbStatzAssists").GetInt32());
+        Assert.Equal("143", row.GetProperty("opponentClubId").GetString());
+        Assert.Equal("Haukar", row.GetProperty("opponentClubName").GetString());
+        Assert.Equal(12, row.GetProperty("points").GetDouble());
+        Assert.True(row.TryGetProperty("date", out _));
     }
 
     [Fact]

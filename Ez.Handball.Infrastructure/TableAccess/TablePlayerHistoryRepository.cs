@@ -77,7 +77,11 @@ internal sealed class TablePlayerHistoryRepository : IPlayerHistoryRepository
                     AvgGoals: (double)goals / games,
                     AvgYellowCards: (double)yellow / games,
                     AvgTwoMinuteSuspensions: (double)twoMin / games,
-                    AvgRedCards: (double)red / games),
+                    AvgRedCards: (double)red / games,
+                    TotalAssists: g.Sum(s => s.HbStatzAssists ?? 0),
+                    TotalSteals: g.Sum(s => s.HbStatzSteals ?? 0),
+                    TotalBlocks: g.Sum(s => s.HbStatzBlocks ?? 0),
+                    TotalSaves: g.Sum(s => s.HbStatzSaves ?? 0)),
                     Priority: priority);
             })
             .OrderByDescending(x => x.Entry.Season, StringComparer.Ordinal)
@@ -98,7 +102,11 @@ internal sealed class TablePlayerHistoryRepository : IPlayerHistoryRepository
             (double)tGoals  / tGames,
             (double)tYellow / tGames,
             (double)tTwoMin / tGames,
-            (double)tRed    / tGames);
+            (double)tRed    / tGames,
+            TotalAssists: entries.Sum(e => e.TotalAssists),
+            TotalSteals: entries.Sum(e => e.TotalSteals),
+            TotalBlocks: entries.Sum(e => e.TotalBlocks),
+            TotalSaves: entries.Sum(e => e.TotalSaves));
 
         return new PlayerHistory(entries, totals);
     }
