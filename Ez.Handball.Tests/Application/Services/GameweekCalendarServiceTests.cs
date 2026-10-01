@@ -10,9 +10,17 @@ public class GameweekCalendarServiceTests
 {
     private readonly Mock<IMatchRepository> _matches = new();
     private readonly Mock<IGameweekLockRepository> _locks = new();
+    private readonly Mock<IMatchFinalOverrideRepository> _finalOverrides = new();
     private DateTimeOffset _now = new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private GameweekCalendarService CreateSut() => new(_matches.Object, _locks.Object, new StubTimeProvider(_now));
+    public GameweekCalendarServiceTests() => SetupOverrides();
+
+    private GameweekCalendarService CreateSut() =>
+        new(_matches.Object, _locks.Object, _finalOverrides.Object, new StubTimeProvider(_now));
+
+    private void SetupOverrides(params string[] matchIds) =>
+        _finalOverrides.Setup(r => r.ListMatchIdsAsync("8444", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HashSet<string>(matchIds));
 
     private static readonly GameweekConfig Config = new(
         Version: 1, TournamentId: "8444", LockOffsetHours: 1,
@@ -179,5 +187,40 @@ public class GameweekCalendarServiceTests
         SetupMatches(M("101", "1", early, "S"), M("102", "1", late, "S"));
         var settled = await CreateSut().GetCalendarAsync(Config, default);
         Assert.Equal(GameweekStatus.Settled, settled![0].Status);
+    }
+
+    [Fact]
+    public async Task FinalOverride_MakesANonFinalPlayedMatchFinal()
+    {
+        // hsi.is left 102 at "U" (played, never finalised); an admin override settles the round (#147).
+        SetupMatches(M("101", "1", _now.AddDays(-1), "S"), M("102", "1", _now.AddDays(-1), "U"));
+        SetupOverrides("102");
+
+        var calendar = await CreateSut().GetCalendarAsync(Config, default);
+
+        var gw = Assert.Single(calendar!);
+        Assert.All(gw.Matches, m => Assert.True(m.IsFinal));
+        Assert.Equal(GameweekStatus.Settled, gw.Status);
+    }
+
+    [Fact]
+    public async Task FinalOverride_StillRespectsTheFinalBuffer()
+    {
+        SetupMatches(M("101", "1", _now.AddHours(-1), "U"));
+        SetupOverrides("101");
+
+        var calendar = await CreateSut().GetCalendarAsync(Config, default);
+
+        Assert.False(Assert.Single(Assert.Single(calendar!).Matches).IsFinal);
+    }
+
+    [Fact]
+    public async Task WithoutOverride_NonSStatusIsNotFinal()
+    {
+        SetupMatches(M("101", "1", _now.AddDays(-1), "S"), M("102", "1", _now.AddDays(-1), "U"));
+
+        var calendar = await CreateSut().GetCalendarAsync(Config, default);
+
+        Assert.Equal(GameweekStatus.InPlay, Assert.Single(calendar!).Status);
     }
 }

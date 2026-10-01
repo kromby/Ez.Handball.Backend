@@ -155,7 +155,12 @@ public class TriggerHbStatzSyncFunction
         {
             // Single-match force resync — a direct point lookup, ignoring HbStatzSyncedAt.
             var match = await _tableWriter.GetAsync<MatchEntity>("Matches", tournamentId, matchId, ct);
-            return match is not null && match.Status == "S" ? new[] { match } : Array.Empty<MatchEntity>();
+            if (match is null) return Array.Empty<MatchEntity>();
+            // An admin final override (Backend#147) stands in for hsi.is's "S" on this explicit path,
+            // so a match hsi.is never finalises still gets its HBStatz stats before it is scored.
+            var final = match.Status == "S"
+                || await _tableWriter.GetAsync<MatchFinalOverrideEntity>("MatchFinalOverrides", tournamentId, matchId, ct) is not null;
+            return final ? new[] { match } : Array.Empty<MatchEntity>();
         }
 
         if (!string.IsNullOrWhiteSpace(round))

@@ -34,8 +34,11 @@ public class SettleGameweekGateIntegrationTests
 
     private SettleGameweekUseCase CreateSut(DateTimeOffset now)
     {
+        var noOverrides = new Mock<IMatchFinalOverrideRepository>();
+        noOverrides.Setup(r => r.ListMatchIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HashSet<string>());
         var calendar = new GameweekCalendarService(
-            _matches.Object, _locks.Object, new StubTimeProvider(now));
+            _matches.Object, _locks.Object, noOverrides.Object, new StubTimeProvider(now));
         return new SettleGameweekUseCase(
             _config.Object, calendar, _snapshots.Object, _liveLineup.Object,
             _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,

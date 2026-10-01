@@ -213,6 +213,12 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   Returns `not_ready` (409) until every member match is final.
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
   authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
+- **Final override (Backend#147):** hsi.is occasionally leaves a played match non-final (e.g.
+  status `U`), which blocks its whole gameweek from settling. An admin can
+  `PUT /api/admin/matches/{matchId}/final-override` (`DELETE` to clear) to treat it as final. The
+  flag lives in `MatchFinalOverrides` (PK tournamentId, RK matchId), not on `Matches`, because
+  ingestion rewrites match rows in Replace mode. `GameweekCalendarService` and the single-match
+  HBStatz sync honour it; `GET /api/admin/games` exposes `hsiStatus` and `finalOverride`.
 - **Default lineup (Backend#142):** the Web has no lineup editor, so most managers never save a
   lineup. Such a manager plays `DefaultLineup.From(squad, constraints)`: highest-rated players
   start (up to `starterCount`, within each position's max), the rest are benched by rating, no

@@ -208,6 +208,7 @@ builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 builder.Services.AddScoped<IGameweekCalendarService>(sp => new GameweekCalendarService(
     sp.GetRequiredService<IMatchRepository>(),
     sp.GetRequiredService<IGameweekLockRepository>(),
+    sp.GetRequiredService<IMatchFinalOverrideRepository>(),
     sp.GetRequiredService<GameClock>()));
 builder.Services.AddScoped<IGetGameweeksUseCase, GetGameweeksUseCase>();
 builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase>();
@@ -217,6 +218,7 @@ builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCa
 builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
 builder.Services.AddScoped<IGetMiniLeagueStandingsUseCase, GetMiniLeagueStandingsUseCase>();
 builder.Services.AddScoped<ISettleRoundForAllTeamsUseCase, SettleRoundForAllTeamsUseCase>();
+builder.Services.AddScoped<ISetMatchFinalOverrideUseCase, SetMatchFinalOverrideUseCase>();
 builder.Services.AddScoped<ISettleCompletedRoundsUseCase>(sp => new SettleCompletedRoundsUseCase(
     sp.GetRequiredService<IGameweekConfigRepository>(),
     sp.GetRequiredService<IGameweekCalendarService>(),

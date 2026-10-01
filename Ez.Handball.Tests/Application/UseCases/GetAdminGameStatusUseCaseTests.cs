@@ -11,9 +11,16 @@ public class GetAdminGameStatusUseCaseTests
     private readonly Mock<ISeasonRepository> _seasons = new();
     private readonly Mock<IMatchScheduleRepository> _schedules = new();
     private readonly Mock<IMatchRepository> _matches = new();
+    private readonly Mock<IMatchFinalOverrideRepository> _finalOverrides = new();
+
+    public GetAdminGameStatusUseCaseTests() => SetupOverrides();
+
+    private void SetupOverrides(params string[] matchIds) =>
+        _finalOverrides.Setup(r => r.ListMatchIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HashSet<string>(matchIds));
 
     private GetAdminGameStatusUseCase CreateSut() =>
-        new(_tournaments.Object, _seasons.Object, _schedules.Object, _matches.Object);
+        new(_tournaments.Object, _seasons.Object, _schedules.Object, _matches.Object, _finalOverrides.Object);
 
     private static Tournament AnyTournament(string id = "8444") =>
         new(id, "Olís deild karla", "karlar", TournamentType.League, "olis-karla", "Olís deild karla");
@@ -143,5 +150,27 @@ public class GetAdminGameStatusUseCaseTests
         var result = await CreateSut().ExecuteAsync("2025-26", CancellationToken.None);
 
         Assert.Equal(new[] { "1", "2", "10" }, result.Single().Rounds.Select(r => r.Round).ToArray());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ExposesRawHsiStatusAndFinalOverride()
+    {
+        _tournaments.Setup(r => r.ListActiveBySeasonAsync("2025-26", It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new List<Tournament> { AnyTournament("8444") });
+        _schedules.Setup(r => r.GetAsync("8444", It.IsAny<CancellationToken>()))
+                  .ReturnsAsync(new MatchSchedule(
+                      new List<ScheduledMatch> { Scheduled("111453", "4", "U"), Scheduled("111454", "4", "S") },
+                      DateTimeOffset.UnixEpoch));
+        _matches.Setup(r => r.ListByTournamentAsync("8444", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Ingested("8444", "111453", "111454"));
+        SetupOverrides("111453");
+
+        var result = await CreateSut().ExecuteAsync("2025-26", CancellationToken.None);
+
+        var games = Assert.Single(Assert.Single(result).Rounds).Games;
+        var stuck = games.Single(g => g.MatchId == "111453");
+        Assert.Equal(("upcoming", "U", true), (stuck.Status, stuck.HsiStatus, stuck.FinalOverride));
+        var played = games.Single(g => g.MatchId == "111454");
+        Assert.Equal(("S", false), (played.HsiStatus, played.FinalOverride));
     }
 }
