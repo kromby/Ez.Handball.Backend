@@ -14,13 +14,16 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
 {
     private readonly IMatchRepository _matches;
     private readonly IGameweekLockRepository _locks;
+    private readonly IMatchFinalOverrideRepository _finalOverrides;
     private readonly TimeProvider _clock;
 
     public GameweekCalendarService(
-        IMatchRepository matches, IGameweekLockRepository locks, TimeProvider clock)
+        IMatchRepository matches, IGameweekLockRepository locks,
+        IMatchFinalOverrideRepository finalOverrides, TimeProvider clock)
     {
         _matches = matches;
         _locks = locks;
+        _finalOverrides = finalOverrides;
         _clock = clock;
     }
 
@@ -28,6 +31,7 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
     {
         var data = await _matches.ListByTournamentAsync(config.TournamentId, ct);
         if (data is null) return null;
+        var overridden = await _finalOverrides.ListMatchIdsAsync(config.TournamentId, ct);
 
         var now = _clock.GetUtcNow();
         var offset = TimeSpan.FromHours(config.LockOffsetHours);
@@ -46,7 +50,7 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
             var roundLabel = group.Key;
             var members = group
                 .Select(m => new GameweekMatch(
-                    m.MatchId, m.Date, IsFinal(m.Status, m.Date, now, finalBuffer),
+                    m.MatchId, m.Date, IsFinal(m.Status, overridden.Contains(m.MatchId), m.Date, now, finalBuffer),
                     m.Home.TeamId, m.Away.TeamId))
                 .OrderBy(m => m.Date)
                 .ToList();
@@ -70,8 +74,9 @@ public sealed class GameweekCalendarService : IGameweekCalendarService
     // Effective finality (#95): stored as final AND virtual now has passed the fixture by the buffer
     // (match duration + reporting slack). In production now is the wall clock, so a played fixture
     // trivially passes and real future matches are not "S" — the gate is a no-op there.
-    private static bool IsFinal(string status, DateTimeOffset date, DateTimeOffset now, TimeSpan buffer)
-        => status == "S" && date + buffer <= now;
+    // An admin override (#147) stands in for "S" when hsi.is never finalises a played match.
+    private static bool IsFinal(string status, bool overridden, DateTimeOffset date, DateTimeOffset now, TimeSpan buffer)
+        => (status == "S" || overridden) && date + buffer <= now;
 
     private static GameweekStatus ComputeStatus(
         DateTimeOffset now, DateTimeOffset deadline, IReadOnlyList<GameweekMatch> members)

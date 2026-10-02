@@ -17,15 +17,18 @@ public class GetAdminGameStatusUseCase : IGetAdminGameStatusUseCase
     private readonly ISeasonRepository _seasons;
     private readonly IMatchScheduleRepository _schedules;
     private readonly IMatchRepository _matches;
+    private readonly IMatchFinalOverrideRepository _finalOverrides;
 
     public GetAdminGameStatusUseCase(
         ITournamentRepository tournaments, ISeasonRepository seasons,
-        IMatchScheduleRepository schedules, IMatchRepository matches)
+        IMatchScheduleRepository schedules, IMatchRepository matches,
+        IMatchFinalOverrideRepository finalOverrides)
     {
         _tournaments = tournaments;
         _seasons = seasons;
         _schedules = schedules;
         _matches = matches;
+        _finalOverrides = finalOverrides;
     }
 
     public async Task<IReadOnlyList<AdminTournamentGames>> ExecuteAsync(string? season, CancellationToken ct)
@@ -52,12 +55,13 @@ public class GetAdminGameStatusUseCase : IGetAdminGameStatusUseCase
         var ingested = await _matches.ListByTournamentAsync(tournament.TournamentId, ct);
         var ingestedById = (ingested?.Matches ?? Array.Empty<MatchListItem>())
             .ToDictionary(m => m.MatchId);
+        var overridden = await _finalOverrides.ListMatchIdsAsync(tournament.TournamentId, ct);
 
         var rounds = (schedule?.Matches ?? Array.Empty<ScheduledMatch>())
             .GroupBy(m => m.Round)
             .Select(g => new AdminRoundGames(
                 g.Key,
-                g.OrderBy(m => m.Date).Select(m => ToGameStatus(m, ingestedById)).ToList()))
+                g.OrderBy(m => m.Date).Select(m => ToGameStatus(m, ingestedById, overridden)).ToList()))
             .OrderBy(r => RoundOrder.Key(r.Round))
             .ThenBy(r => r.Round, StringComparer.Ordinal)
             .ToList();
@@ -67,7 +71,8 @@ public class GetAdminGameStatusUseCase : IGetAdminGameStatusUseCase
             schedule?.LastSyncedAt, rounds);
     }
 
-    private static AdminGameStatus ToGameStatus(ScheduledMatch m, IReadOnlyDictionary<string, MatchListItem> ingestedById)
+    private static AdminGameStatus ToGameStatus(
+        ScheduledMatch m, IReadOnlyDictionary<string, MatchListItem> ingestedById, IReadOnlySet<string> overridden)
     {
         var ingested = ingestedById.TryGetValue(m.MatchId, out var match) ? match : null;
         return new AdminGameStatus(
@@ -78,6 +83,8 @@ public class GetAdminGameStatusUseCase : IGetAdminGameStatusUseCase
             AwayTeamName: m.AwayTeamName,
             Status: m.HsiStatus == "S" ? "played" : "upcoming",
             Ingested: ingested is not null,
-            HbStatzIngested: ingested?.HbStatzSyncedAt is not null);
+            HbStatzIngested: ingested?.HbStatzSyncedAt is not null,
+            HsiStatus: m.HsiStatus,
+            FinalOverride: overridden.Contains(m.MatchId));
     }
 }

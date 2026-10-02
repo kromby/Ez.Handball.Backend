@@ -10,7 +10,9 @@ public sealed record AdminGameStatus(
     string AwayTeamName,
     string Status,     // "played" | "upcoming"
     bool Ingested,
-    bool HbStatzIngested);
+    bool HbStatzIngested,
+    string HsiStatus,  // hsi.is's raw code ("S", "U", "L", "") — shown so an admin sees why a game isn't final
+    bool FinalOverride);
 
 public sealed record AdminRoundGames(
     string Round,

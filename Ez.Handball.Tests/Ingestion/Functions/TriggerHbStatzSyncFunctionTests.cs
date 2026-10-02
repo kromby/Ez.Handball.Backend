@@ -325,6 +325,48 @@ public class TriggerHbStatzSyncFunctionTests
     }
 
     [Fact]
+    public async Task SyncAsync_MatchIdScope_NonFinalMatchWithAdminOverride_IsSynced()
+    {
+        // hsi.is never finalised the match ("U"), but an admin override (Backend#147) stands in for "S".
+        SetupTournamentQuery("RowKey eq '9142' and IngestHbStatz eq true", Tournament());
+        _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FixturesJson);
+        _hbStatzClient.Setup(c => c.GetGameJsonAsync(12924, It.IsAny<CancellationToken>())).ReturnsAsync(GameJson);
+        var stuck = Match("103414");
+        stuck.Status = "U";
+        _tableWriter.Setup(t => t.GetAsync<MatchEntity>("Matches", "9142", "103414", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stuck);
+        _tableWriter.Setup(t => t.GetAsync<MatchFinalOverrideEntity>("MatchFinalOverrides", "9142", "103414", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MatchFinalOverrideEntity { PartitionKey = "9142", RowKey = "103414" });
+        SetupClubs();
+        _tableWriter.Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", "390", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClubEntity { RowKey = "390", Name = "Breiðablik" });
+        SetupReconcilableRoster();
+        SetupExistingPlayerStat("103414");
+
+        var result = await CreateSut().SyncAsync("9142", matchId: "103414");
+
+        Assert.Equal(1, result.MatchesChecked);
+        Assert.Equal(1, result.MatchesSynced);
+    }
+
+    [Fact]
+    public async Task SyncAsync_MatchIdScope_NonFinalMatchWithoutOverride_IsSkipped()
+    {
+        SetupTournamentQuery("RowKey eq '9142' and IngestHbStatz eq true", Tournament());
+        _hbStatzClient.Setup(c => c.GetFixturesJsonAsync("olis", "M", 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FixturesJson);
+        var stuck = Match("103414");
+        stuck.Status = "U";
+        _tableWriter.Setup(t => t.GetAsync<MatchEntity>("Matches", "9142", "103414", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stuck);
+
+        var result = await CreateSut().SyncAsync("9142", matchId: "103414");
+
+        Assert.Equal(0, result.MatchesChecked);
+    }
+
+    [Fact]
     public async Task SyncAsync_MatchIdScope_UnknownMatch_ReturnsZeroChecked()
     {
         SetupTournamentQuery("RowKey eq '9142' and IngestHbStatz eq true", Tournament());

@@ -80,8 +80,8 @@ public class AdminGamesEndpointTests : IClassFixture<AdminGamesEndpointTests.Fac
                     {
                         new("1", new List<AdminGameStatus>
                         {
-                            new("103414", DateTimeOffset.UnixEpoch, "Ásgarður", "Stjarnan", "Breiðablik", "played", true, true),
-                            new("103415", DateTimeOffset.UnixEpoch, null, "Valur", "KA", "upcoming", false, false),
+                            new("103414", DateTimeOffset.UnixEpoch, "Ásgarður", "Stjarnan", "Breiðablik", "played", true, true, "S", false),
+                            new("103415", DateTimeOffset.UnixEpoch, null, "Valur", "KA", "upcoming", false, false, "U", true),
                         })
                     })
             });
@@ -98,6 +98,9 @@ public class AdminGamesEndpointTests : IClassFixture<AdminGamesEndpointTests.Fac
         Assert.Equal("played", games[0].GetProperty("status").GetString());
         Assert.True(games[0].GetProperty("ingested").GetBoolean());
         Assert.False(games[1].GetProperty("ingested").GetBoolean());
+        Assert.Equal("U", games[1].GetProperty("hsiStatus").GetString());
+        Assert.True(games[1].GetProperty("finalOverride").GetBoolean());
+        Assert.False(games[0].GetProperty("finalOverride").GetBoolean());
 
         _factory.Uc.Verify(s => s.ExecuteAsync("2025-26", It.IsAny<CancellationToken>()), Times.Once);
     }

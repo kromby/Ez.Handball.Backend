@@ -1,3 +1,4 @@
+using Ez.Handball.Api.Auth;
 using Ez.Handball.Application.UseCases;
 
 namespace Ez.Handball.Api;
@@ -52,7 +53,9 @@ public static class AdminEndpoints
                         awayTeamName = g.AwayTeamName,
                         status = g.Status,
                         ingested = g.Ingested,
-                        hbStatzIngested = g.HbStatzIngested
+                        hbStatzIngested = g.HbStatzIngested,
+                        hsiStatus = g.HsiStatus,
+                        finalOverride = g.FinalOverride
                     })
                 })
             }));
@@ -135,6 +138,15 @@ public static class AdminEndpoints
             };
         });
 
+        // Final override (#147): treat a played match as final when hsi.is never marks it "S",
+        // so its gameweek can settle. PUT sets it, DELETE clears it.
+        admin.MapPut("/matches/{matchId}/final-override", (
+            string matchId, HttpContext http, ISetMatchFinalOverrideUseCase uc, CancellationToken ct) =>
+            SetFinalOverrideAsync(matchId, true, http, uc, ct));
+        admin.MapDelete("/matches/{matchId}/final-override", (
+            string matchId, HttpContext http, ISetMatchFinalOverrideUseCase uc, CancellationToken ct) =>
+            SetFinalOverrideAsync(matchId, false, http, uc, ct));
+
         admin.MapPost("/players/{playerId}/position", async (
             string playerId, SetPlayerPositionRequest body,
             ISetPlayerPositionUseCase uc, CancellationToken ct) =>
@@ -148,5 +160,17 @@ public static class AdminEndpoints
                 _                                       => Results.Problem()
             };
         });
+    }
+
+    private static async Task<IResult> SetFinalOverrideAsync(
+        string matchId, bool finalOverride, HttpContext http, ISetMatchFinalOverrideUseCase uc, CancellationToken ct)
+    {
+        var result = await uc.ExecuteAsync(matchId, finalOverride, http.User.UserId() ?? string.Empty, ct);
+        return result switch
+        {
+            SetMatchFinalOverrideResult.Ok ok           => Results.Ok(new { tournamentId = ok.TournamentId, matchId = ok.MatchId, finalOverride = ok.FinalOverride }),
+            SetMatchFinalOverrideResult.MatchNotFound   => Results.NotFound(new { error = "match_not_found" }),
+            _                                           => Results.Problem()
+        };
     }
 }
