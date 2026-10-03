@@ -15,7 +15,7 @@ permissions:
 jobs:
   deploy-api:
     name: API (App Service)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
 
@@ -39,7 +39,7 @@ jobs:
 
   deploy-functions:
     name: Ingestion (Function App)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
 
