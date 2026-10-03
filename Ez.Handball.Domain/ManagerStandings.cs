@@ -3,9 +3,14 @@ namespace Ez.Handball.Domain;
 // A lightweight projection of a settled gameweek score — points only, no breakdown.
 public sealed record GameweekScoreSummary(string TeamId, string RoundLabel, double Points);
 
+// One settled round in a manager's history. TotalPoints is the running total after this round.
+public sealed record RoundScore(string RoundLabel, double Points, double TotalPoints);
+
 // One manager's row in the standings.
 // PreviousRank/RankDelta are null for a manager who first appears in the latest round.
 // RankDelta = PreviousRank − Rank, so a positive value means the manager climbed.
+// Rounds lists the manager's settled rounds oldest-first; RoundsPlayed is its length and
+// AveragePoints is TotalPoints / RoundsPlayed (0 before the first settled round).
 public sealed record ManagerStanding(
     int Rank,
     int? PreviousRank,
@@ -14,7 +19,10 @@ public sealed record ManagerStanding(
     string TeamName,
     string Color,
     double TotalPoints,
-    double RoundPoints);
+    double RoundPoints,
+    int RoundsPlayed,
+    double AveragePoints,
+    IReadOnlyList<RoundScore> Rounds);
 
 // The paginated response returned by both standings endpoints.
 public sealed record ManagerStandings(

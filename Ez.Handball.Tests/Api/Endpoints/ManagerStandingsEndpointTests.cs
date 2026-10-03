@@ -81,7 +81,7 @@ public class ManagerStandingsEndpointTests : IClassFixture<ManagerStandingsEndpo
         _factory.Uc.Setup(u => u.ExecuteAsync(0, 50, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManagerStandings(1, 0, 50, "2", new[]
             {
-                new ManagerStanding(1, 2, 1, "a:fantasy", "Alpha", "#abcdef", 95, 40),
+                new ManagerStanding(1, 2, 1, "a:fantasy", "Alpha", "#abcdef", 95, 40, 1, 95, new[] { new RoundScore("1", 95, 95) }),
             }));
 
         var resp = await _client.GetAsync("/api/managers/leaderboard");
