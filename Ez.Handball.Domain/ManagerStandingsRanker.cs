@@ -31,7 +31,10 @@ public static class ManagerStandingsRanker
         string? latestRound = rounds.Count > 0 ? rounds[^1] : null;
         string? previousRound = rounds.Count > 1 ? rounds[^2] : null;
 
-        var totals = byTeam.ToDictionary(kv => kv.Key, kv => kv.Value.Sum(r => r.Points));
+        // Totals come from the round-ordered history so ranking, TotalPoints and the history's
+        // running totals share one accumulation (double addition depends on summing order).
+        var histories = byTeam.ToDictionary(kv => kv.Key, kv => History(kv.Value));
+        var totals = histories.ToDictionary(kv => kv.Key, kv => kv.Value.Count == 0 ? 0.0 : kv.Value[^1].TotalPoints);
         var roundPoints = byTeam.ToDictionary(
             kv => kv.Key,
             kv => kv.Value.Where(r => r.RoundLabel == latestRound).Sum(r => r.Points));
@@ -60,6 +63,7 @@ public static class ManagerStandingsRanker
             int? prevRank = previousRanks.TryGetValue(teamId, out var pr) ? pr : null;
             int? delta = prevRank is null ? null : prevRank - rank;
             var (name, color) = NameOrFallback(teamId, names);
+            var history = histories[teamId];
 
             entries.Add(new ManagerStanding(
                 Rank: rank,
@@ -69,10 +73,31 @@ public static class ManagerStandingsRanker
                 TeamName: name,
                 Color: color,
                 TotalPoints: total,
-                RoundPoints: roundPoints[teamId]));
+                RoundPoints: roundPoints[teamId],
+                RoundsPlayed: history.Count,
+                AveragePoints: history.Count == 0 ? 0 : total / history.Count,
+                Rounds: history));
         }
 
         return new RankedManagers(latestRound, entries);
+    }
+
+    // One entry per settled round, oldest first, carrying the running total.
+    private static List<RoundScore> History(IEnumerable<GameweekScoreSummary> rows)
+    {
+        var history = new List<RoundScore>();
+        var runningTotal = 0.0;
+        var perRound = rows
+            .GroupBy(r => r.RoundLabel)
+            .OrderBy(g => RoundOrder.Key(g.Key))
+            .ThenBy(g => g.Key, StringComparer.Ordinal);
+        foreach (var round in perRound)
+        {
+            var points = round.Sum(r => r.Points);
+            runningTotal += points;
+            history.Add(new RoundScore(round.Key, points, runningTotal));
+        }
+        return history;
     }
 
     private static Dictionary<string, int> RankByTotal(

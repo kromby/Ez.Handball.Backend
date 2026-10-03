@@ -45,6 +45,53 @@ public class ManagerStandingsRankerTests
     }
 
     [Fact]
+    public void Rank_ReportsRoundHistoryWithRunningTotalsAndAverage()
+    {
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "2", 40),
+            new GameweekScoreSummary("a:fantasy", "1", 30),
+            new GameweekScoreSummary("a:fantasy", "10", 20),
+            new GameweekScoreSummary("b:fantasy", "2", 5),
+        };
+
+        var result = ManagerStandingsRanker.Rank(
+            summaries, Names(("a:fantasy", "Alpha"), ("b:fantasy", "Bravo")), new[] { "c:fantasy" });
+
+        var alpha = result.Entries.Single(e => e.TeamId == "a:fantasy");
+        Assert.Equal(3, alpha.RoundsPlayed);
+        Assert.Equal(30, alpha.AveragePoints);
+        Assert.Equal(new[] { "1", "2", "10" }, alpha.Rounds.Select(r => r.RoundLabel));
+        Assert.Equal(new[] { 30.0, 70.0, 90.0 }, alpha.Rounds.Select(r => r.TotalPoints));
+
+        var bravo = result.Entries.Single(e => e.TeamId == "b:fantasy");
+        Assert.Equal(1, bravo.RoundsPlayed);
+
+        var rosterOnly = result.Entries.Single(e => e.TeamId == "c:fantasy");
+        Assert.Equal(0, rosterOnly.RoundsPlayed);
+        Assert.Equal(0, rosterOnly.AveragePoints);
+        Assert.Empty(rosterOnly.Rounds);
+    }
+
+    [Fact]
+    public void Rank_TotalMatchesHistoryRunningTotal_EvenWhenSummariesArriveOutOfRoundOrder()
+    {
+        // 0.1 + 0.2 + 0.3 is 0.6000000000000001 in round order but 0.6 in reverse order.
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "3", 0.3),
+            new GameweekScoreSummary("a:fantasy", "2", 0.2),
+            new GameweekScoreSummary("a:fantasy", "1", 0.1),
+        };
+
+        var result = ManagerStandingsRanker.Rank(summaries, Names(("a:fantasy", "Alpha")));
+
+        var alpha = result.Entries.Single();
+        Assert.Equal(alpha.Rounds[^1].TotalPoints, alpha.TotalPoints);
+        Assert.Equal(alpha.TotalPoints / 3, alpha.AveragePoints);
+    }
+
+    [Fact]
     public void Rank_TiedTotals_ShareRank_OrderedByNameThenTeamId()
     {
         var summaries = new[]

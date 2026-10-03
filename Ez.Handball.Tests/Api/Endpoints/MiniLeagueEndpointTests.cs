@@ -269,7 +269,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
             .ReturnsAsync(new GetMiniLeagueStandingsResult.Found(new ManagerStandings(
                 1, 0, 50, "1", new[]
                 {
-                    new ManagerStanding(1, null, null, "a:fantasy", "Alpha", "#abcdef", 70, 70),
+                    new ManagerStanding(1, null, null, "a:fantasy", "Alpha", "#abcdef", 70, 70, 1, 70, new[] { new RoundScore("1", 70, 70) }),
                 })));
         var token = await TokenAsync();
 
