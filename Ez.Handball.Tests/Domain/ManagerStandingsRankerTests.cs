@@ -74,6 +74,24 @@ public class ManagerStandingsRankerTests
     }
 
     [Fact]
+    public void Rank_TotalMatchesHistoryRunningTotal_EvenWhenSummariesArriveOutOfRoundOrder()
+    {
+        // 0.1 + 0.2 + 0.3 is 0.6000000000000001 in round order but 0.6 in reverse order.
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "3", 0.3),
+            new GameweekScoreSummary("a:fantasy", "2", 0.2),
+            new GameweekScoreSummary("a:fantasy", "1", 0.1),
+        };
+
+        var result = ManagerStandingsRanker.Rank(summaries, Names(("a:fantasy", "Alpha")));
+
+        var alpha = result.Entries.Single();
+        Assert.Equal(alpha.Rounds[^1].TotalPoints, alpha.TotalPoints);
+        Assert.Equal(alpha.TotalPoints / 3, alpha.AveragePoints);
+    }
+
+    [Fact]
     public void Rank_TiedTotals_ShareRank_OrderedByNameThenTeamId()
     {
         var summaries = new[]

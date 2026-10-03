@@ -31,7 +31,10 @@ public static class ManagerStandingsRanker
         string? latestRound = rounds.Count > 0 ? rounds[^1] : null;
         string? previousRound = rounds.Count > 1 ? rounds[^2] : null;
 
-        var totals = byTeam.ToDictionary(kv => kv.Key, kv => kv.Value.Sum(r => r.Points));
+        // Totals come from the round-ordered history so ranking, TotalPoints and the history's
+        // running totals share one accumulation (double addition depends on summing order).
+        var histories = byTeam.ToDictionary(kv => kv.Key, kv => History(kv.Value));
+        var totals = histories.ToDictionary(kv => kv.Key, kv => kv.Value.Count == 0 ? 0.0 : kv.Value[^1].TotalPoints);
         var roundPoints = byTeam.ToDictionary(
             kv => kv.Key,
             kv => kv.Value.Where(r => r.RoundLabel == latestRound).Sum(r => r.Points));
@@ -47,8 +50,6 @@ public static class ManagerStandingsRanker
                     .Where(x => x.Present)
                     .ToDictionary(x => x.TeamId, x => x.Total),
                 names);
-
-        var histories = byTeam.ToDictionary(kv => kv.Key, kv => History(kv.Value));
 
         var ordered = Order(totals.Keys, totals, names);
         var currentRanks = AssignRanks(ordered, totals);
