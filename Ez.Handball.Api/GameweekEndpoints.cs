@@ -64,7 +64,22 @@ public static class GameweekEndpoints
                     roundLabel = g.RoundLabel,
                     points = g.Points,
                     captainPlayerId = g.CaptainPlayerId,
-                    breakdown = g.Breakdown
+                    breakdown = g.Breakdown.Select(b =>
+                    {
+                        result.Players.TryGetValue(b.PlayerId, out var player);
+                        return new
+                        {
+                            b.PlayerId,
+                            name = player?.Name,
+                            position = player?.Position,
+                            b.RawPoints,
+                            b.Points,
+                            b.Played,
+                            b.AutoSubbedIn,
+                            b.CaptainApplied,
+                            b.Multiplier
+                        };
+                    })
                 })
             });
         }).RequireAuthorization();
