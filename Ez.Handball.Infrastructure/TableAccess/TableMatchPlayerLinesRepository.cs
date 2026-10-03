@@ -96,6 +96,10 @@ internal sealed class TableMatchPlayerLinesRepository : IMatchPlayerLinesReposit
             Goals: stat.Goals,
             YellowCards: stat.YellowCards,
             TwoMinuteSuspensions: stat.TwoMinuteSuspensions,
-            RedCards: stat.RedCards);
+            RedCards: stat.RedCards,
+            HbStatzAssists: stat.HbStatzAssists,
+            HbStatzSteals: stat.HbStatzSteals,
+            HbStatzBlocks: stat.HbStatzBlocks,
+            HbStatzSaves: stat.HbStatzSaves);
     }
 }

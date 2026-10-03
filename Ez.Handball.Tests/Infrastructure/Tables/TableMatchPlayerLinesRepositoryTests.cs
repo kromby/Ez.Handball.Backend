@@ -155,4 +155,29 @@ public class TableMatchPlayerLinesRepositoryTests
         var ids = result["385-karlar"].Select(p => p.PlayerId).ToArray();
         Assert.Equal(new[] { "c", "b", "a" }, ids);   // 7, 12, then null last
     }
+
+    [Fact]
+    public async Task GetByMatchAsync_CopiesHbStatzColumns_AndLeavesThemNullWhenAbsent()
+    {
+        var enriched = Stat("103414", "9912", "385-karlar", 6, 0, 0, 0);
+        enriched.HbStatzAssists = 2;
+        enriched.HbStatzSteals = 1;
+        enriched.HbStatzBlocks = 0;
+        enriched.HbStatzSaves = 5;
+        SetupStats("103414", enriched, Stat("103414", "7755", "385-karlar", 1, 0, 0, 0));
+        SetupPlayers("385-karlar",
+            Player("385-karlar", "9912", "Jón", "7", "VS"), Player("385-karlar", "7755", "Páll", "12", "MS"));
+
+        var lines = (await CreateSut().GetByMatchAsync("103414", default))["385-karlar"];
+
+        var withData = lines.Single(l => l.PlayerId == "9912");
+        Assert.Equal(2, withData.HbStatzAssists);
+        Assert.Equal(1, withData.HbStatzSteals);
+        Assert.Equal(0, withData.HbStatzBlocks);
+        Assert.Equal(5, withData.HbStatzSaves);
+
+        var without = lines.Single(l => l.PlayerId == "7755");
+        Assert.Null(without.HbStatzAssists);
+        Assert.Null(without.HbStatzSaves);
+    }
 }
