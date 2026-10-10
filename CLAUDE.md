@@ -238,3 +238,9 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   gameweek (the backfill for rounds older than the window). The ingestion
   `ISettlementTrigger`/`SettlementTrigger` is still only a logging stub. Scoring point values
   come from the configured `ScoringRuleSet` version (#27 calibration plugs in there).
+- **Whole-number points (Backend#155):** every scored value (gameweek player points, match-line
+  and player-history/stats `points`) is rounded down to an integer via
+  `FantasyPointsCalculator.Whole`. With `fantasy-v2`'s 0.5 per save this means 1 point per 2
+  saves. The unrounded rating still drives pricing. After deploying, run the admin settle with
+  no `round` so already-settled rounds are re-scored; rounds a late team can't be settled for
+  (#158) keep their old values.

@@ -24,6 +24,11 @@ public sealed class FantasyPointsCalculator
     {
         if (ruleSet is null) return null;
         var context = new PlayerRatingContext(null, null, null, ruleSet.Version, null, null);
-        return _rating.Compute(new PlayerRatingInputs(playerId, stats, ruleSet, context)).Rating;
+        return Whole(_rating.Compute(new PlayerRatingInputs(playerId, stats, ruleSet, context)).Rating);
     }
+
+    // Scored points are whole numbers (#155). The only fractional rule value is 0.5 per save, so
+    // rounding the total down is exactly "1 point per 2 saves". The unrounded rating still drives
+    // pricing (FantasyPricing), so prices don't move.
+    public static double Whole(double rating) => Math.Floor(rating);
 }
