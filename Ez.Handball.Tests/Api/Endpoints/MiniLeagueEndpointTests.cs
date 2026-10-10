@@ -269,7 +269,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
             .ReturnsAsync(new GetMiniLeagueStandingsResult.Found(new ManagerStandings(
                 1, 0, 50, "1", new[]
                 {
-                    new ManagerStanding(1, null, null, "a:fantasy", "Alpha", "#abcdef", 70, 70, 1, 70, new[] { new RoundScore("1", 70, 70) }),
+                    new ManagerStanding(1, null, null, "a:fantasy", "Alpha", "#abcdef", 70, 70, 1, 70, new[] { new RoundScore("1", 70, 70) }, 1, true),
                 })));
         var token = await TokenAsync();
 
@@ -278,7 +278,10 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(1, body.GetProperty("total").GetInt32());
-        Assert.Equal("Alpha", body.GetProperty("entries")[0].GetProperty("teamName").GetString());
+        var entry = body.GetProperty("entries")[0];
+        Assert.Equal("Alpha", entry.GetProperty("teamName").GetString());
+        Assert.Equal(1, entry.GetProperty("roundsWon").GetInt32());
+        Assert.True(entry.GetProperty("wonLatestRound").GetBoolean());
     }
 
     [Fact]

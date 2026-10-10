@@ -11,6 +11,8 @@ public sealed record RoundScore(string RoundLabel, double Points, double TotalPo
 // RankDelta = PreviousRank − Rank, so a positive value means the manager climbed.
 // Rounds lists the manager's settled rounds oldest-first; RoundsPlayed is its length and
 // AveragePoints is TotalPoints / RoundsPlayed (0 before the first settled round).
+// RoundsWon counts the rounds where this manager had the top score among the ranked set
+// (ties all win); WonLatestRound is whether that includes LatestRoundLabel.
 public sealed record ManagerStanding(
     int Rank,
     int? PreviousRank,
@@ -22,7 +24,9 @@ public sealed record ManagerStanding(
     double RoundPoints,
     int RoundsPlayed,
     double AveragePoints,
-    IReadOnlyList<RoundScore> Rounds);
+    IReadOnlyList<RoundScore> Rounds,
+    int RoundsWon,
+    bool WonLatestRound);
 
 // The paginated response returned by both standings endpoints.
 public sealed record ManagerStandings(
