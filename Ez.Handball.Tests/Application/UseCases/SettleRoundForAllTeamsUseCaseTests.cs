@@ -28,19 +28,20 @@ public class SettleRoundForAllTeamsUseCaseTests
     [Fact]
     public async Task FansOutOverFantasyTeams_TalliesOutcomes()
     {
-        SetupTeams("u1:fantasy", "u2:fantasy", "u3:fantasy");
+        SetupTeams("u1:fantasy", "u2:fantasy", "u3:fantasy", "u4:fantasy");
         SetupSettle("u1", "u1:fantasy", Settled());
         SetupSettle("u2", "u2:fantasy", SettleGameweekResult.NotReady.Instance);
         SetupSettle("u3", "u3:fantasy", SettleGameweekResult.NoSnapshotPossible.Instance);
+        SetupSettle("u4", "u4:fantasy", SettleGameweekResult.TeamCreatedAfterDeadline.Instance);
 
         var result = await Sut().ExecuteAsync("1", null, default);
 
         var report = Assert.IsType<SettleRoundForAllTeamsResult.Completed>(result).Report;
         Assert.Equal("1", report.Round);
-        Assert.Equal(3, report.TeamsConsidered);
+        Assert.Equal(4, report.TeamsConsidered);
         Assert.Equal(1, report.Settled);
         Assert.Equal(1, report.NotReady);
-        Assert.Equal(1, report.Skipped);
+        Assert.Equal(2, report.Skipped);
     }
 
     [Fact]

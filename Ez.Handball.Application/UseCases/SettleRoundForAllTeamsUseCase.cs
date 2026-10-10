@@ -55,6 +55,7 @@ public sealed class SettleRoundForAllTeamsUseCase : ISettleRoundForAllTeamsUseCa
                     break;
                 case SettleGameweekResult.NoSnapshotPossible:
                 case SettleGameweekResult.SquadNotFound:
+                case SettleGameweekResult.TeamCreatedAfterDeadline:
                     skipped++;
                     break;
                 // Team-independent failures: the round/config is wrong for everyone — stop and report once.

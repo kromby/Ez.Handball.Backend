@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure;
 using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
 using Ez.Handball.Domain;
@@ -30,6 +31,14 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
             CaptainPlayerId = score.CaptainPlayerId,
             BreakdownJson = JsonSerializer.Serialize(score.Breakdown)
         }, TableUpdateMode.Replace, ct);
+    }
+
+    public async Task DeleteAsync(string teamId, string roundLabel, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameweekScores);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+        // DeleteEntityAsync doesn't throw on a missing row, so deleting an absent score is a no-op.
+        await table.DeleteEntityAsync(teamId, roundLabel, ETag.All, ct);
     }
 
     public async Task<IReadOnlyList<GameweekScore>> ListByTeamAsync(string teamId, CancellationToken ct)
