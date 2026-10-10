@@ -208,9 +208,9 @@ public class SettleGameweekUseCaseTests
     }
 
     [Fact]
-    public async Task TeamCreatedAfterDeadline_IsNotScored_AndStaleScoreIsRemoved()
+    public async Task TeamCreatedAfterDeadline_IsNotScored()
     {
-        // A snapshot already exists (frozen by the buy-time guard before #158) — it must not be scored.
+        // A snapshot already exists (frozen by the buy-time guard before #158); it must not be scored.
         SetupCommon(GameweekStatus.Settled, snapshotExists: true);
         SetupTeamCreatedAt(DateTimeOffset.UnixEpoch.AddHours(1));
 
@@ -219,7 +219,6 @@ public class SettleGameweekUseCaseTests
         Assert.IsType<SettleGameweekResult.TeamCreatedAfterDeadline>(result);
         _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
         _snapshots.Verify(s => s.SaveSnapshotAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
-        _scores.Verify(s => s.DeleteAsync(Team, "1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

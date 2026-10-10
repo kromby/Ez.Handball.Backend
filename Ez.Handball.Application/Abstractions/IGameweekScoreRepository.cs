@@ -6,9 +6,6 @@ public interface IGameweekScoreRepository
 {
     // Replace-mode upsert → idempotent/recomputable settlement.
     Task SaveAsync(GameweekScore score, CancellationToken ct);
-
-    // Removes a (team, round) score if present; a no-op when there is none.
-    Task DeleteAsync(string teamId, string roundLabel, CancellationToken ct);
     Task<IReadOnlyList<GameweekScore>> ListByTeamAsync(string teamId, CancellationToken ct);
 
     // All settled scores across every team (slim projection — points only, no breakdown).

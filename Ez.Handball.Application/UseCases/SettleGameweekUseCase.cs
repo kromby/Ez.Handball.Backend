@@ -77,14 +77,11 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         var gw = calendar.FirstOrDefault(g => g.RoundLabel == roundLabel);
         if (gw is null) return SettleGameweekResult.NotFound.Instance;
 
-        // A team created at or after the deadline had no lineup for this round, so it scores nothing.
-        // Drop any score an earlier settle wrote from a snapshot the buy-time guard froze (#158).
+        // A team created at or after the deadline had no lineup for this round, so it isn't scored (#158).
+        // A score already stored for the round is left as it is.
         var team = await _teams.GetAsync(userId, GameFlavor.Fantasy, ct);
         if (team is not null && team.CreatedAt >= gw.Deadline)
-        {
-            await _scores.DeleteAsync(teamId, roundLabel, ct);
             return SettleGameweekResult.TeamCreatedAfterDeadline.Instance;
-        }
 
         // Only settle once every member match is final (results complete). Postponed match → not yet.
         if (gw.Matches.Count == 0 || !gw.Matches.All(m => m.IsFinal))
