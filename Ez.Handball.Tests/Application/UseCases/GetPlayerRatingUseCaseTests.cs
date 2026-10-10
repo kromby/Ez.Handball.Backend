@@ -15,8 +15,8 @@ public class GetPlayerRatingUseCaseTests
     private static readonly ScoringRuleSet FantasyV1 =
         new(GameFlavor.Fantasy, 1, 2, -1, -2, -5, 1);
 
-    private static readonly ScoringRuleSet FantasyV2 =
-        new(GameFlavor.Fantasy, 2, 2, -1, -2, -5, 1, AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 0.5);
+    private static readonly ScoringRuleSet FantasyDefault =
+        new(GameFlavor.Fantasy, 3, 2, -1, -2, -5, 1, AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 0.5);
 
     private GetPlayerRatingUseCase CreateSut() => new(
         new IPlayerRatingFunction[] { new FantasyPlayerRatingFunction(), new ManagerPlayerRatingFunction() },
@@ -39,8 +39,8 @@ public class GetPlayerRatingUseCaseTests
         Aggregate(0, 0);
         _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 1, It.IsAny<CancellationToken>()))
                  .ReturnsAsync(FantasyV1);
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(FantasyV2);
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(FantasyDefault);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class GetPlayerRatingUseCaseTests
 
         var found = Assert.IsType<GetPlayerRatingResult.Found>(result);
         Assert.Equal(18, found.Rating.Rating);
-        Assert.Equal("fantasy-v2", found.Rating.Version);
+        Assert.Equal("fantasy-v3", found.Rating.Version);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class GetPlayerRatingUseCaseTests
     [Fact]
     public async Task Fantasy_MissingRuleSet_ReturnsRuleSetNotFound()
     {
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
                  .ReturnsAsync((ScoringRuleSet?)null);
 
         var result = await CreateSut().ExecuteAsync("p1", GameFlavor.Fantasy, Ctx(), default);

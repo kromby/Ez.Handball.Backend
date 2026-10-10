@@ -5,7 +5,7 @@ namespace Ez.Handball.Application.RatingFunctions;
 public sealed class FantasyPlayerRatingFunction : IPlayerRatingFunction
 {
     public GameFlavor Flavor => GameFlavor.Fantasy;
-    public int? DefaultRuleSetVersion => 2;
+    public int? DefaultRuleSetVersion => 3;
 
     public PlayerRating Compute(PlayerRatingInputs inputs)
     {

@@ -42,6 +42,20 @@ public class SeedScoringRuleSetsFunctionTests
     }
 
     [Fact]
+    public void RuleSetDefinitions_FantasyV3_IsV2WithOnePointPerSave()
+    {
+        // #160: goalkeepers scored too little at 0.5 per save; v3 changes only the save value.
+        var v2 = SeedScoringRuleSetsFunction.RuleSetDefinitions.Where(d => d.Group == "fantasy-v2")
+            .ToDictionary(d => d.Key, d => d.Value);
+        var v3 = SeedScoringRuleSetsFunction.RuleSetDefinitions.Where(d => d.Group == "fantasy-v3")
+            .ToDictionary(d => d.Key, d => d.Value);
+
+        Assert.Equal("1", v3["saves"]);
+        Assert.Equal(v2.Where(kv => kv.Key != "saves"), v3.Where(kv => kv.Key != "saves"));
+        Assert.Equal(v2.Keys.Order(), v3.Keys.Order());
+    }
+
+    [Fact]
     public async Task ProcessAsync_UpsertsEveryRuleSetRow_IntoConfigTable()
     {
         var seeded = await CreateSut().ProcessAsync();

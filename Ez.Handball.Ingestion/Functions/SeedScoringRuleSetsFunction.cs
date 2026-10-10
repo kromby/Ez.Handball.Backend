@@ -26,6 +26,17 @@ public class SeedScoringRuleSetsFunction
         ("fantasy-v2", "steals",      "1"),
         ("fantasy-v2", "blocks",      "1"),
         ("fantasy-v2", "saves",       "0.5"),
+
+        // #160: v2 with saves raised from 0.5 to 1 — goalkeepers scored far below every other position.
+        ("fantasy-v3", "goals",       "2"),
+        ("fantasy-v3", "yellowCards", "-1"),
+        ("fantasy-v3", "twoMinute",   "-2"),
+        ("fantasy-v3", "redCards",    "-5"),
+        ("fantasy-v3", "appearances", "1"),
+        ("fantasy-v3", "assists",     "1"),
+        ("fantasy-v3", "steals",      "1"),
+        ("fantasy-v3", "blocks",      "1"),
+        ("fantasy-v3", "saves",       "1"),
     ];
 
     private readonly ITableWriter _tableWriter;

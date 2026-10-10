@@ -20,9 +20,9 @@ public class GetPlayerHistoryUseCaseTests
 
     public GetPlayerHistoryUseCaseTests()
     {
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
                  .ReturnsAsync(new ScoringRuleSet(
-                     GameFlavor.Fantasy, 2, GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
+                     GameFlavor.Fantasy, 3, GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
                      RedCardPoints: -5, AppearancePoints: 1, AssistPoints: 1, StealPoints: 1,
                      BlockPoints: 1, SavePoints: 1));
     }
@@ -74,7 +74,7 @@ public class GetPlayerHistoryUseCaseTests
     [Fact]
     public async Task ExecuteAsync_MissingRuleSet_LeavesPointsNull()
     {
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
                  .ReturnsAsync((ScoringRuleSet?)null);
         var entry = new PlayerHistoryEntry("2025", "8444", null, "385", null, 1, 1, 0, 0, 0, 1, 0, 0, 0);
         var totals = new PlayerHistoryTotals(1, 1, 0, 0, 0, 1, 0, 0, 0);

@@ -27,8 +27,8 @@ public sealed class FantasyPointsCalculator
         return Whole(_rating.Compute(new PlayerRatingInputs(playerId, stats, ruleSet, context)).Rating);
     }
 
-    // Scored points are whole numbers (#155). The only fractional rule value is 0.5 per save, so
-    // rounding the total down is exactly "1 point per 2 saves". The unrounded rating still drives
-    // pricing (FantasyPricing), so prices don't move.
+    // Scored points are whole numbers (#155). Only a fractional rule value can produce a fraction
+    // (fantasy-v2's 0.5 per save, where rounding down means "1 point per 2 saves"); fantasy-v3 has
+    // none. The unrounded rating still drives pricing (FantasyPricing).
     public static double Whole(double rating) => Math.Floor(rating);
 }
