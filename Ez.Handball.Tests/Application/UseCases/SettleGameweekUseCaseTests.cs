@@ -18,6 +18,7 @@ public class SettleGameweekUseCaseTests
     private readonly Mock<IPlayerStatsRepository> _stats = new();
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
 
     // The use case enforces teamId == GameTeamId.For(userId, Fantasy), so the test team id must
     // be the real composite for "user".
@@ -32,7 +33,7 @@ public class SettleGameweekUseCaseTests
     private SettleGameweekUseCase CreateSut() => new(
         _config.Object, _calendar.Object, _snapshots.Object, _liveLineup.Object,
         _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,
-        new GameweekScoringService(new FantasyPlayerRatingFunction()));
+        _teams.Object, new GameweekScoringService(new FantasyPlayerRatingFunction()));
 
     private static Gameweek GW(string round, GameweekStatus status, params GameweekMatch[] m) =>
         new(1, round, "8444", DateTimeOffset.UnixEpoch, status, m);
@@ -50,8 +51,14 @@ public class SettleGameweekUseCaseTests
     private static SquadPlayer Owned(string id, string pos) =>
         new(id, id, "1", "Club", pos, "karlar", new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), 0);
 
+    // GW deadlines are UnixEpoch; by default the team existed well before them.
+    private void SetupTeamCreatedAt(DateTimeOffset createdAt) =>
+        _teams.Setup(t => t.GetAsync("user", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GameTeam(Team, "Team", "#abcdef", createdAt));
+
     private void SetupCommon(GameweekStatus status, bool snapshotExists)
     {
+        SetupTeamCreatedAt(DateTimeOffset.UnixEpoch.AddDays(-1));
         _config.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Config);
         _calendar.Setup(c => c.GetCalendarAsync(Config, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { GW("1", status, Match("m1", final: status == GameweekStatus.Settled)) });
@@ -198,5 +205,30 @@ public class SettleGameweekUseCaseTests
 
         Assert.IsType<SettleGameweekResult.NoSnapshotPossible>(result);
         _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TeamCreatedAfterDeadline_IsNotScored()
+    {
+        // A snapshot already exists (frozen by the buy-time guard before #158); it must not be scored.
+        SetupCommon(GameweekStatus.Settled, snapshotExists: true);
+        SetupTeamCreatedAt(DateTimeOffset.UnixEpoch.AddHours(1));
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        Assert.IsType<SettleGameweekResult.TeamCreatedAfterDeadline>(result);
+        _scores.Verify(s => s.SaveAsync(It.IsAny<GameweekScore>(), It.IsAny<CancellationToken>()), Times.Never);
+        _snapshots.Verify(s => s.SaveSnapshotAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TeamCreatedExactlyAtDeadline_IsNotScored()
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: false);
+        SetupTeamCreatedAt(DateTimeOffset.UnixEpoch);
+
+        var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
+
+        Assert.IsType<SettleGameweekResult.TeamCreatedAfterDeadline>(result);
     }
 }

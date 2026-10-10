@@ -23,6 +23,7 @@ public class SettleGameweekGateIntegrationTests
     private readonly Mock<IPlayerStatsRepository> _stats = new();
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
 
     private static readonly string Team = GameTeamId.For("user", GameFlavor.Fantasy);
     private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1, 3);
@@ -42,7 +43,7 @@ public class SettleGameweekGateIntegrationTests
         return new SettleGameweekUseCase(
             _config.Object, calendar, _snapshots.Object, _liveLineup.Object,
             _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,
-            new Ez.Handball.Application.Services.GameweekScoringService(
+            _teams.Object, new Ez.Handball.Application.Services.GameweekScoringService(
                 new Ez.Handball.Application.RatingFunctions.FantasyPlayerRatingFunction()));
     }
 

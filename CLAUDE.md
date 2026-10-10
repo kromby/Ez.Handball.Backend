@@ -224,6 +224,10 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   start (up to `starterCount`, within each position's max), the rest are benched by rating, no
   captain. The snapshot guard freezes it at the deadline and settlement falls back to it, and the
   settle fan-out walks every fantasy team (`GameTeams`), not just teams with lineup rows.
+- **Late teams (Backend#158):** a team created at or after a gameweek's deadline
+  (`GameTeam.CreatedAt >= Deadline`) scores nothing for it. The snapshot guard doesn't freeze
+  such rounds, and settlement returns `TeamCreatedAfterDeadline` without touching any score
+  already stored for that (team, round). Scores written before the fix are kept as they are.
 - **All-teams settlement (Backend#136):** the Api's `AutoSettlementService` (hosted
   `BackgroundService`) runs `SettleCompletedRoundsUseCase` every `Settlement:Interval`
   (default 1h, first run after `Settlement:StartupDelay`, default 2 min). Each tick re-settles

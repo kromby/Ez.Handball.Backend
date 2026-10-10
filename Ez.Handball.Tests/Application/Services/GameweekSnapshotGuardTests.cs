@@ -16,11 +16,12 @@ public class GameweekSnapshotGuardTests
     private readonly Mock<ILineupRepository> _liveLineup = new();
     private readonly Mock<IGetSquadUseCase> _squad = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
+    private readonly Mock<IGameTeamRepository> _teams = new();
     private DateTimeOffset _now = new(2026, 2, 1, 12, 0, 0, TimeSpan.Zero);
 
     private GameweekSnapshotGuard CreateSut() => new(
         _config.Object, _calendar.Object, _locks.Object, _snapshots.Object, _liveLineup.Object, _squad.Object, _constraints.Object,
-        new StubTimeProvider(_now));
+        _teams.Object, new StubTimeProvider(_now));
 
     private static readonly GameweekConfig Config = new(1, "8444", 1, 1, 1, 3);
 
@@ -107,5 +108,28 @@ public class GameweekSnapshotGuardTests
         _snapshots.Verify(s => s.SaveSnapshotAsync(team, "1",
             It.Is<Lineup>(l => l.Slots.Count == 1 && l.Slots[0].PlayerId == "p1" && l.Slots[0].Role == LineupRole.Starter),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TeamCreatedAfterARoundsDeadline_DoesNotSnapshotThatRound()
+    {
+        // Round 1 locked before the team existed; round 2 locked after it was created.
+        const string team = "u1:fantasy";
+        Setup(
+            GW(1, "1", _now.AddDays(-7), GameweekStatus.Settled),
+            GW(2, "2", _now.AddDays(-1), GameweekStatus.Settled),
+            GW(3, "3", _now.AddDays(7), GameweekStatus.Open));
+        _teams.Setup(t => t.GetAsync("u1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GameTeam(team, "Team", "#abcdef", _now.AddDays(-3)));
+        _snapshots.Setup(s => s.GetSnapshotAsync(team, It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _liveLineup.Setup(l => l.GetAsync(team, It.IsAny<CancellationToken>())).ReturnsAsync(Live());
+
+        var result = await CreateSut().EnsureSnapshotsAsync(team, null, default);
+
+        _snapshots.Verify(s => s.SaveSnapshotAsync(team, "1", It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+        _snapshots.Verify(s => s.SaveSnapshotAsync(team, "2", It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Once);
+        // The deadline is still pinned: locking is team-independent.
+        _locks.Verify(l => l.PinAsync("8444", "1", It.IsAny<DateTimeOffset>(), _now, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.True(result.CurrentGameweekLocked);
     }
 }

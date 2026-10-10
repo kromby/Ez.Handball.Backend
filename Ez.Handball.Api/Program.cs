@@ -241,6 +241,7 @@ builder.Services.AddScoped<IGameweekSnapshotGuard>(sp => new GameweekSnapshotGua
     sp.GetRequiredService<ILineupRepository>(),
     sp.GetRequiredService<IGetSquadUseCase>(),
     sp.GetRequiredService<ILineupConstraintsRepository>(),
+    sp.GetRequiredService<IGameTeamRepository>(),
     sp.GetRequiredService<GameClock>()));
 
 var app = builder.Build();

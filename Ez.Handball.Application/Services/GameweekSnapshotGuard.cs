@@ -24,12 +24,13 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
     private readonly ILineupRepository _liveLineup;
     private readonly IGetSquadUseCase _squad;
     private readonly ILineupConstraintsRepository _constraints;
+    private readonly IGameTeamRepository _teams;
     private readonly TimeProvider _clock;
 
     public GameweekSnapshotGuard(
         IGameweekConfigRepository config, IGameweekCalendarService calendar, IGameweekLockRepository locks,
         IGameweekLineupRepository snapshots, ILineupRepository liveLineup, IGetSquadUseCase squad,
-        ILineupConstraintsRepository constraints, TimeProvider clock)
+        ILineupConstraintsRepository constraints, IGameTeamRepository teams, TimeProvider clock)
     {
         _config = config;
         _calendar = calendar;
@@ -38,6 +39,7 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
         _liveLineup = liveLineup;
         _squad = squad;
         _constraints = constraints;
+        _teams = teams;
         _clock = clock;
     }
 
@@ -53,6 +55,8 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
         var anyLocked = false;
         Lineup? live = null;
         var liveLoaded = false;
+        DateTimeOffset? createdAt = null;
+        var teamLoaded = false;
 
         foreach (var gw in calendar)
         {
@@ -61,6 +65,15 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
             // Pin the deadline the first time it's observed as passed (idempotent first-write-wins).
             await _locks.PinAsync(config.TournamentId, gw.RoundLabel, gw.Deadline, now, ct);
+
+            // A team created at or after this deadline had no lineup for the round: freezing its
+            // current (possibly half-built) squad here would wrongly score it (#158).
+            if (!teamLoaded)
+            {
+                createdAt = await CreatedAtAsync(teamId, ct);
+                teamLoaded = true;
+            }
+            if (createdAt >= gw.Deadline) continue;
 
             var existing = await _snapshots.GetSnapshotAsync(teamId, gw.RoundLabel, ct);
             if (existing is not null) continue;
@@ -76,6 +89,13 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
         var current = calendar.FirstOrDefault(g => g.Status == GameweekStatus.Open);
         return new SnapshotGuardResult(current, anyLocked);
+    }
+
+    private async Task<DateTimeOffset?> CreatedAtAsync(string teamId, CancellationToken ct)
+    {
+        var userId = GameTeamId.UserIdOf(teamId, GameFlavor.Fantasy);
+        if (userId is null) return null;
+        return (await _teams.GetAsync(userId, GameFlavor.Fantasy, ct))?.CreatedAt;
     }
 
     // The saved lineup, or — for a manager who never saved one — the default lineup from the squad

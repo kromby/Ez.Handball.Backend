@@ -12,6 +12,7 @@ public abstract record SettleGameweekResult
     public sealed record NoSnapshotPossible : SettleGameweekResult { public static readonly NoSnapshotPossible Instance = new(); } // no live lineup to freeze
     public sealed record SquadNotFound : SettleGameweekResult { public static readonly SquadNotFound Instance = new(); } // owned squad couldn't be resolved
     public sealed record NotReady : SettleGameweekResult { public static readonly NotReady Instance = new(); }  // not all member matches final
+    public sealed record TeamCreatedAfterDeadline : SettleGameweekResult { public static readonly TeamCreatedAfterDeadline Instance = new(); } // team didn't exist at the round's deadline
     public sealed record Settled(GameweekScore Score) : SettleGameweekResult;
 }
 
@@ -35,6 +36,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
     private readonly IPlayerStatsRepository _stats;
     private readonly IScoringRuleSetRepository _ruleSets;
     private readonly ILineupConstraintsRepository _constraints;
+    private readonly IGameTeamRepository _teams;
     private readonly IGameweekScoringService _scoring;
 
     public SettleGameweekUseCase(
@@ -42,7 +44,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         IGameweekLineupRepository snapshots, ILineupRepository liveLineup,
         IGameweekScoreRepository scores, IGetSquadUseCase squad, IPlayerStatsRepository stats,
         IScoringRuleSetRepository ruleSets, ILineupConstraintsRepository constraints,
-        IGameweekScoringService scoring)
+        IGameTeamRepository teams, IGameweekScoringService scoring)
     {
         _config = config;
         _calendar = calendar;
@@ -53,6 +55,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         _stats = stats;
         _ruleSets = ruleSets;
         _constraints = constraints;
+        _teams = teams;
         _scoring = scoring;
     }
 
@@ -73,6 +76,12 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
 
         var gw = calendar.FirstOrDefault(g => g.RoundLabel == roundLabel);
         if (gw is null) return SettleGameweekResult.NotFound.Instance;
+
+        // A team created at or after the deadline had no lineup for this round, so it isn't scored (#158).
+        // A score already stored for the round is left as it is.
+        var team = await _teams.GetAsync(userId, GameFlavor.Fantasy, ct);
+        if (team is not null && team.CreatedAt >= gw.Deadline)
+            return SettleGameweekResult.TeamCreatedAfterDeadline.Instance;
 
         // Only settle once every member match is final (results complete). Postponed match → not yet.
         if (gw.Matches.Count == 0 || !gw.Matches.All(m => m.IsFinal))

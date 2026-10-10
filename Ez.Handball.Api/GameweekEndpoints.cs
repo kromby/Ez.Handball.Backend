@@ -104,6 +104,7 @@ public static class GameweekEndpoints
                 SettleGameweekResult.NoSnapshotPossible => Results.Json(new { error = "no_lineup" }, statusCode: StatusCodes.Status409Conflict),
                 SettleGameweekResult.SquadNotFound      => Results.Json(new { error = "no_squad" }, statusCode: StatusCodes.Status409Conflict),
                 SettleGameweekResult.NotReady           => Results.Json(new { error = "not_ready" }, statusCode: StatusCodes.Status409Conflict),
+                SettleGameweekResult.TeamCreatedAfterDeadline => Results.Json(new { error = "team_created_after_deadline" }, statusCode: StatusCodes.Status409Conflict),
                 SettleGameweekResult.Settled s          => Results.Ok(new { round = s.Score.RoundLabel, points = s.Score.Points }),
                 _                                       => Results.Problem()
             };
