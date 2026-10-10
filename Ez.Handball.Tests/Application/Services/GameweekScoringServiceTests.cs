@@ -177,4 +177,24 @@ public class GameweekScoringServiceTests
         Assert.Equal(0, score.Breakdown.Single(b => b.PlayerId == "fp1").Points); // captain replaced
         Assert.Equal(1 + 8 + 2, score.Points);
     }
+
+    [Fact]
+    public void HalfPointSaves_ScoreOnePointPerTwoSaves()
+    {
+        // fantasy-v2 shape: saves are worth 0.5 each, but scored points are whole numbers (#155).
+        var rules = new ScoringRuleSet(GameFlavor.Fantasy, 2, GoalPoints: 1, YellowCardPoints: 0,
+            TwoMinutePoints: 0, RedCardPoints: 0, AppearancePoints: 1, SavePoints: 0.5);
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["gk1"] = new(Games: 1, Goals: 0, 0, 0, 0, Saves: 7), // 1 + 3.5 → 4
+            ["fp1"] = Played(1),                                   // 2 raw → captain ×2 = 4
+        };
+
+        var score = CreateSut().Score("team", "1", Snapshot(), Squad(), stats, rules, Constraints);
+
+        var gk = score.Breakdown.Single(b => b.PlayerId == "gk1");
+        Assert.Equal(4, gk.RawPoints);
+        Assert.Equal(4, gk.Points);
+        Assert.Equal(4 + 4, score.Points);
+    }
 }

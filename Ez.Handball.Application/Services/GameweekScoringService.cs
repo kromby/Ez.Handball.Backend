@@ -31,8 +31,8 @@ public sealed class GameweekScoringService : IGameweekScoringService
         bool Played(string id) => playedStatsByPlayer.ContainsKey(id);
 
         double RawPoints(string id) => playedStatsByPlayer.TryGetValue(id, out var s)
-            ? _rating.Compute(new PlayerRatingInputs(id, s, ruleSet,
-                new PlayerRatingContext(null, null, null, ruleSet.Version, null, null))).Rating
+            ? FantasyPointsCalculator.Whole(_rating.Compute(new PlayerRatingInputs(id, s, ruleSet,
+                new PlayerRatingContext(null, null, null, ruleSet.Version, null, null))).Rating)
             : 0;
 
         var starters = snapshot.Slots
