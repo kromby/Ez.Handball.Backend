@@ -16,7 +16,7 @@ public class GetPlayerStatsUseCaseTests
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
 
     private static readonly ScoringRuleSet RuleSet = new(
-        GameFlavor.Fantasy, 2, GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
+        GameFlavor.Fantasy, 3, GoalPoints: 2, YellowCardPoints: -1, TwoMinutePoints: -2,
         RedCardPoints: -5, AppearancePoints: 1, AssistPoints: 1, StealPoints: 1, BlockPoints: 1, SavePoints: 1);
 
     private GetPlayerStatsUseCase CreateSut() => new(
@@ -49,7 +49,7 @@ public class GetPlayerStatsUseCaseTests
               .ReturnsAsync((IReadOnlyList<string>?)null);
         _scope.Setup(s => s.ResolveSeasonLabelAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync((string? s, CancellationToken _) => s);
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
                  .ReturnsAsync(RuleSet);
     }
 
@@ -186,7 +186,7 @@ public class GetPlayerStatsUseCaseTests
     [Fact]
     public async Task MissingRuleSet_LeavesPointsNull()
     {
-        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 2, It.IsAny<CancellationToken>()))
+        _ruleSets.Setup(r => r.GetAsync(GameFlavor.Fantasy, 3, It.IsAny<CancellationToken>()))
                  .ReturnsAsync((ScoringRuleSet?)null);
         _stats.Setup(r => r.GetByPlayerAsync("p1", It.IsAny<CancellationToken>()))
               .ReturnsAsync(new List<PlayerStat> { Stat("2025-26", "8444", 1) });

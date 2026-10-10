@@ -93,3 +93,25 @@ With no `round` it settles every complete gameweek and returns one report per ro
 (`teamsConsidered`, `settled`, `notReady`, `skipped`). Idempotent — safe to re-run. From then
 on `AutoSettlementService` keeps recent rounds settled automatically.
 
+## Switch scoring to `fantasy-v3` (Backend#160)
+
+The API prices players with `fantasy-v3` as soon as it deploys, and `/api/players` returns
+`invalid_rule_set` until the `fantasy-v3` rows exist in `Config`. Order:
+
+1. **Before merging**, seed the new rule set so it exists when the API switches. Either add the
+   nine `fantasy-v3` rows to the `Config` table by hand (copy `fantasy-v2`, set `saves` = `1`), or
+   merge and **immediately** run the seed once the ingestion app has deployed:
+   ```bash
+   curl -X POST "https://ez-handball-ingestion.azurewebsites.net/api/seed/scoring-rule-sets?code=<function key>"
+   ```
+   The seed is idempotent and only rewrites the `fantasy-v1/v2/v3` groups.
+2. Point gameweek scoring at v3: set `Config` row `fantasy-gameweek-v1` / `scoringRuleSetVersion`
+   to `3`. Edit that single row. Re-running `seed/gameweek-config` also works, but it resets
+   `tournamentId`, `lockOffsetHours` and `matchFinalBufferHours` to the seeded values.
+3. Re-score every round as an admin:
+   ```bash
+   curl -X POST -H "Authorization: Bearer <admin token>" \
+     "https://ez-handball-api.azurewebsites.net/api/admin/gameweeks/settle"
+   ```
+   Rounds a late team isn't settled for (Backend#158) keep their old scores.
+

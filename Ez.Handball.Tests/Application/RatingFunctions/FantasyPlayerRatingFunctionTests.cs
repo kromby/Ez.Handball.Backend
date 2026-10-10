@@ -21,7 +21,7 @@ public class FantasyPlayerRatingFunctionTests
         var fn = new FantasyPlayerRatingFunction();
 
         Assert.Equal(GameFlavor.Fantasy, fn.Flavor);
-        Assert.Equal(2, fn.DefaultRuleSetVersion);
+        Assert.Equal(3, fn.DefaultRuleSetVersion);
     }
 
     [Fact]
