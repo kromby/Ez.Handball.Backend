@@ -63,4 +63,34 @@ public class DefaultLineupTests
     {
         Assert.Empty(DefaultLineup.From(Array.Empty<SquadPlayer>(), Constraints).Slots);
     }
+
+    private static SquadPlayer DualPlayer(string id, string pos, string sec, double rating) => Player(id, pos, rating) with { PositionSecondary = sec };
+
+    [Fact]
+    public void DualPlayer_StartsAtSecondary_WhenPrimaryAtMax()
+    {
+        var squad = new[]
+        {
+            Player("gk", "GK", 9), Player("cb1", "CB", 8), Player("cb2", "CB", 7),
+            DualPlayer("cb3", "CB", "LB", 6),                       // CB max 2 → starts at LB
+            Player("lw", "LW", 5), Player("rw", "RW", 4), Player("lp", "LP", 3), Player("rb", "RB", 2),
+        };
+
+        var lineup = DefaultLineup.From(squad, Constraints);
+
+        Assert.Contains("cb3", Ids(lineup, LineupRole.Starter));
+        Assert.Equal(new[] { "rb" }, Ids(lineup, LineupRole.Bench));
+    }
+
+    [Fact]
+    public void DualPlayers_SameInput_SameLineup()
+    {
+        var squad = new[]
+        {
+            Player("gk", "GK", 9), DualPlayer("a", "CB", "LB", 8), DualPlayer("b", "CB", "RB", 8),
+            Player("c", "CB", 8), Player("lw", "LW", 1),
+        };
+
+        Assert.Equal(DefaultLineup.From(squad, Constraints).Slots, DefaultLineup.From(squad, Constraints).Slots);
+    }
 }

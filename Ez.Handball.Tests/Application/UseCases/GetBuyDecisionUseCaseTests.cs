@@ -115,4 +115,39 @@ public class GetBuyDecisionUseCaseTests
         _constraints.Verify(c => c.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _squad.Verify(s => s.GetAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Fantasy_UsesLivePlayerEligibilityForSquadSlots()
+    {
+        // The owned "x" was bought as CB but now has LB as a live secondary, so buying a CB fits.
+        _constraints.Setup(c => c.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int> { ["CB"] = 1, ["LB"] = 1 }, 100_000_000, "ISK"));
+        _squad.Setup(s => s.GetAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new Squad(new[] { new SquadSlot("x", "CB", new PlayerPrice(1, "ISK")) }, 100_000_000, "ISK"));
+        _players.Setup(r => r.GetByIdAsync("x", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Player("x", "X", null, null, null, "team", "club", "Club", "karlar", "CB", false, "LB"));
+        _players.Setup(r => r.GetByIdAsync("p1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Player("p1", "P", null, null, null, "team", "club", "Club", "karlar", "CB", false));
+
+        var result = await CreateSut().ExecuteAsync("u1", "p1", GameFlavor.Fantasy, new BuyPlayerContext(null, null, null), default);
+
+        Assert.True(Assert.IsType<BuyDecisionResult.Decided>(result).Decision.Allowed);
+    }
+
+    [Fact]
+    public async Task Fantasy_UnresolvableSquadPlayer_FallsBackToSnapshotPosition()
+    {
+        _constraints.Setup(c => c.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int> { ["CB"] = 1 }, 100_000_000, "ISK"));
+        _squad.Setup(s => s.GetAsync(It.IsAny<string>(), It.IsAny<GameFlavor>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new Squad(new[] { new SquadSlot("gone", "CB", new PlayerPrice(1, "ISK")) }, 100_000_000, "ISK"));
+        _players.Setup(r => r.GetByIdAsync("gone", It.IsAny<CancellationToken>())).ReturnsAsync((Player?)null);
+        _players.Setup(r => r.GetByIdAsync("p1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Player("p1", "P", null, null, null, "team", "club", "Club", "karlar", "CB", false));
+
+        var result = await CreateSut().ExecuteAsync("u1", "p1", GameFlavor.Fantasy, new BuyPlayerContext(null, null, null), default);
+
+        var decision = Assert.IsType<BuyDecisionResult.Decided>(result).Decision;
+        Assert.Contains(decision.Violations, v => v.Code == "position_limit");
+    }
 }

@@ -58,4 +58,28 @@ public class LineupViewMapperTests
         Assert.Null(ghost.Price);
         Assert.False(view.IsValid);
     }
+
+    [Fact]
+    public void Map_StarterAssignedToSecondary_BenchKeepsPrimary()
+    {
+        var owned = new[]
+        {
+            Player("a", "CB"), Player("b", "CB") with { PositionSecondary = "LB" }, Player("c", "CB") with { PositionSecondary = "LB" },
+        };
+        var lineup = new Lineup(new[]
+        {
+            new LineupSlot("a", LineupRole.Captain, null),
+            new LineupSlot("b", LineupRole.Starter, null),
+            new LineupSlot("c", LineupRole.Bench, 0),
+        });
+        var constraints = new LineupConstraints(1, 2,
+            new Dictionary<string, (int, int)> { ["CB"] = (0, 1), ["LB"] = (0, 1) }, 2, true, false);
+
+        var view = LineupViewMapper.Map(owned, lineup, constraints, new LineupValidation(true, Array.Empty<LineupViolation>()));
+
+        Assert.Equal("CB", view.Slots.Single(s => s.PlayerId == "a").AssignedPosition);
+        Assert.Equal("LB", view.Slots.Single(s => s.PlayerId == "b").AssignedPosition);
+        Assert.Equal("LB", view.Slots.Single(s => s.PlayerId == "b").PositionSecondary);
+        Assert.Equal("CB", view.Slots.Single(s => s.PlayerId == "c").AssignedPosition);
+    }
 }
