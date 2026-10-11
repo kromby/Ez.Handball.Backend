@@ -60,7 +60,9 @@ public static class LineupValidator
         LineupConstraints constraints,
         List<LineupViolation> violations)
     {
+        // Distinct: duplicate slots are reported elsewhere and must not inflate the solver's search.
         var candidates = starters
+            .DistinctBy(s => s.PlayerId)
             .Where(s => ownedById.ContainsKey(s.PlayerId))
             .Select(s => new PositionCandidate(s.PlayerId, ownedById[s.PlayerId].EligiblePositions))
             .ToList();

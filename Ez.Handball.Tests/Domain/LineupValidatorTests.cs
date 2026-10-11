@@ -83,6 +83,15 @@ public class LineupValidatorTests
     }
 
     [Fact]
+    public void ManyDuplicateStarterSlots_ReturnsWithDuplicateFlag()
+    {
+        var slots = Enumerable.Repeat(new LineupSlot("p1", LineupRole.Starter, null), 500)
+            .Append(new LineupSlot("p0", LineupRole.Captain, null)).ToList();
+        var result = LineupValidator.Validate(new Lineup(slots), Owned(EightPositions), Constraints);
+        Assert.True(Has(result, "duplicate_slot"));
+    }
+
+    [Fact]
     public void WrongStarterCount_Flagged()
     {
         // Demote p6 to bench → only 6 starters. Give it a bench order alongside p7.
