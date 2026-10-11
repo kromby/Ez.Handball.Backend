@@ -39,6 +39,19 @@ public static class ManagerStandingsRanker
             kv => kv.Key,
             kv => kv.Value.Where(r => r.RoundLabel == latestRound).Sum(r => r.Points));
 
+        // Round winners: per round, the top score among teams that have a score for it.
+        // Every team on that score wins (ties all credited); a team missing a round can't win it.
+        var roundWinners = histories
+            .SelectMany(kv => kv.Value.Select(r => (TeamId: kv.Key, r.RoundLabel, r.Points)))
+            .GroupBy(x => x.RoundLabel)
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    var top = g.Max(x => x.Points);
+                    return g.Where(x => x.Points == top).Select(x => x.TeamId).ToHashSet();
+                });
+
         // Previous ranking: totals over rounds ≤ previousRound, only for teams present by then.
         var previousRanks = previousRound is null
             ? new Dictionary<string, int>()
@@ -76,7 +89,11 @@ public static class ManagerStandingsRanker
                 RoundPoints: roundPoints[teamId],
                 RoundsPlayed: history.Count,
                 AveragePoints: history.Count == 0 ? 0 : total / history.Count,
-                Rounds: history));
+                Rounds: history,
+                RoundsWon: history.Count(r => roundWinners[r.RoundLabel].Contains(teamId)),
+                WonLatestRound: latestRound is not null
+                    && roundWinners.TryGetValue(latestRound, out var latestWinners)
+                    && latestWinners.Contains(teamId)));
         }
 
         return new RankedManagers(latestRound, entries);
