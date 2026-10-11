@@ -13,7 +13,8 @@ public sealed record LineupPlayer(
     LineupRole Role,
     int? BenchOrder,
     string? PositionSecondary = null,
-    string? AssignedPosition = null);
+    string? AssignedPosition = null,
+    string? PlayAs = null);
 
 public sealed record LineupView(
     IReadOnlyList<LineupPlayer> Slots,
@@ -52,7 +53,8 @@ public static class LineupViewMapper
                 Role: s.Role,
                 BenchOrder: s.BenchOrder,
                 PositionSecondary: p?.PositionSecondary,
-                AssignedPosition: assigned is not null && assigned.TryGetValue(s.PlayerId, out var pos) ? pos ?? p?.Position : p?.Position);
+                AssignedPosition: assigned is not null && assigned.TryGetValue(s.PlayerId, out var pos) ? pos ?? p?.Position : p?.Position,
+                PlayAs: p?.ValidPlayAs);
         }).ToList();
 
         return new LineupView(slots, constraints.CaptainMultiplier, validation.IsValid, validation.Violations);

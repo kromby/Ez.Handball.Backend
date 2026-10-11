@@ -101,7 +101,7 @@ public class LineupEndpointTests : IClassFixture<LineupEndpointTests.Factory>, I
     private static LineupView SampleView() => new(
         new[]
         {
-            new LineupPlayer("p0", "Aron", "Stjarnan", "GK", new PlayerPrice(10_000_000, "ISK"), LineupRole.Captain, null, PositionSecondary: "LB", AssignedPosition: "LB"),
+            new LineupPlayer("p0", "Aron", "Stjarnan", "GK", new PlayerPrice(10_000_000, "ISK"), LineupRole.Captain, null, PositionSecondary: "LB", AssignedPosition: "LB", PlayAs: "LB"),
             new LineupPlayer("p7", "Bjarki", "Stjarnan", "CB", new PlayerPrice(8_000_000, "ISK"), LineupRole.Bench, 0, PositionSecondary: null, AssignedPosition: "CB"),
         },
         CaptainMultiplier: 2, IsValid: true, Violations: Array.Empty<LineupViolation>());
@@ -140,9 +140,11 @@ public class LineupEndpointTests : IClassFixture<LineupEndpointTests.Factory>, I
         var starter = body.GetProperty("starters")[0];
         Assert.Equal("LB", starter.GetProperty("positionSecondary").GetString());
         Assert.Equal("LB", starter.GetProperty("assignedPosition").GetString());
+        Assert.Equal("LB", starter.GetProperty("playAs").GetString());
         var benchPlayer = body.GetProperty("bench")[0];
         Assert.Equal(JsonValueKind.Null, benchPlayer.GetProperty("positionSecondary").ValueKind);
         Assert.Equal("CB", benchPlayer.GetProperty("assignedPosition").GetString());
+        Assert.Equal(JsonValueKind.Null, benchPlayer.GetProperty("playAs").ValueKind);
         Assert.True(body.GetProperty("isValid").GetBoolean());
         Assert.Equal(2, body.GetProperty("captainMultiplier").GetDouble());
     }

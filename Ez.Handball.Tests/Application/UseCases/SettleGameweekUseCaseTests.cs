@@ -33,7 +33,7 @@ public class SettleGameweekUseCaseTests
         1, 2, new Dictionary<string, (int, int)> { ["GK"] = (1, 1), ["FP"] = (1, 2) }, 2, true, false);
 
     private SettleGameweekUseCase CreateSut() => new(
-        _config.Object, _calendar.Object, _snapshots.Object, _liveLineup.Object,
+        _config.Object, _calendar.Object, _snapshots.Object, new Ez.Handball.Application.Services.EffectiveLineupService(_liveLineup.Object),
         _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,
         _teams.Object, new GameweekScoringService(new FantasyPlayerRatingFunction()),
         _transferConfig.Object, _transferCounts.Object);

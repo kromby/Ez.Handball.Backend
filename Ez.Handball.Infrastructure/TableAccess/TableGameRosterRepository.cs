@@ -24,7 +24,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
                            Tables.GameRosters, $"PartitionKey eq '{ODataFilter.Escape(teamId)}'", ct))
         {
             if (e.DeletedAt is null)
-                entries.Add(new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt));
+                entries.Add(new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt, e.PlayAs));
         }
         return entries;
     }
@@ -35,7 +35,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
         {
             var e = (await _client.GetTableClient(Tables.GameRosters)
                 .GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
-            return new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt);
+            return new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt, e.PlayAs);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
@@ -69,6 +69,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
             existing.PricePaidAmount = pricePaid;
             existing.CreatedAt = now;
             existing.DeletedAt = null;
+            existing.PlayAs = null; // a fresh purchase starts unpinned
             try
             {
                 await table.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Replace, ct);
@@ -81,23 +82,66 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
         }
     }
 
-    public async Task SoftDeleteAsync(string teamId, string playerId, DateTimeOffset now, CancellationToken ct)
+    public async Task<SetPlayAsOutcome> SetPlayAsAsync(
+        string teamId, string playerId, string? playAs, CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.GameRosters);
         try
         {
             var e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
-            e.DeletedAt = now;
+            if (e.DeletedAt is not null) return SetPlayAsOutcome.NotFound;
+            e.PlayAs = playAs;
             await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+            return SetPlayAsOutcome.Updated;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
-            // nothing to delete
+            return SetPlayAsOutcome.NotFound;
         }
         catch (RequestFailedException ex) when (ex.Status == 412)
         {
-            // ETag mismatch: a concurrent writer already updated or soft-deleted the row.
-            // Soft-delete is idempotent — the row is already gone from the active set.
+            return SetPlayAsOutcome.Conflict;
         }
+    }
+
+    // A conditional replace can lose its ETag race not only to a concurrent sell but — since #166 —
+    // to a pin write on the still-active row. Treating every 412 as "already deleted" would let a sell
+    // credit the money while the player stays in the squad, so re-read and retry until the row is
+    // seen soft-deleted (or gone); if it keeps conflicting, throw so the sell aborts before crediting.
+    private const int SoftDeleteAttempts = 3;
+
+    public async Task SoftDeleteAsync(string teamId, string playerId, DateTimeOffset now, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameRosters);
+        for (var attempt = 1; attempt <= SoftDeleteAttempts; attempt++)
+        {
+            GameRosterEntity e;
+            try
+            {
+                e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                return; // nothing to delete
+            }
+            if (e.DeletedAt is not null) return; // idempotent: already out of the active set
+
+            e.DeletedAt = now;
+            try
+            {
+                await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+                return;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                return; // removed between our read and write
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412)
+            {
+                // A concurrent writer changed the row; re-read to see whether it is now deleted.
+            }
+        }
+        throw new InvalidOperationException(
+            $"Could not soft-delete roster row {teamId}/{playerId}: still conflicting after {SoftDeleteAttempts} attempts.");
     }
 }

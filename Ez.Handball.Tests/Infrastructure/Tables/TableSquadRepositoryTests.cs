@@ -55,6 +55,17 @@ public class TableSquadRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Get_CarriesPlayAsPin()
+    {
+        await _roster.AddOrResurrectAsync(Team, "p-1", "CB", 40_000_000, T0, default);
+        await _roster.SetPlayAsAsync(Team, "p-1", "LB", default);
+
+        var squad = await _sut.GetAsync("u-1", GameFlavor.Fantasy, default);
+
+        Assert.Equal("LB", Assert.Single(squad.Players).PlayAs);
+    }
+
+    [Fact]
     public async Task Get_NoBudgetRow_BudgetIsZero()
     {
         var squad = await _sut.GetAsync("u-1", GameFlavor.Fantasy, default);

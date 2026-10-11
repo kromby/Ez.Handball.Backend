@@ -281,4 +281,88 @@ public class GameweekScoringServiceTests
         Assert.True(score.Breakdown.Single(b => b.PlayerId == "e").AutoSubbedIn);
         Assert.False(score.Breakdown.Single(b => b.PlayerId == "x").AutoSubbedIn);
     }
+
+    // LB needs min 1; d (CB/LB) sits first on the bench. The frozen slot's PlayAs decides whether d can cover it.
+    private AutoSubScoreFixture PinnedBenchSub(string? framePlayAs, string? livePlayAs)
+    {
+        var constraints = new LineupConstraints(1, 3,
+            new Dictionary<string, (int Min, int Max)> { ["GK"] = (1, 1), ["LB"] = (1, 1), ["CB"] = (0, 2) },
+            CaptainMultiplier: 2, CaptainRequired: true, ViceRequired: false);
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("lb1", LineupRole.Starter, null),
+            new LineupSlot("cb1", LineupRole.Captain, null),
+            new LineupSlot("d", LineupRole.Bench, 0, framePlayAs),
+            new LineupSlot("l", LineupRole.Bench, 1),
+        });
+        var squad = new[]
+        {
+            Owned("gk1", "GK"), Owned("lb1", "LB"), Owned("cb1", "CB"),
+            Owned("d", "CB") with { PositionSecondary = "LB", PlayAs = livePlayAs }, Owned("l", "LB"),
+        };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["gk1"] = Played(0), ["cb1"] = Played(0), ["d"] = Played(0), ["l"] = Played(0),
+        };
+        return new AutoSubScoreFixture(CreateSut().Score("team", "1", snapshot, squad, stats, Rules, constraints));
+    }
+
+    private sealed record AutoSubScoreFixture(GameweekScore Score)
+    {
+        public bool SubbedIn(string id) => Score.Breakdown.Single(b => b.PlayerId == id).AutoSubbedIn;
+    }
+
+    [Fact]
+    public void FrozenPin_RestrictsBenchSubToPinnedPosition()
+    {
+        var r = PinnedBenchSub("CB", null);
+        Assert.False(r.SubbedIn("d"));
+        Assert.True(r.SubbedIn("l"));
+    }
+
+    [Fact]
+    public void LivePin_IsIgnoredWhenSnapshotHasNoPin()
+    {
+        var r = PinnedBenchSub(null, "CB");
+        Assert.True(r.SubbedIn("d"));
+        Assert.False(r.SubbedIn("l"));
+    }
+
+    [Fact]
+    public void FrozenPin_WinsOverADifferingLivePin()
+    {
+        // Frozen CB, live LB (both natural): scoring follows the snapshot, so d still can't cover LB.
+        var r = PinnedBenchSub("CB", "LB");
+        Assert.False(r.SubbedIn("d"));
+        Assert.True(r.SubbedIn("l"));
+    }
+
+    [Fact]
+    public void StaleFrozenPin_IsIgnored()
+    {
+        var r = PinnedBenchSub("RW", null);
+        Assert.True(r.SubbedIn("d"));
+    }
+
+    [Fact]
+    public void DuplicateSnapshotSlot_DoesNotThrow()
+    {
+        // A legacy/hand-written snapshot can list a player as both starter (pinned) and bench; scoring must still complete.
+        var constraints = new LineupConstraints(1, 2,
+            new Dictionary<string, (int Min, int Max)> { ["GK"] = (1, 1), ["CB"] = (0, 2) },
+            CaptainMultiplier: 2, CaptainRequired: true, ViceRequired: false);
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("cb1", LineupRole.Captain, null, "CB"),
+            new LineupSlot("cb1", LineupRole.Bench, 0),
+        });
+        var squad = new[] { Owned("gk1", "GK"), Owned("cb1", "CB") };
+        var stats = new Dictionary<string, AggregatedStats> { ["gk1"] = Played(0), ["cb1"] = Played(0) };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, constraints);
+
+        Assert.NotNull(score);
+    }
 }

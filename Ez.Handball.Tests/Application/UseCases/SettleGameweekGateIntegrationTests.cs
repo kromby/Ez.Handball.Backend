@@ -41,7 +41,7 @@ public class SettleGameweekGateIntegrationTests
         var calendar = new GameweekCalendarService(
             _matches.Object, _locks.Object, noOverrides.Object, new StubTimeProvider(now));
         return new SettleGameweekUseCase(
-            _config.Object, calendar, _snapshots.Object, _liveLineup.Object,
+            _config.Object, calendar, _snapshots.Object, new Ez.Handball.Application.Services.EffectiveLineupService(_liveLineup.Object),
             _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,
             _teams.Object, new Ez.Handball.Application.Services.GameweekScoringService(
                 new Ez.Handball.Application.RatingFunctions.FantasyPlayerRatingFunction()),

@@ -199,6 +199,16 @@ public class LineupValidatorTests
     }
 
     [Fact]
+    public void ThreeCbStarters_DualPinnedToCb_ReportsPositionMax()
+    {
+        var squad = Owned("GK", "LW", "RW", "LP", "CB", "CB").Append(Dual("d", "CB", "LB") with { PlayAs = "CB" }).ToList();
+
+        var result = LineupValidator.Validate(StartAll(squad), squad, Constraints);
+
+        Assert.Contains(result.Violations, v => v.Code == "position_max");
+    }
+
+    [Fact]
     public void NoKeeperAnywhere_StillReportsPositionMin()
     {
         var squad = Owned("LW", "RW", "LB", "CB", "RB", "LP", "LP");

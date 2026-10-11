@@ -4,6 +4,8 @@ namespace Ez.Handball.Application.Abstractions;
 
 public enum RosterAddOutcome { Added, AlreadyActive }
 
+public enum SetPlayAsOutcome { Updated, NotFound, Conflict }
+
 public interface IGameRosterRepository
 {
     // Active rows only (DeletedAt == null).
@@ -16,6 +18,10 @@ public interface IGameRosterRepository
     // Returns AlreadyActive if an active row already exists (write-time duplicate guard).
     Task<RosterAddOutcome> AddOrResurrectAsync(
         string teamId, string playerId, string? position, double pricePaid, DateTimeOffset now, CancellationToken ct);
+
+    // Set (or clear with null) the manager's position pin on an active row. NotFound for a missing
+    // or soft-deleted row; Conflict if a concurrent writer changed the row first (ETag mismatch).
+    Task<SetPlayAsOutcome> SetPlayAsAsync(string teamId, string playerId, string? playAs, CancellationToken ct);
 
     // Soft-delete (DeletedAt = now). No-op if the row is missing.
     Task SoftDeleteAsync(string teamId, string playerId, DateTimeOffset now, CancellationToken ct);

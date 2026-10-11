@@ -93,4 +93,19 @@ public class DefaultLineupTests
 
         Assert.Equal(DefaultLineup.From(squad, Constraints).Slots, DefaultLineup.From(squad, Constraints).Slots);
     }
+
+    [Fact]
+    public void PinnedDual_StaysAtPinnedPosition_AndBenchesWhenThatPositionIsFull()
+    {
+        var squad = new[]
+        {
+            Player("gk", "GK", 9), Player("cb1", "CB", 8), Player("cb2", "CB", 7),
+            DualPlayer("pinned", "CB", "LB", 6) with { PlayAs = "CB" },   // pinned to full CB → cannot slide to LB
+            Player("lw", "LW", 5), Player("rw", "RW", 4), Player("lp", "LP", 3), Player("rb", "RB", 2),
+        };
+
+        var lineup = DefaultLineup.From(squad, Constraints);
+
+        Assert.Contains("pinned", Ids(lineup, LineupRole.Bench));
+    }
 }

@@ -22,6 +22,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     {
         public Mock<IBuyPlayerUseCase> Buy { get; } = new();
         public Mock<ISellPlayerUseCase> Sell { get; } = new();
+        public Mock<ISetPlayAsUseCase> SetPlayAs { get; } = new();
         public Mock<IGetTransferAllowanceUseCase> Allowance { get; } = new();
 
         static Factory() => Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
@@ -43,6 +44,8 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
                 services.Remove(services.Single(d => d.ServiceType == typeof(ISellPlayerUseCase)));
                 services.AddSingleton(Buy.Object);
                 services.AddSingleton(Sell.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(ISetPlayAsUseCase)));
+                services.AddSingleton(SetPlayAs.Object);
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetTransferAllowanceUseCase)));
                 services.AddSingleton(Allowance.Object);
             });
@@ -56,7 +59,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
     public SquadMutationEndpointTests(Factory factory)
     {
-        _factory = factory; _factory.Buy.Reset(); _factory.Sell.Reset(); _factory.Allowance.Reset();
+        _factory = factory; _factory.Buy.Reset(); _factory.Sell.Reset(); _factory.SetPlayAs.Reset(); _factory.Allowance.Reset();
         _client = factory.CreateClient();
     }
 
@@ -246,6 +249,104 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     {
         var resp = await _client.DeleteAsync("/api/users/me/squad/players/p-1");
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    private void SetupPlayAs(string? position, SetPlayAsResult result)
+        => _factory.SetPlayAs.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", position, It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+    [Fact]
+    public async Task PlayAs_Put_Returns200WithSquadAndGameweek()
+    {
+        SetupPlayAs("LB", new SetPlayAsResult.Updated(View()));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/users/me/squad/players/p-1/position", token, new { position = "LB" }));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("p-1", body.GetProperty("squad").GetProperty("players")[0].GetProperty("playerId").GetString());
+        Assert.True(body.TryGetProperty("gameweek", out _));
+    }
+
+    [Fact]
+    public async Task PlayAs_Put_NotEligible_Returns422()
+    {
+        SetupPlayAs("RW", SetPlayAsResult.NotEligible.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/users/me/squad/players/p-1/position", token, new { position = "RW" }));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("position_not_eligible", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task PlayAs_Put_LineupRejected_Returns422WithViolations()
+    {
+        SetupPlayAs("LB", new SetPlayAsResult.Rejected(new[] { new LineupViolation("position_max", "At most 1 starter(s) allowed at LB.") }));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/users/me/squad/players/p-1/position", token, new { position = "LB" }));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("lineup_invalid", body.GetProperty("error").GetString());
+        Assert.Equal("position_max", body.GetProperty("violations")[0].GetProperty("code").GetString());
+    }
+
+    [Theory]
+    [InlineData("""{ "position": "  " }""")]
+    [InlineData("""{}""")]
+    public async Task PlayAs_Put_BlankPosition_Returns400(string json)
+    {
+        var token = await TokenAsync();
+        var req = Req(HttpMethod.Put, "/api/users/me/squad/players/p-1/position", token);
+        req.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var resp = await _client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_position", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task PlayAs_Delete_Returns200()
+    {
+        SetupPlayAs(null, new SetPlayAsResult.Updated(View()));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Delete, "/api/users/me/squad/players/p-1/position", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlayAs_Delete_NotInSquad_Returns404()
+    {
+        SetupPlayAs(null, SetPlayAsResult.NotInSquad.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Delete, "/api/users/me/squad/players/p-1/position", token));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("not_in_squad", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task PlayAs_Put_Conflict_Returns409()
+    {
+        SetupPlayAs("LB", SetPlayAsResult.Conflict.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/users/me/squad/players/p-1/position", token, new { position = "LB" }));
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("conflict", body.GetProperty("error").GetString());
     }
 
     private void AllowanceAfterCommitIs(TransferAllowance allowance) =>

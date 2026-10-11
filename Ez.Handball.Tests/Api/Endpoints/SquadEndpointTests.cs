@@ -104,7 +104,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         {
             new SquadPlayer("p-1", "Aron", "385", "Stjarnan", "VS", "karlar",
                 new PlayerPrice(50_000_000, "ISK"), new PlayerPrice(42_000_000, "ISK"), Rating: 0.0,
-                PositionSecondary: "ST", AssignedPosition: "ST")
+                PositionSecondary: "ST", AssignedPosition: "ST", PlayAs: "ST")
         },
         BudgetUsed: new PlayerPrice(42_000_000, "ISK"),
         RemainingBudget: new PlayerPrice(8_000_000, "ISK"),
@@ -134,6 +134,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         Assert.Equal("p-1", player.GetProperty("playerId").GetString());
         Assert.Equal("ST", player.GetProperty("positionSecondary").GetString());
         Assert.Equal("ST", player.GetProperty("assignedPosition").GetString());
+        Assert.Equal("ST", player.GetProperty("playAs").GetString());
         Assert.Equal(50_000_000, player.GetProperty("price").GetProperty("amount").GetDouble());
         Assert.Equal(42_000_000, player.GetProperty("pricePaid").GetProperty("amount").GetDouble());
         Assert.Equal(42_000_000, body.GetProperty("budgetUsed").GetProperty("amount").GetDouble());

@@ -48,6 +48,51 @@ public class GetSquadUseCaseTests
         Assert.Equal("CB", view.Players.Single(p => p.PlayerId == "p-1").AssignedPosition);
     }
 
+    private void SetupDual(string id, string primary, string? secondary, double rating)
+    {
+        _players.Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(AnyPlayer(id, primary) with { PositionSecondary = secondary ?? "" });
+        _price.Setup(s => s.GetPriceAsync(id, 1, null, null, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(PriceOf(id, 1) with { Rating = rating });
+    }
+
+    private void SetupCaps(int cb, int lb) =>
+        _constraints.Setup(c => c.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int> { ["CB"] = cb, ["LB"] = lb }, 100_000_000, "ISK"));
+
+    [Fact]
+    public async Task Found_PinnedPlayer_AssignedToPin()
+    {
+        // CB has room, so the unpinned solve would keep this CB/LB player at its primary CB; the LB pin must win.
+        SetupSquad(0, new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK"), PlayAs: "LB"));
+        SetupDual("p-1", "CB", "LB", 1);
+        SetupCaps(2, 1);
+
+        var p = Assert.IsType<GetSquadResult.Found>(
+            await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None)).View.Players.Single();
+
+        Assert.Equal("LB", p.PlayAs);
+        Assert.Equal("LB", p.AssignedPosition);
+    }
+
+    [Fact]
+    public async Task Found_PinnedInfeasible_FallsBackToUnpinnedSolve()
+    {
+        SetupSquad(0,
+            new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK")),
+            new SquadSlot("p-2", "CB", new PlayerPrice(1, "ISK")),
+            new SquadSlot("p-3", "CB", new PlayerPrice(1, "ISK"), PlayAs: "CB"));
+        SetupDual("p-1", "CB", null, 9);
+        SetupDual("p-2", "CB", null, 8);
+        SetupDual("p-3", "CB", "LB", 1);
+        SetupCaps(2, 1);
+
+        var view = Assert.IsType<GetSquadResult.Found>(
+            await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None)).View;
+
+        Assert.Equal("LB", view.Players.Single(p => p.PlayerId == "p-3").AssignedPosition);
+    }
+
     [Fact]
     public async Task Found_NoConstraints_AssignedPositionIsPrimary()
     {

@@ -281,3 +281,10 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   over a cap (positions changed after purchase) falls back to the primary-only count so unrelated
   buys still go through. Squad and lineup views return `positionSecondary` and the solved
   `assignedPosition`; the pool's `position` filter matches either position. Lineup snapshots stay frozen, but bench auto-subs are recomputed from the live squad/eligibility on every settle, so a deploy (or a later HBStatz position change) can re-score rounds the auto-settler re-settles within `Settlement:RecentWindow`.
+- **Position pins (Backend#166):** a manager can pin an owned dual-position player to their
+  primary or secondary (`PUT`/`DELETE /api/users/me/squad/players/{playerId}/position`). The pin
+  is `GameRosters.PlayAs` (null = auto-solve, cleared on re-buy); `SquadPlayer.EligiblePositions`
+  honours it, so the default lineup, lineup validation and views do too. Buying ignores pins. The
+  snapshot guard runs before a pin change and `IEffectiveLineupService` stamps pins onto the lineup
+  it freezes (`GameweekLineups.PlayAs`); scoring reads pins only from the snapshot, so a later move
+  never changes a locked round. A pin that's no longer one of the player's positions is ignored.

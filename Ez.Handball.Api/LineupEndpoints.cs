@@ -121,7 +121,7 @@ public static class LineupEndpoints
             .Select(s => new
             {
                 playerId = s.PlayerId, name = s.Name, clubName = s.ClubName,
-                position = s.Position, positionSecondary = s.PositionSecondary, assignedPosition = s.AssignedPosition, price = s.Price, role = s.Role.ToString()
+                position = s.Position, positionSecondary = s.PositionSecondary, assignedPosition = s.AssignedPosition, playAs = s.PlayAs, price = s.Price, role = s.Role.ToString()
             }),
         bench = view.Slots
             .Where(s => s.Role == LineupRole.Bench)
@@ -129,7 +129,7 @@ public static class LineupEndpoints
             .Select(s => new
             {
                 playerId = s.PlayerId, name = s.Name, clubName = s.ClubName,
-                position = s.Position, positionSecondary = s.PositionSecondary, assignedPosition = s.AssignedPosition, price = s.Price, benchOrder = s.BenchOrder
+                position = s.Position, positionSecondary = s.PositionSecondary, assignedPosition = s.AssignedPosition, playAs = s.PlayAs, price = s.Price, benchOrder = s.BenchOrder
             }),
         captainId = view.Slots.FirstOrDefault(s => s.Role == LineupRole.Captain)?.PlayerId,
         viceId = view.Slots.FirstOrDefault(s => s.Role == LineupRole.Vice)?.PlayerId,

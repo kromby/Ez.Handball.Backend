@@ -175,6 +175,7 @@ builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
 builder.Services.AddScoped<IGetSquadUseCase, GetSquadUseCase>();
 builder.Services.AddScoped<IBuyPlayerUseCase, BuyPlayerUseCase>();
 builder.Services.AddScoped<ISellPlayerUseCase, SellPlayerUseCase>();
+builder.Services.AddScoped<ISetPlayAsUseCase, SetPlayAsUseCase>();
 builder.Services.AddScoped<ITransferLedgerRecorder, TransferLedgerRecorder>();
 builder.Services.AddScoped<ITransferCountRecorder, TransferCountRecorder>();
 builder.Services.AddScoped<IGetTransferAllowanceUseCase, GetTransferAllowanceUseCase>();
@@ -217,6 +218,7 @@ builder.Services.AddScoped<IGameweekCalendarService>(sp => new GameweekCalendarS
 builder.Services.AddScoped<IGetGameweeksUseCase, GetGameweeksUseCase>();
 builder.Services.AddScoped<IGetCurrentGameweekUseCase, GetCurrentGameweekUseCase>();
 builder.Services.AddScoped<IGameweekScoringService, GameweekScoringService>();
+builder.Services.AddScoped<IEffectiveLineupService, EffectiveLineupService>();
 builder.Services.AddScoped<ISettleGameweekUseCase, SettleGameweekUseCase>();
 builder.Services.AddScoped<IGetMyGameweekScoresUseCase, GetMyGameweekScoresUseCase>();
 builder.Services.AddScoped<IGetManagerStandingsUseCase, GetManagerStandingsUseCase>();
@@ -242,7 +244,7 @@ builder.Services.AddScoped<IGameweekSnapshotGuard>(sp => new GameweekSnapshotGua
     sp.GetRequiredService<IGameweekCalendarService>(),
     sp.GetRequiredService<IGameweekLockRepository>(),
     sp.GetRequiredService<IGameweekLineupRepository>(),
-    sp.GetRequiredService<ILineupRepository>(),
+    sp.GetRequiredService<IEffectiveLineupService>(),
     sp.GetRequiredService<IGetSquadUseCase>(),
     sp.GetRequiredService<ILineupConstraintsRepository>(),
     sp.GetRequiredService<IGameTeamRepository>(),

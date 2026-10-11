@@ -49,7 +49,17 @@ public sealed class GameweekScoringService : IGameweekScoringService
         var subbedInIds = new HashSet<string>();
         var replacedStarterIds = new HashSet<string>();
         var usedBench = new HashSet<string>();
-        var eligibleById = ownedSquad.ToDictionary(p => p.PlayerId, p => p.EligiblePositions);
+        // Frozen pins only (#166): the snapshot slot's PlayAs, when still one of the player's natural
+        // positions. The live SquadPlayer pin is ignored so post-deadline moves can't touch locked rounds.
+        var frozenPins = snapshot.Slots.GroupBy(s => s.PlayerId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().PlayAs, StringComparer.Ordinal); // first-wins: tolerate duplicate slots
+        var eligibleById = ownedSquad.ToDictionary(p => p.PlayerId, p =>
+        {
+            var natural = p.NaturalPositions;
+            return frozenPins.TryGetValue(p.PlayerId, out var pin) && pin is not null && natural.Contains(pin, StringComparer.Ordinal)
+                ? (IReadOnlyList<string>)new[] { pin }
+                : natural;
+        });
 
         // Position each original starter was solved into; a starter's absence only needs its own
         // assigned position refilled, not every position it is merely eligible for.

@@ -30,7 +30,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
     private readonly IGameweekConfigRepository _config;
     private readonly IGameweekCalendarService _calendar;
     private readonly IGameweekLineupRepository _snapshots;
-    private readonly ILineupRepository _liveLineup;
+    private readonly IEffectiveLineupService _effective;
     private readonly IGameweekScoreRepository _scores;
     private readonly IGetSquadUseCase _squad;
     private readonly IPlayerStatsRepository _stats;
@@ -43,7 +43,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
 
     public SettleGameweekUseCase(
         IGameweekConfigRepository config, IGameweekCalendarService calendar,
-        IGameweekLineupRepository snapshots, ILineupRepository liveLineup,
+        IGameweekLineupRepository snapshots, IEffectiveLineupService effective,
         IGameweekScoreRepository scores, IGetSquadUseCase squad, IPlayerStatsRepository stats,
         IScoringRuleSetRepository ruleSets, ILineupConstraintsRepository constraints,
         IGameTeamRepository teams, IGameweekScoringService scoring,
@@ -52,7 +52,7 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         _config = config;
         _calendar = calendar;
         _snapshots = snapshots;
-        _liveLineup = liveLineup;
+        _effective = effective;
         _scores = scores;
         _squad = squad;
         _stats = stats;
@@ -107,9 +107,8 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         var snapshot = await _snapshots.GetSnapshotAsync(teamId, roundLabel, ct);
         if (snapshot is null)
         {
-            var live = await _liveLineup.GetAsync(teamId, ct);
-            var effective = live ?? DefaultLineup.From(found.View.Players, constraints);
-            if (effective.Slots.Count == 0) return SettleGameweekResult.NoSnapshotPossible.Instance;
+            var effective = await _effective.GetAsync(teamId, found.View.Players, constraints, ct);
+            if (effective is null) return SettleGameweekResult.NoSnapshotPossible.Instance;
             await _snapshots.SaveSnapshotAsync(teamId, roundLabel, effective, ct);
             snapshot = effective;
         }
