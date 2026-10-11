@@ -27,7 +27,7 @@ internal sealed class TableGameweekLineupRepository : IGameweekLineupRepository
                            Tables.GameweekLineups, $"PartitionKey eq '{ODataFilter.Escape(pk)}'", ct))
         {
             if (Enum.TryParse<LineupRole>(e.Role, out var role))
-                slots.Add(new LineupSlot(e.RowKey, role, e.BenchOrder));
+                slots.Add(new LineupSlot(e.RowKey, role, e.BenchOrder, e.PlayAs));
         }
         return slots.Count == 0 ? null : new Lineup(slots);
     }
@@ -59,7 +59,8 @@ internal sealed class TableGameweekLineupRepository : IGameweekLineupRepository
                     PartitionKey = pk,
                     RowKey = s.PlayerId,
                     Role = s.Role.ToString(),
-                    BenchOrder = s.BenchOrder
+                    BenchOrder = s.BenchOrder,
+                    PlayAs = s.PlayAs
                 }));
 
         if (actions.Count > 0)
