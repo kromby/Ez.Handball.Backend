@@ -6,4 +6,5 @@ public sealed record RosterEntry(
     string PlayerId,
     string? Position,
     double PricePaidAmount,
-    DateTimeOffset? DeletedAt);
+    DateTimeOffset? DeletedAt,
+    string? PlayAs = null);   // manager's position pin for a dual-position player (#166); null = unpinned
