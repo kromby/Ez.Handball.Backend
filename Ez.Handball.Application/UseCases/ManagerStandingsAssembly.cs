@@ -14,6 +14,14 @@ internal static class ManagerStandingsAssembly
         return all.ToDictionary(t => t.TeamId, t => (t.Name, t.Color));
     }
 
+    // Drops rounds before a mini-league's start round, so totals, rounds played, average and
+    // history all cover only the rounds the league counts. Null start round keeps every round.
+    public static IEnumerable<GameweekScoreSummary> FromStartRound(
+        IEnumerable<GameweekScoreSummary> summaries, string? startRound)
+        => startRound is null
+            ? summaries
+            : summaries.Where(s => RoundOrder.Compare(s.RoundLabel, startRound) >= 0);
+
     public static ManagerStandings Paginate(RankedManagers ranked, int offset, int limit)
         => new(
             Total: ranked.Entries.Count,

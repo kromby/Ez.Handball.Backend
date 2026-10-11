@@ -4,7 +4,10 @@ using Ez.Handball.Domain;
 
 namespace Ez.Handball.Api;
 
-public sealed record CreateMiniLeagueRequest(string? Name);
+public sealed record CreateMiniLeagueRequest(string? Name, string? StartRound = null);
+
+// StartRound null/blank resets the league to count every round.
+public sealed record SetMiniLeagueStartRoundRequest(string? StartRound);
 
 public static class MiniLeagueEndpoints
 {
@@ -21,10 +24,12 @@ public static class MiniLeagueEndpoints
             if (string.IsNullOrEmpty(userId))
                 return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
 
-            var result = await uc.ExecuteAsync(userId, req.Name ?? string.Empty, ct);
+            var result = await uc.ExecuteAsync(userId, req.Name ?? string.Empty, req.StartRound, ct);
             return result switch
             {
                 CreateMiniLeagueResult.Created c          => Results.Json(MiniLeagueResponse.Body(c.View, userId), statusCode: StatusCodes.Status201Created),
+                CreateMiniLeagueResult.ValidationError { Field: "startRound" }
+                                                          => Results.BadRequest(new { error = "invalid_start_round" }),
                 CreateMiniLeagueResult.ValidationError    => Results.BadRequest(new { error = "invalid_name" }),
                 CreateMiniLeagueResult.NoCurrentSeason    => Results.Json(new { error = "no_current_season" }, statusCode: StatusCodes.Status409Conflict),
                 _                                         => Results.Problem()
@@ -44,6 +49,7 @@ public static class MiniLeagueEndpoints
                 id          = l.League.Id,
                 name        = l.League.Name,
                 season      = l.League.Season,
+                startRound  = l.League.StartRound,
                 role        = l.Role,
                 memberCount = l.MemberCount
             }));
@@ -62,6 +68,25 @@ public static class MiniLeagueEndpoints
                 GetMiniLeagueResult.Found f    => Results.Ok(MiniLeagueResponse.Body(f.View, userId)),
                 GetMiniLeagueResult.NotFound   => Results.NotFound(new { error = "league_not_found" }),
                 _                              => Results.Problem()
+            };
+        });
+
+        group.MapPut("/{id}/start-round", async (
+            string id, SetMiniLeagueStartRoundRequest req, HttpContext http,
+            ISetMiniLeagueStartRoundUseCase uc, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(userId, id, req.StartRound, ct);
+            return result switch
+            {
+                SetMiniLeagueStartRoundResult.Updated u         => Results.Ok(new { id = u.League.Id, startRound = u.League.StartRound }),
+                SetMiniLeagueStartRoundResult.NotFound          => Results.NotFound(new { error = "league_not_found" }),
+                SetMiniLeagueStartRoundResult.NotCreator        => Results.Json(new { error = "not_creator" }, statusCode: StatusCodes.Status403Forbidden),
+                SetMiniLeagueStartRoundResult.ValidationError   => Results.BadRequest(new { error = "invalid_start_round" }),
+                _                                               => Results.Problem()
             };
         });
 

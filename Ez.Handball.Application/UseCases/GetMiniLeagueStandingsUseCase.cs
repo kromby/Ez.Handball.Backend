@@ -41,7 +41,8 @@ public sealed class GetMiniLeagueStandingsUseCase : IGetMiniLeagueStandingsUseCa
         var members = await _leagues.GetMembersAsync(leagueId, ct);
         var teamIds = members.Select(m => GameTeamId.For(m.UserId, GameFlavor.Fantasy)).ToList();
 
-        var summaries = await _scores.ListSummariesByTeamsAsync(teamIds, ct);
+        var summaries = ManagerStandingsAssembly.FromStartRound(
+            await _scores.ListSummariesByTeamsAsync(teamIds, ct), league.StartRound);
         var names = await ManagerStandingsAssembly.NameMapAsync(_teams, ct);
         // Every member with a fantasy team is ranked, even before their first settled score.
         var roster = teamIds.Where(names.ContainsKey);

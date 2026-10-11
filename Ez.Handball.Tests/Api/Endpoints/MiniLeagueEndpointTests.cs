@@ -24,6 +24,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         public Mock<IGetMiniLeagueUseCase> Get { get; } = new();
         public Mock<IGetMiniLeagueStandingsUseCase> Standings { get; } = new();
         public Mock<IGetMyMiniLeaguesUseCase> Mine { get; } = new();
+        public Mock<ISetMiniLeagueStartRoundUseCase> SetStartRound { get; } = new();
 
         static Factory()
         {
@@ -52,6 +53,8 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
                 services.AddSingleton(Standings.Object);
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetMyMiniLeaguesUseCase)));
                 services.AddSingleton(Mine.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(ISetMiniLeagueStartRoundUseCase)));
+                services.AddSingleton(SetStartRound.Object);
             });
             return base.CreateHost(builder);
         }
@@ -69,6 +72,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         _factory.Get.Reset();
         _factory.Standings.Reset();
         _factory.Mine.Reset();
+        _factory.SetStartRound.Reset();
         _client = factory.CreateClient();
     }
 
@@ -121,20 +125,21 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
     public async Task Create_HappyPath_Returns201WithCreatorRole()
     {
         // Echo the caller's userId back into the view so the endpoint resolves role == "creator".
-        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "Office League", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string uid, string name, CancellationToken _) =>
+        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "Office League", "6", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string uid, string name, string? startRound, CancellationToken _) =>
                 new CreateMiniLeagueResult.Created(new MiniLeagueView(
-                    new MiniLeague("lg-1", name, "2025-26", uid, T0),
+                    new MiniLeague("lg-1", name, "2025-26", uid, T0, startRound),
                     new[] { new MiniLeagueMember(uid, MiniLeagueRoles.Creator, T0) })));
         var token = await TokenAsync();
 
-        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues", token, new { name = "Office League" }));
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues", token, new { name = "Office League", startRound = "6" }));
 
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("lg-1", body.GetProperty("id").GetString());
         Assert.Equal("Office League", body.GetProperty("name").GetString());
         Assert.Equal("2025-26", body.GetProperty("season").GetString());
+        Assert.Equal("6", body.GetProperty("startRound").GetString());
         Assert.Equal(1, body.GetProperty("memberCount").GetInt32());
         Assert.Equal("creator", body.GetProperty("role").GetString());
         var member = body.GetProperty("members")[0];
@@ -144,7 +149,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
     [Fact]
     public async Task Create_BlankName_Returns400InvalidName()
     {
-        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CreateMiniLeagueResult.ValidationError("name"));
         var token = await TokenAsync();
 
@@ -156,9 +161,85 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
     }
 
     [Fact]
+    public async Task Create_InvalidStartRound_Returns400InvalidStartRound()
+    {
+        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateMiniLeagueResult.ValidationError("startRound"));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/mini-leagues", token, new { name = "Office League", startRound = new string('x', 41) }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_start_round", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task SetStartRound_WithoutToken_Returns401()
+    {
+        var resp = await _client.PutAsJsonAsync("/api/mini-leagues/lg-1/start-round", new { startRound = "6" });
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetStartRound_Updated_Returns200WithStartRound()
+    {
+        _factory.SetStartRound.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "lg-1", "6", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SetMiniLeagueStartRoundResult.Updated(new MiniLeague("lg-1", "Office", "2025-26", "a", T0, "6")));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/mini-leagues/lg-1/start-round", token, new { startRound = "6" }));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("lg-1", body.GetProperty("id").GetString());
+        Assert.Equal("6", body.GetProperty("startRound").GetString());
+    }
+
+    [Fact]
+    public async Task SetStartRound_NotCreator_Returns403()
+    {
+        _factory.SetStartRound.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "lg-1", It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SetMiniLeagueStartRoundResult.NotCreator());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/mini-leagues/lg-1/start-round", token, new { startRound = "6" }));
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("not_creator", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task SetStartRound_MissingLeague_Returns404()
+    {
+        _factory.SetStartRound.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "missing", It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SetMiniLeagueStartRoundResult.NotFound());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/mini-leagues/missing/start-round", token, new { startRound = "6" }));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetStartRound_Invalid_Returns400()
+    {
+        _factory.SetStartRound.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "lg-1", It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SetMiniLeagueStartRoundResult.ValidationError());
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Put, "/api/mini-leagues/lg-1/start-round", token, new { startRound = new string('x', 41) }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_start_round", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
     public async Task Create_NoCurrentSeason_Returns409()
     {
-        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _factory.Create.Setup(u => u.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CreateMiniLeagueResult.NoCurrentSeason());
         var token = await TokenAsync();
 

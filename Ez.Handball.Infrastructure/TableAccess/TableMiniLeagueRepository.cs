@@ -30,8 +30,29 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
             Name = league.Name,
             Season = league.Season,
             CreatorUserId = league.CreatorUserId,
-            CreatedAt = league.CreatedAt
+            CreatedAt = league.CreatedAt,
+            StartRound = league.StartRound
         }, TableUpdateMode.Replace, ct);
+    }
+
+    public async Task<bool> SetStartRoundAsync(string leagueId, string? startRound, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.MiniLeagues);
+        MiniLeagueEntity entity;
+        try
+        {
+            entity = (await table.GetEntityAsync<MiniLeagueEntity>(HeaderPartition, leagueId, cancellationToken: ct)).Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return false; // row or table missing
+        }
+
+        // Replace, not Merge: Merge skips null properties, so clearing the start round would be a no-op.
+        // The read's ETag guards against overwriting a concurrent header change.
+        entity.StartRound = startRound;
+        await table.UpdateEntityAsync(entity, entity.ETag, TableUpdateMode.Replace, ct);
+        return true;
     }
 
     public async Task DeleteAsync(string leagueId, CancellationToken ct)
@@ -76,7 +97,7 @@ internal sealed class TableMiniLeagueRepository : IMiniLeagueRepository
         try
         {
             var e = (await table.GetEntityAsync<MiniLeagueEntity>(HeaderPartition, leagueId, cancellationToken: ct)).Value;
-            return new MiniLeague(e.RowKey, e.Name, e.Season, e.CreatorUserId, e.CreatedAt);
+            return new MiniLeague(e.RowKey, e.Name, e.Season, e.CreatorUserId, e.CreatedAt, e.StartRound);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {

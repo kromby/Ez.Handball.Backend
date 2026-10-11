@@ -1,4 +1,5 @@
 using Ez.Handball.Application.Abstractions;
+using Ez.Handball.Application.Services;
 using Ez.Handball.Application.UseCases;
 using Ez.Handball.Domain;
 using Moq;
@@ -10,9 +11,22 @@ public class CreateMiniLeagueUseCaseTests
     private readonly Mock<IMiniLeagueRepository> _leagues = new();
     private readonly Mock<ISeasonRepository> _seasons = new();
     private readonly Mock<IGameTeamRepository> _teams = new();
+    private readonly Mock<IGameweekConfigRepository> _gameweekConfig = new();
+    private readonly Mock<IGameweekCalendarService> _calendar = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch.AddDays(100);
+    private static readonly GameweekConfig Config = new(1, "9142", 1, 3, 1, 3);
 
-    private CreateMiniLeagueUseCase CreateSut() => new(_leagues.Object, _seasons.Object, _teams.Object, () => Now);
+    private CreateMiniLeagueUseCase CreateSut() =>
+        new(_leagues.Object, _seasons.Object, _teams.Object, _gameweekConfig.Object, _calendar.Object, () => Now);
+
+    private static Gameweek Gw(int number, string round) =>
+        new(number, round, "9142", Now, GameweekStatus.Open, Array.Empty<GameweekMatch>());
+
+    private void CalendarReturns(params Gameweek[] gws)
+    {
+        _gameweekConfig.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Config);
+        _calendar.Setup(c => c.GetCalendarAsync(Config, It.IsAny<CancellationToken>())).ReturnsAsync(gws);
+    }
 
     private void SeasonsReturn(params Season[] s) =>
         _seasons.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(s);
@@ -20,7 +34,7 @@ public class CreateMiniLeagueUseCaseTests
     [Fact]
     public async Task BlankName_ReturnsValidationError_AndDoesNotWrite()
     {
-        var result = await CreateSut().ExecuteAsync("u-1", "   ", CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync("u-1", "   ", null, CancellationToken.None);
 
         var err = Assert.IsType<CreateMiniLeagueResult.ValidationError>(result);
         Assert.Equal("name", err.Field);
@@ -32,7 +46,7 @@ public class CreateMiniLeagueUseCaseTests
     {
         SeasonsReturn(new Season("2025-26", true));
 
-        var result = await CreateSut().ExecuteAsync("u-1", new string('x', 61), CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync("u-1", new string('x', 61), null, CancellationToken.None);
 
         Assert.IsType<CreateMiniLeagueResult.ValidationError>(result);
         _leagues.Verify(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -44,7 +58,7 @@ public class CreateMiniLeagueUseCaseTests
     {
         SeasonsReturn(new Season("2024-25", false));
 
-        var result = await CreateSut().ExecuteAsync("u-1", "Office League", CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync("u-1", "Office League", null, CancellationToken.None);
 
         Assert.IsType<CreateMiniLeagueResult.NoCurrentSeason>(result);
         _leagues.Verify(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -61,7 +75,7 @@ public class CreateMiniLeagueUseCaseTests
         _teams.Setup(t => t.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
               .ReturnsAsync(new GameTeam("u-1:fantasy", "Alpha", "#abcdef", Now));
 
-        var result = await CreateSut().ExecuteAsync("u-1", "  Office League  ", CancellationToken.None);
+        var result = await CreateSut().ExecuteAsync("u-1", "  Office League  ", null, CancellationToken.None);
 
         var created = Assert.IsType<CreateMiniLeagueResult.Created>(result);
         Assert.NotNull(captured);
@@ -85,6 +99,66 @@ public class CreateMiniLeagueUseCaseTests
     }
 
     [Fact]
+    public async Task WithoutStartRound_DefaultsToFirstGameweek()
+    {
+        SeasonsReturn(new Season("2025-26", true));
+        CalendarReturns(Gw(2, "2"), Gw(1, "1"), Gw(3, "3"));
+        MiniLeague? captured = null;
+        _leagues.Setup(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()))
+                .Callback<MiniLeague, CancellationToken>((l, _) => captured = l)
+                .Returns(Task.CompletedTask);
+
+        var result = await CreateSut().ExecuteAsync("u-1", "Office League", "   ", CancellationToken.None);
+
+        Assert.Equal("1", captured!.StartRound);
+        Assert.Equal("1", Assert.IsType<CreateMiniLeagueResult.Created>(result).View.League.StartRound);
+    }
+
+    [Fact]
+    public async Task WithoutStartRound_NoGameweekConfig_CountsEveryRound()
+    {
+        SeasonsReturn(new Season("2025-26", true));
+        _gameweekConfig.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((GameweekConfig?)null);
+        MiniLeague? captured = null;
+        _leagues.Setup(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()))
+                .Callback<MiniLeague, CancellationToken>((l, _) => captured = l)
+                .Returns(Task.CompletedTask);
+
+        await CreateSut().ExecuteAsync("u-1", "Office League", null, CancellationToken.None);
+
+        Assert.Null(captured!.StartRound);
+    }
+
+    [Fact]
+    public async Task WithStartRound_StoresTrimmedLabel()
+    {
+        SeasonsReturn(new Season("2025-26", true));
+        MiniLeague? captured = null;
+        _leagues.Setup(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()))
+                .Callback<MiniLeague, CancellationToken>((l, _) => captured = l)
+                .Returns(Task.CompletedTask);
+
+        var result = await CreateSut().ExecuteAsync("u-1", "Office League", " 6 ", CancellationToken.None);
+
+        var created = Assert.IsType<CreateMiniLeagueResult.Created>(result);
+        Assert.Equal("6", captured!.StartRound);
+        _calendar.Verify(c => c.GetCalendarAsync(It.IsAny<GameweekConfig>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal("6", created.View.League.StartRound);
+    }
+
+    [Fact]
+    public async Task StartRoundTooLong_ReturnsValidationError_AndDoesNotWrite()
+    {
+        SeasonsReturn(new Season("2025-26", true));
+
+        var result = await CreateSut().ExecuteAsync("u-1", "Office League", new string('x', 41), CancellationToken.None);
+
+        var err = Assert.IsType<CreateMiniLeagueResult.ValidationError>(result);
+        Assert.Equal("startRound", err.Field);
+        _leagues.Verify(r => r.CreateAsync(It.IsAny<MiniLeague>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task MemberWriteFails_DeletesHeader_AndRethrows()
     {
         SeasonsReturn(new Season("2025-26", true));
@@ -96,7 +170,7 @@ public class CreateMiniLeagueUseCaseTests
                 .ThrowsAsync(new InvalidOperationException("boom"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            CreateSut().ExecuteAsync("u-1", "Office League", CancellationToken.None));
+            CreateSut().ExecuteAsync("u-1", "Office League", null, CancellationToken.None));
 
         Assert.NotNull(captured);
         // The header write is compensated so no member-less league is left behind.

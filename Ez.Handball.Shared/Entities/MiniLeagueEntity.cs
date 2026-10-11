@@ -12,6 +12,7 @@ public sealed class MiniLeagueEntity : ITableEntity
     public string Season { get; set; } = string.Empty;       // season label, e.g. "2025-26"
     public string CreatorUserId { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
+    public string? StartRound { get; set; }                   // round label standings count from; null = every round
     public ETag ETag { get; set; }
     public DateTimeOffset? Timestamp { get; set; }
 }
