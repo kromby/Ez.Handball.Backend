@@ -22,6 +22,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     {
         public Mock<IBuyPlayerUseCase> Buy { get; } = new();
         public Mock<ISellPlayerUseCase> Sell { get; } = new();
+        public Mock<IGetTransferAllowanceUseCase> Allowance { get; } = new();
 
         static Factory() => Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
 
@@ -42,6 +43,8 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
                 services.Remove(services.Single(d => d.ServiceType == typeof(ISellPlayerUseCase)));
                 services.AddSingleton(Buy.Object);
                 services.AddSingleton(Sell.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetTransferAllowanceUseCase)));
+                services.AddSingleton(Allowance.Object);
             });
             return base.CreateHost(builder);
         }
@@ -53,7 +56,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
     public SquadMutationEndpointTests(Factory factory)
     {
-        _factory = factory; _factory.Buy.Reset(); _factory.Sell.Reset();
+        _factory = factory; _factory.Buy.Reset(); _factory.Sell.Reset(); _factory.Allowance.Reset();
         _client = factory.CreateClient();
     }
 
@@ -243,5 +246,79 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     {
         var resp = await _client.DeleteAsync("/api/users/me/squad/players/p-1");
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    private void AllowanceAfterCommitIs(TransferAllowance allowance) =>
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTransferAllowanceResult.Found(allowance));
+
+    [Fact]
+    public async Task Buy_Committed_EchoesTheAllowanceIncludingThisBuy()
+    {
+        _factory.Buy.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BuyPlayerResult.Committed(View()));
+        AllowanceAfterCommitIs(new TransferAllowance("7", 7, FreeAvailable: 1, Used: 2, Extra: 1, PointsHit: 4, Exempt: false));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/users/me/squad/players", token, new { playerId = "p-1", flavor = "fantasy" }));
+
+        var transfers = (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers");
+        Assert.Equal(1, transfers.GetProperty("extra").GetInt32());
+        Assert.Equal(4, transfers.GetProperty("pointsHit").GetInt32());
+        Assert.Equal("7", transfers.GetProperty("roundLabel").GetString());
+    }
+
+    [Fact]
+    public async Task Buy_Committed_WhileBuildingTheSquad_EchoesExempt()
+    {
+        _factory.Buy.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BuyPlayerResult.Committed(View()));
+        AllowanceAfterCommitIs(new TransferAllowance("1", 1, FreeAvailable: 1, Used: 5, Extra: 0, PointsHit: 0, Exempt: true));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/users/me/squad/players", token, new { playerId = "p-1", flavor = "fantasy" }));
+
+        Assert.True((await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers").GetProperty("exempt").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Sell_Sold_EchoesTheAllowanceIncludingThisSell()
+    {
+        _factory.Sell.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SellPlayerResult.Sold(View()));
+        AllowanceAfterCommitIs(new TransferAllowance("7", 7, FreeAvailable: 1, Used: 1, Extra: 0, PointsHit: 0, Exempt: false));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Delete, "/api/users/me/squad/players/p-1?flavor=fantasy", token));
+
+        var transfers = (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers");
+        Assert.Equal(1, transfers.GetProperty("used").GetInt32());
+        Assert.Equal(0, transfers.GetProperty("extra").GetInt32());
+    }
+
+    [Fact]
+    public async Task Buy_Committed_WithNoAllowanceAvailable_EchoesTransfersNull()
+    {
+        _factory.Buy.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BuyPlayerResult.Committed(View()));
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetTransferAllowanceResult.NotAvailable.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/users/me/squad/players", token, new { playerId = "p-1", flavor = "fantasy" }));
+
+        Assert.Equal(JsonValueKind.Null, (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers").ValueKind);
+    }
+
+    [Fact]
+    public async Task Buy_Rejected_DoesNotComputeTheAllowance()
+    {
+        _factory.Buy.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BuyPlayerResult.Rejected(new[] { new BuyRuleViolation("insufficient_budget", "x") }));
+        var token = await TokenAsync();
+
+        await _client.SendAsync(Req(HttpMethod.Post, "/api/users/me/squad/players", token, new { playerId = "p-1", flavor = "fantasy" }));
+
+        _factory.Allowance.VerifyNoOtherCalls();
     }
 }
