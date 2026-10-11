@@ -18,13 +18,18 @@ public interface IGetSquadUseCase
 public sealed class GetSquadUseCase : IGetSquadUseCase
 {
     private const int DefaultVersion = 1;
+    private const int SquadConstraintsVersion = 1; // fantasy-squad-v1
 
     private readonly ISquadRepository _squad;
     private readonly IPlayerRepository _players;
     private readonly IPlayerPriceService _price;
+    private readonly ISquadConstraintsRepository _constraints;
 
-    public GetSquadUseCase(ISquadRepository squad, IPlayerRepository players, IPlayerPriceService price)
+    public GetSquadUseCase(
+        ISquadRepository squad, IPlayerRepository players, IPlayerPriceService price,
+        ISquadConstraintsRepository constraints)
     {
+        _constraints = constraints;
         _squad = squad;
         _players = players;
         _price = price;
@@ -57,11 +62,14 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
                 Gender: player?.Gender,
                 Price: price.Price,
                 PricePaid: slot.PricePaid,
-                Rating: price.Rating));
+                Rating: price.Rating,
+                PositionSecondary: player?.PositionSecondary));
 
             squadValue += price.Price.Amount;
             budgetUsed += slot.PricePaid.Amount;
         }
+
+        items = await WithAssignedPositionsAsync(items, ct);
 
         var view = new SquadView(
             items,
@@ -69,5 +77,24 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
             RemainingBudget: new PlayerPrice(squad.Budget, squad.Currency),
             SquadValue: new PlayerPrice(squadValue, squad.Currency));
         return new GetSquadResult.Found(view);
+    }
+
+    // #108: the slot each player fills under the squad caps, preferring primaries; highest-rated
+    // players are placed first so the result is stable. Primary when there are no caps or the squad
+    // can't be arranged (over a cap after a live position change).
+    private async Task<List<SquadPlayer>> WithAssignedPositionsAsync(List<SquadPlayer> items, CancellationToken ct)
+    {
+        var constraints = await _constraints.GetAsync(SquadConstraintsVersion, ct);
+        var ordered = items.OrderByDescending(p => p.Rating).ThenBy(p => p.PlayerId, StringComparer.Ordinal).ToList();
+        var assignment = constraints is null
+            ? null
+            : PositionAssignment.TrySolve(
+                ordered.Select(p => new PositionCandidate(p.PlayerId, p.EligiblePositions)).ToList(),
+                PositionAssignment.MaxOnly(constraints.PositionLimits));
+
+        return items.Select(p => p with
+        {
+            AssignedPosition = assignment is not null && assignment.TryGetValue(p.PlayerId, out var pos) ? pos : p.Position
+        }).ToList();
     }
 }

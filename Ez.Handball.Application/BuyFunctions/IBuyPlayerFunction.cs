@@ -9,7 +9,8 @@ public sealed record BuyPlayerInputs(
     string Version,                 // the pricing rule-set name, e.g. "fantasy-price-v1"
     SquadConstraints Constraints,   // from the fantasy-squad-v{n} Config group
     Squad Squad,
-    BuyPlayerContext Context);
+    BuyPlayerContext Context,
+    IReadOnlyList<string>? Eligible = null);   // candidate's live eligible positions (#108); null → just Position
 
 public interface IBuyPlayerFunction
 {

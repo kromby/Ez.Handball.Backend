@@ -256,3 +256,10 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   (`FantasyPlayerRatingFunction.DefaultRuleSetVersion`) and the gameweek config both use v3. A
   rule change is always a new version, never an edit to an existing one. See `docs/runbook.md`
   for the deploy order.
+- **Secondary positions (Backend#108):** a player is eligible under `Position` and, when set,
+  `PositionSecondary` (read live from `Players`). Squad caps, lineup starter rules, the default
+  lineup and bench subs all ask `PositionAssignment.TrySolve` whether *some* assignment of
+  players to one eligible position each fits the limits — nobody counts twice. A squad already
+  over a cap (positions changed after purchase) falls back to the primary-only count so unrelated
+  buys still go through. Squad and lineup views return `positionSecondary` and the solved
+  `assignedPosition`; the pool's `position` filter matches either position. Lineup snapshots stay frozen, but bench auto-subs are recomputed from the live squad/eligibility on every settle, so a deploy (or a later HBStatz position change) can re-score rounds the auto-settler re-settles within `Settlement:RecentWindow`.

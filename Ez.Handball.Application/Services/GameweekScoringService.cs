@@ -49,11 +49,31 @@ public sealed class GameweekScoringService : IGameweekScoringService
         var subbedInIds = new HashSet<string>();
         var replacedStarterIds = new HashSet<string>();
         var usedBench = new HashSet<string>();
-        var posById = ownedSquad.ToDictionary(p => p.PlayerId, p => p.Position);
+        var eligibleById = ownedSquad.ToDictionary(p => p.PlayerId, p => p.EligiblePositions);
+
+        // Position each original starter was solved into; a starter's absence only needs its own
+        // assigned position refilled, not every position it is merely eligible for.
+        var assigned = PositionAssignment.TrySolve(
+            starters.Select(s => new PositionCandidate(s.PlayerId, EligibleOf(s.PlayerId))).ToList(),
+            constraints.PositionStart);
+
+        IReadOnlyList<string> EligibleOf(string playerId)
+            => eligibleById.TryGetValue(playerId, out var eligible) ? eligible : Array.Empty<string>();
+
+        IReadOnlyList<string> MinPositions(string starterId)
+        {
+            if (assigned is not null && assigned.TryGetValue(starterId, out var pos) && pos is not null)
+                return new[] { pos };
+            return EligibleOf(starterId);
+        }
 
         // Build an ordered list of effective (playing) ids decided before the current slot, used
         // to check position validity for sub candidates.
         var decidedEffective = new List<string>();
+
+        // Positions already-filled slots cover. Later subs must keep them covered, or the solver
+        // could shuffle a dual-position sub off the slot it was brought on to fill.
+        var coveredPositions = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var starter in starters)
         {
@@ -61,12 +81,14 @@ public sealed class GameweekScoringService : IGameweekScoringService
             {
                 effectiveMap[starter.PlayerId] = starter.PlayerId;
                 decidedEffective.Add(starter.PlayerId);
+                coveredPositions.UnionWith(MinPositions(starter.PlayerId));
                 continue;
             }
 
             // Non-playing starter: look for a valid bench sub.
+            var required = coveredPositions.Union(MinPositions(starter.PlayerId)).ToList();
             var sub = FindValidSub(
-                starter.PlayerId, decidedEffective, bench, usedBench, posById, constraints, Played);
+                required, decidedEffective, bench, usedBench, eligibleById, constraints, Played);
 
             if (sub is not null)
             {
@@ -75,6 +97,7 @@ public sealed class GameweekScoringService : IGameweekScoringService
                 replacedStarterIds.Add(starter.PlayerId);
                 effectiveMap[starter.PlayerId] = sub;
                 decidedEffective.Add(sub);
+                coveredPositions.UnionWith(MinPositions(starter.PlayerId));
             }
             else
             {
@@ -152,14 +175,13 @@ public sealed class GameweekScoringService : IGameweekScoringService
 
     // A bench player is a valid sub for a non-playing starter if they played, are unused,
     // and replacing the non-playing starter with them keeps the whole effective lineup
-    // position-valid (no position exceeds its max AND no position falls below its min after
-    // the swap, given the players already decided plus all yet-to-be-processed starters).
+    // position-valid (see KeepsPositionsValid for the solver-based check, #108).
     private static string? FindValidSub(
-        string nonPlayingStarterId,
+        IReadOnlyList<string> minPositions,
         IReadOnlyList<string> decidedEffective,
         IReadOnlyList<LineupSlot> bench,
         HashSet<string> usedBench,
-        IReadOnlyDictionary<string, string?> posById,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> eligibleById,
         LineupConstraints constraints,
         Func<string, bool> played)
     {
@@ -167,68 +189,35 @@ public sealed class GameweekScoringService : IGameweekScoringService
         {
             if (usedBench.Contains(b.PlayerId) || !played(b.PlayerId)) continue;
             if (KeepsPositionsValid(
-                    nonPlayingStarterId, b.PlayerId, decidedEffective, posById, constraints))
+                    minPositions, b.PlayerId, decidedEffective, eligibleById, constraints))
                 return b.PlayerId;
         }
         return null;
     }
 
-    // After the swap (remove the non-playing starter, add the candidate), check that no position
-    // exceeds its max in the decided-effective list. Also check that the non-playing starter's
-    // position is covered: the candidate fills the same position OR the position count of the
-    // outgoing slot still meets the minimum when the remaining players are considered.
-    //
-    // Concretely: the swap is valid iff the candidate's position equals the non-playing starter's
-    // position OR the non-playing starter's position still has at least (min) representatives
-    // among the already-decided effective players (excluding the outgoing starter, who isn't in
-    // decidedEffective, but including any future starters — which we conservatively don't count).
-    //
-    // The rule reduces to: a bench player can only fill a position slot if their position matches
-    // the outgoing starter's position, OR the outgoing starter's position has enough coverage
-    // from other already-effective players to remain at or above its minimum.
+    // After the swap, the decided-effective players plus the candidate must still be arrangeable
+    // (primary or secondary, #108) with no position over its max, and every position in
+    // minPositions — the outgoing starter's plus those already-filled slots cover — must still
+    // reach its min. Future slots' mins aren't enforced: those starters aren't decided yet.
     private static bool KeepsPositionsValid(
-        string nonPlayingStarterId,
+        IReadOnlyList<string> minPositions,
         string candidateId,
         IReadOnlyList<string> decidedEffective,
-        IReadOnlyDictionary<string, string?> posById,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> eligibleById,
         LineupConstraints constraints)
     {
-        posById.TryGetValue(nonPlayingStarterId, out var outgoingPos);
-        posById.TryGetValue(candidateId, out var incomingPos);
+        IReadOnlyList<string> Eligible(string id)
+            => eligibleById.TryGetValue(id, out var e) ? e : Array.Empty<string>();
 
-        // Count positions in the already-decided effective list + the candidate.
-        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
-        void Inc(string? pos)
-        {
-            if (pos is not null) counts[pos] = counts.TryGetValue(pos, out var c) ? c + 1 : 1;
-        }
+        var limits = constraints.PositionStart.ToDictionary(
+            kv => kv.Key,
+            kv => (minPositions.Contains(kv.Key) ? kv.Value.Min : 0, kv.Value.Max),
+            StringComparer.Ordinal);
 
-        foreach (var id in decidedEffective) { posById.TryGetValue(id, out var p); Inc(p); }
-        Inc(incomingPos);
-
-        foreach (var kv in constraints.PositionStart)
-        {
-            counts.TryGetValue(kv.Key, out var count);
-            // Max: adding the candidate must not overflow this position.
-            if (count > kv.Value.Max) return false;
-        }
-
-        // Min for the outgoing position: the candidate fills the gap only if same position,
-        // otherwise the outgoing position must already have ≥ min representatives in the
-        // decided-effective list (not counting future starters — conservative check).
-        if (outgoingPos is not null
-            && !string.Equals(outgoingPos, incomingPos, StringComparison.Ordinal)
-            && constraints.PositionStart.TryGetValue(outgoingPos, out var outgoingConstraint))
-        {
-            // How many of the outgoing position are already decided (excluding the outgoing
-            // starter, who isn't in decidedEffective)?
-            counts.TryGetValue(outgoingPos, out var countWithoutOutgoing);
-            // incomingPos may equal outgoingPos — handled above, so here they differ.
-            // The already-decided count for outgoingPos doesn't include the candidate.
-            if (countWithoutOutgoing < outgoingConstraint.Min) return false;
-        }
-
-        return true;
+        var players = decidedEffective.Append(candidateId)
+            .Select(id => new PositionCandidate(id, Eligible(id)))
+            .ToList();
+        return PositionAssignment.TrySolve(players, limits) is not null;
     }
 
     // Returns the PlayerId of the armband holder IF they are still the effective player for their

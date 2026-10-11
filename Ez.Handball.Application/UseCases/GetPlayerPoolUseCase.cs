@@ -102,8 +102,11 @@ public sealed class GetPlayerPoolUseCase : IGetPlayerPoolUseCase
         var computed = players
             .Where(p => !p.Retired)
             .Where(p => playerIdFilter is null || playerIdFilter.Contains(p.PlayerId))
+            // #108: a player is buyable under their secondary too, so filtering by a position
+            // includes them.
             .Where(p => string.IsNullOrWhiteSpace(request.Position)
-                || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(p.Position, request.Position, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.PositionSecondary, request.Position, StringComparison.OrdinalIgnoreCase))
             .Where(p => string.IsNullOrWhiteSpace(request.ClubId)
                 || string.Equals(p.ClubId, request.ClubId, StringComparison.Ordinal))
             .Where(p => !hasName

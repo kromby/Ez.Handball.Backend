@@ -115,3 +115,10 @@ The API prices players with `fantasy-v3` as soon as it deploys, and `/api/player
    ```
    Rounds a late team isn't settled for (Backend#158) keep their old scores.
 
+## Secondary positions (Backend#108)
+
+No backfill is needed: eligibility is read live from `Players` (`Position` + `PositionSecondary`).
+On deploy, rounds inside `Settlement:RecentWindow` (default 7 days) may be re-scored by the
+auto-settler, because bench auto-subs are recomputed on every settle (a sub previously blocked by a
+full position can now come in through a secondary position). Older settled rounds are untouched
+unless an admin settles them again.

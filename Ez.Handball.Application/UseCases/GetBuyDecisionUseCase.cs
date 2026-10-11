@@ -21,6 +21,7 @@ public interface IGetBuyDecisionUseCase
 public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
 {
     private const int DefaultVersion = 1;
+    private const int SquadConstraintsVersion = 1; // fantasy-squad-v1
 
     private readonly IReadOnlyDictionary<GameFlavor, IBuyPlayerFunction> _functions;
     private readonly IPlayerRepository _players;
@@ -65,13 +66,30 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         var price = await _price.GetPriceAsync(playerId, version, context.Season, context.TournamentId, ct);
         if (price is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
-        var constraints = await _constraints.GetAsync(DefaultVersion, ct);
+        var constraints = await _constraints.GetAsync(SquadConstraintsVersion, ct);
         if (constraints is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var squad = await _squad.GetAsync(userId, flavor, ct);
+        squad = await WithLiveEligibilityAsync(squad, ct);
 
         var inputs = new BuyPlayerInputs(
-            playerId, player.Position, price.Price, price.Version, constraints, squad, context);
+            playerId, player.Position, price.Price, price.Version, constraints, squad, context,
+            PositionAssignment.EligibleFor(player.Position, player.PositionSecondary));
         return new BuyDecisionResult.Decided(function.Evaluate(inputs));
+    }
+
+    // #108: eligibility is live — a player's secondary can change after purchase. Falls back to
+    // the buy-time snapshot when the player row no longer resolves.
+    private async Task<Squad> WithLiveEligibilityAsync(Squad squad, CancellationToken ct)
+    {
+        var slots = new List<SquadSlot>(squad.Players.Count);
+        foreach (var slot in squad.Players)
+        {
+            var live = await _players.GetByIdAsync(slot.PlayerId, ct);
+            slots.Add(live is null
+                ? slot
+                : slot with { Eligible = PositionAssignment.EligibleFor(live.Position, live.PositionSecondary) });
+        }
+        return squad with { Players = slots };
     }
 }
