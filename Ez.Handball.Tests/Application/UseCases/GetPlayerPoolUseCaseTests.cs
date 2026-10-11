@@ -160,6 +160,22 @@ public class GetPlayerPoolUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_PositionFilter_AlsoMatchesSecondary()
+    {
+        SetupResolver();
+        SetupRuleSets();
+        SetupPool(
+            Pooled("a", goals: 50, position: "CB"),
+            Pooled("b", goals: 40, position: "GK") with { PositionSecondary = "cb" },
+            Pooled("c", goals: 30, position: "LW"));
+
+        var result = await CreateSut().ExecuteAsync(Req(position: "CB"), 0, 50, CancellationToken.None);
+
+        var pool = Assert.IsType<PlayerPoolResult.Found>(result).Pool;
+        Assert.Equal(new[] { "a", "b" }, pool.Entries.Select(e => e.PlayerId));
+    }
+
+    [Fact]
     public async Task Execute_NameFilter_MatchesSubstring_CaseInsensitive()
     {
         SetupResolver();
