@@ -175,6 +175,7 @@ builder.Services.AddScoped<IGetShortlistUseCase, GetShortlistUseCase>();
 builder.Services.AddScoped<IGetSquadUseCase, GetSquadUseCase>();
 builder.Services.AddScoped<IBuyPlayerUseCase, BuyPlayerUseCase>();
 builder.Services.AddScoped<ISellPlayerUseCase, SellPlayerUseCase>();
+builder.Services.AddScoped<ISetPlayAsUseCase, SetPlayAsUseCase>();
 builder.Services.AddScoped<ITransferLedgerRecorder, TransferLedgerRecorder>();
 builder.Services.AddScoped<ITransferCountRecorder, TransferCountRecorder>();
 builder.Services.AddScoped<IGetTransferAllowanceUseCase, GetTransferAllowanceUseCase>();

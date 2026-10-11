@@ -7,6 +7,8 @@ namespace Ez.Handball.Api;
 public sealed record BuySquadPlayerRequest(
     string? PlayerId, string? Flavor, string? Season, string? TournamentId, int? RuleSetVersion);
 
+public sealed record SetPlayerPositionBody(string? Position);
+
 public static class SquadEndpoints
 {
     private const string Base = "/api/users/me/squad";
@@ -95,6 +97,62 @@ public static class SquadEndpoints
                 _                                => Results.Problem()
             };
         });
+
+        group.MapPut("/players/{playerId}/position", async (
+            string playerId, SetPlayerPositionBody? body, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
+            HttpContext http, ISetPlayAsUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+        {
+            if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
+            if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
+            if (string.IsNullOrWhiteSpace(body?.Position)) return Results.BadRequest(new { error = "invalid_position" });
+
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(userId, playerId, body.Position,
+                new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
+            return await PlayAsResponseAsync(result, gw, ct);
+        });
+
+        group.MapDelete("/players/{playerId}/position", async (
+            string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
+            HttpContext http, ISetPlayAsUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+        {
+            if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
+            if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
+
+            var userId = http.User.UserId();
+            if (string.IsNullOrEmpty(userId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(userId, playerId, null,
+                new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
+            return await PlayAsResponseAsync(result, gw, ct);
+        });
+    }
+
+    private static async Task<IResult> PlayAsResponseAsync(SetPlayAsResult result, IGetCurrentGameweekUseCase gw, CancellationToken ct)
+    {
+        if (result is SetPlayAsResult.Updated u)
+        {
+            var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+            return Results.Ok(new { squad = SquadBody(u.View), gameweek });
+        }
+        return result switch
+        {
+            SetPlayAsResult.NotInSquad      => Results.NotFound(new { error = "not_in_squad" }),
+            SetPlayAsResult.NoTeam          => Results.Json(new { error = "no_team" }, statusCode: StatusCodes.Status409Conflict),
+            SetPlayAsResult.Conflict        => Results.Json(new { error = "conflict" }, statusCode: StatusCodes.Status409Conflict),
+            SetPlayAsResult.NotEligible     => Results.Json(new { error = "position_not_eligible" }, statusCode: StatusCodes.Status422UnprocessableEntity),
+            SetPlayAsResult.Rejected r      => Results.Json(new
+            {
+                error = "lineup_invalid",
+                violations = r.Violations.Select(v => new { code = v.Code, message = v.Message })
+            }, statusCode: StatusCodes.Status422UnprocessableEntity),
+            SetPlayAsResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+            _                               => Results.Problem()
+        };
     }
 
     private static bool IsFantasy(string? flavor)
