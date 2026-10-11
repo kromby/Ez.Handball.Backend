@@ -265,7 +265,9 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   open round). On buy/sell it's read after the commit, so it includes that transfer
   (#169/#170). Settlement deducts the round's hit (#171): `GameweekScore.TransferHit` is stored on
   `GameweekScores`, and `Points` is the net score (it can go below zero), so running totals,
-  standings and rounds won all use it. `SettleGameweekUseCase` runs the calculator on the calendar
+  standings and rounds won all use it. `GET /api/users/me/gameweeks` and the league member view
+  return `transferHit` and `grossPoints` (= `points + transferHit`) per round; the member view's
+  are `null` for an unsettled round (#172). `SettleGameweekUseCase` runs the calculator on the calendar
   it already loaded rather than calling the use case. Without the transfer config the hit is 0, so
   seeding `fantasy-transfers-v1` is what switches the rules on; the auto-settler then applies hits
   to rounds it re-settles within `Settlement:RecentWindow`.

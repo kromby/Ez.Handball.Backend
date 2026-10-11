@@ -488,4 +488,27 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         Assert.Equal(0, second.GetProperty("breakdown").GetArrayLength());
         Assert.Equal("Bench Guy", second.GetProperty("lineup")[0].GetProperty("name").GetString());
     }
+
+    [Fact]
+    public async Task MemberGameweeks_SettledRoundWithAHit_ReportsHitAndGrossPoints()
+    {
+        var settled = new MemberGameweek(7, "7", T0, new Lineup(new[] { new LineupSlot("p1", LineupRole.Starter, null) }),
+            new GameweekScore("rival:fantasy", "7", 5, null, new[] { new GameweekPlayerScore("p1", 9, 9, true, false, false, 1.0) },
+                TransferHit: 4));
+        var locked = new MemberGameweek(8, "8", T0.AddDays(7), new Lineup(new[] { new LineupSlot("p1", LineupRole.Starter, null) }), null);
+        _factory.MemberGameweeks.Setup(u => u.ExecuteAsync("lg-1", It.IsAny<string>(), "rival", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetLeagueMemberGameweeksResult.Found(new MemberGameweeks(5, new[] { settled, locked },
+                new Dictionary<string, Player>())));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1/members/rival/gameweeks", token));
+
+        var gws = (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("gameweeks");
+        Assert.Equal(5, gws[0].GetProperty("points").GetDouble());
+        Assert.Equal(4, gws[0].GetProperty("transferHit").GetInt32());
+        Assert.Equal(9, gws[0].GetProperty("grossPoints").GetDouble());
+        // Unsettled: no score yet, so no hit either.
+        Assert.Equal(JsonValueKind.Null, gws[1].GetProperty("transferHit").ValueKind);
+        Assert.Equal(JsonValueKind.Null, gws[1].GetProperty("grossPoints").ValueKind);
+    }
 }

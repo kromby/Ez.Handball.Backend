@@ -63,6 +63,9 @@ public static class GameweekEndpoints
                 {
                     roundLabel = g.RoundLabel,
                     points = g.Points,
+                    // points is net of transferHit (#171); grossPoints lets the UI show "9 − 4" (#172).
+                    transferHit = g.TransferHit,
+                    grossPoints = g.Points + g.TransferHit,
                     captainPlayerId = g.CaptainPlayerId,
                     breakdown = Breakdown(g, result.Players)
                 })

@@ -130,7 +130,7 @@ public static class MiniLeagueEndpoints
     }
 
     // The /api/users/me/gameweeks shape, plus each round's frozen lineup and whether it is settled.
-    // An unsettled round has null points and an empty breakdown.
+    // An unsettled round has null points, transferHit and grossPoints, and an empty breakdown.
     private static object MemberGameweeksBody(MemberGameweeks view) => new
     {
         runningTotal = view.RunningTotal,
@@ -141,6 +141,8 @@ public static class MiniLeagueEndpoints
             deadline = g.Deadline,
             settled = g.Score is not null,
             points = g.Score?.Points,
+            transferHit = g.Score?.TransferHit,
+            grossPoints = g.Score is null ? (double?)null : g.Score.Points + g.Score.TransferHit,
             captainPlayerId = g.Score?.CaptainPlayerId,
             lineup = (g.Lineup?.Slots ?? Array.Empty<LineupSlot>()).Select(s =>
             {
