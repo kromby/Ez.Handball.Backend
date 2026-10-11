@@ -21,6 +21,7 @@ public interface IGetBuyDecisionUseCase
 public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
 {
     private const int DefaultVersion = 1;
+    private const int SquadConstraintsVersion = 1; // fantasy-squad-v1
 
     private readonly IReadOnlyDictionary<GameFlavor, IBuyPlayerFunction> _functions;
     private readonly IPlayerRepository _players;
@@ -65,7 +66,7 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         var price = await _price.GetPriceAsync(playerId, version, context.Season, context.TournamentId, ct);
         if (price is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
-        var constraints = await _constraints.GetAsync(DefaultVersion, ct);
+        var constraints = await _constraints.GetAsync(SquadConstraintsVersion, ct);
         if (constraints is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var squad = await _squad.GetAsync(userId, flavor, ct);

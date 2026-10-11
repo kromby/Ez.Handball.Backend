@@ -18,6 +18,7 @@ public interface IGetSquadUseCase
 public sealed class GetSquadUseCase : IGetSquadUseCase
 {
     private const int DefaultVersion = 1;
+    private const int SquadConstraintsVersion = 1; // fantasy-squad-v1
 
     private readonly ISquadRepository _squad;
     private readonly IPlayerRepository _players;
@@ -83,7 +84,7 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
     // can't be arranged (over a cap after a live position change).
     private async Task<List<SquadPlayer>> WithAssignedPositionsAsync(List<SquadPlayer> items, CancellationToken ct)
     {
-        var constraints = await _constraints.GetAsync(DefaultVersion, ct);
+        var constraints = await _constraints.GetAsync(SquadConstraintsVersion, ct);
         var ordered = items.OrderByDescending(p => p.Rating).ThenBy(p => p.PlayerId, StringComparer.Ordinal).ToList();
         var assignment = constraints is null
             ? null
