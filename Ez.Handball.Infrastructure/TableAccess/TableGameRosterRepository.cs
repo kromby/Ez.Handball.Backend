@@ -24,7 +24,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
                            Tables.GameRosters, $"PartitionKey eq '{ODataFilter.Escape(teamId)}'", ct))
         {
             if (e.DeletedAt is null)
-                entries.Add(new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt));
+                entries.Add(new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt, e.PlayAs));
         }
         return entries;
     }
@@ -35,7 +35,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
         {
             var e = (await _client.GetTableClient(Tables.GameRosters)
                 .GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
-            return new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt);
+            return new RosterEntry(e.RowKey, e.Position, e.PricePaidAmount, e.DeletedAt, e.PlayAs);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
@@ -69,6 +69,7 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
             existing.PricePaidAmount = pricePaid;
             existing.CreatedAt = now;
             existing.DeletedAt = null;
+            existing.PlayAs = null; // a fresh purchase starts unpinned
             try
             {
                 await table.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Replace, ct);
@@ -78,6 +79,28 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
             {
                 return RosterAddOutcome.AlreadyActive; // raced with a concurrent buy
             }
+        }
+    }
+
+    public async Task<SetPlayAsOutcome> SetPlayAsAsync(
+        string teamId, string playerId, string? playAs, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameRosters);
+        try
+        {
+            var e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
+            if (e.DeletedAt is not null) return SetPlayAsOutcome.NotFound;
+            e.PlayAs = playAs;
+            await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+            return SetPlayAsOutcome.Updated;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return SetPlayAsOutcome.NotFound;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 412)
+        {
+            return SetPlayAsOutcome.Conflict;
         }
     }
 

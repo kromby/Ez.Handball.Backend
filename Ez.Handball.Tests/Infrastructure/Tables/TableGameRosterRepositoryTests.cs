@@ -75,4 +75,47 @@ public class TableGameRosterRepositoryTests : IAsyncLifetime
         await Sut().AddOrResurrectAsync("u-2:fantasy", "p-9", "VS", 10_000_000, T0, default);
         Assert.Single(await Sut().ListActiveAsync(Team, default));
     }
+
+    [Fact]
+    public async Task SetPlayAs_ThenGet_StoresPinAndKeepsOtherFields()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "CB", 40_000_000, T0, default);
+        Assert.Equal(SetPlayAsOutcome.Updated, await Sut().SetPlayAsAsync(Team, "p-1", "LB", default));
+        var entry = (await Sut().GetAsync(Team, "p-1", default))!;
+        Assert.Equal("LB", entry.PlayAs);
+        Assert.Equal("CB", entry.Position);
+        Assert.Equal(40_000_000, entry.PricePaidAmount);
+        Assert.Equal("LB", Assert.Single(await Sut().ListActiveAsync(Team, default)).PlayAs);
+    }
+
+    [Fact]
+    public async Task SetPlayAs_Null_ClearsPin()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "CB", 40_000_000, T0, default);
+        await Sut().SetPlayAsAsync(Team, "p-1", "LB", default);
+        Assert.Equal(SetPlayAsOutcome.Updated, await Sut().SetPlayAsAsync(Team, "p-1", null, default));
+        Assert.Null((await Sut().GetAsync(Team, "p-1", default))!.PlayAs);
+    }
+
+    [Fact]
+    public async Task SetPlayAs_MissingRow_ReturnsNotFound()
+        => Assert.Equal(SetPlayAsOutcome.NotFound, await Sut().SetPlayAsAsync(Team, "nope", "LB", default));
+
+    [Fact]
+    public async Task SetPlayAs_SoftDeletedRow_ReturnsNotFound()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "CB", 40_000_000, T0, default);
+        await Sut().SoftDeleteAsync(Team, "p-1", T1, default);
+        Assert.Equal(SetPlayAsOutcome.NotFound, await Sut().SetPlayAsAsync(Team, "p-1", "LB", default));
+    }
+
+    [Fact]
+    public async Task Resurrect_ClearsPin()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "CB", 40_000_000, T0, default);
+        await Sut().SetPlayAsAsync(Team, "p-1", "LB", default);
+        await Sut().SoftDeleteAsync(Team, "p-1", T1, default);
+        await Sut().AddOrResurrectAsync(Team, "p-1", "CB", 50_000_000, T1, default);
+        Assert.Null((await Sut().GetAsync(Team, "p-1", default))!.PlayAs);
+    }
 }

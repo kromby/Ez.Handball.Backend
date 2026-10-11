@@ -11,6 +11,7 @@ public sealed class GameRosterEntity : ITableEntity
     public string RowKey { get; set; } = string.Empty;       // playerId
     public string? Position { get; set; }                    // position snapshot
     public double PricePaidAmount { get; set; }              // price locked at buy time
+    public string? PlayAs { get; set; }                      // manager's position pin (#166); null = auto-solve
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }           // null while owned
     public ETag ETag { get; set; }

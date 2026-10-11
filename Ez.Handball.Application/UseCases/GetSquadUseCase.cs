@@ -63,7 +63,8 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
                 Price: price.Price,
                 PricePaid: slot.PricePaid,
                 Rating: price.Rating,
-                PositionSecondary: player?.PositionSecondary));
+                PositionSecondary: player?.PositionSecondary,
+                PlayAs: slot.PlayAs));
 
             squadValue += price.Price.Amount;
             budgetUsed += slot.PricePaid.Amount;
@@ -80,21 +81,26 @@ public sealed class GetSquadUseCase : IGetSquadUseCase
     }
 
     // #108: the slot each player fills under the squad caps, preferring primaries; highest-rated
-    // players are placed first so the result is stable. Primary when there are no caps or the squad
-    // can't be arranged (over a cap after a live position change).
+    // players are placed first so the result is stable. Pins (#166) are honoured first; if they make
+    // the squad unarrangeable, solve ignoring them. Primary when there are no caps or the squad
+    // can't be arranged either way (over a cap after a live position change).
     private async Task<List<SquadPlayer>> WithAssignedPositionsAsync(List<SquadPlayer> items, CancellationToken ct)
     {
         var constraints = await _constraints.GetAsync(SquadConstraintsVersion, ct);
         var ordered = items.OrderByDescending(p => p.Rating).ThenBy(p => p.PlayerId, StringComparer.Ordinal).ToList();
         var assignment = constraints is null
             ? null
-            : PositionAssignment.TrySolve(
-                ordered.Select(p => new PositionCandidate(p.PlayerId, p.EligiblePositions)).ToList(),
-                PositionAssignment.MaxOnly(constraints.PositionLimits));
+            : Solve(ordered, constraints, p => p.EligiblePositions) ?? Solve(ordered, constraints, p => p.NaturalPositions);
 
         return items.Select(p => p with
         {
             AssignedPosition = assignment is not null && assignment.TryGetValue(p.PlayerId, out var pos) ? pos : p.Position
         }).ToList();
     }
+
+    private static IReadOnlyDictionary<string, string?>? Solve(
+        List<SquadPlayer> ordered, SquadConstraints constraints, Func<SquadPlayer, IReadOnlyList<string>> eligible)
+        => PositionAssignment.TrySolve(
+            ordered.Select(p => new PositionCandidate(p.PlayerId, eligible(p))).ToList(),
+            PositionAssignment.MaxOnly(constraints.PositionLimits));
 }

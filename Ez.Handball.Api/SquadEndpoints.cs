@@ -112,6 +112,7 @@ public static class SquadEndpoints
             position = p.Position,
             positionSecondary = p.PositionSecondary,
             assignedPosition = p.AssignedPosition,
+            playAs = p.ValidPlayAs,
             gender = p.Gender,
             price = p.Price,
             pricePaid = p.PricePaid,
