@@ -24,6 +24,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         public Mock<IGetMiniLeagueUseCase> Get { get; } = new();
         public Mock<IGetMiniLeagueStandingsUseCase> Standings { get; } = new();
         public Mock<IGetMyMiniLeaguesUseCase> Mine { get; } = new();
+        public Mock<IGetLeagueMemberGameweeksUseCase> MemberGameweeks { get; } = new();
 
         static Factory()
         {
@@ -52,6 +53,8 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
                 services.AddSingleton(Standings.Object);
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetMyMiniLeaguesUseCase)));
                 services.AddSingleton(Mine.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetLeagueMemberGameweeksUseCase)));
+                services.AddSingleton(MemberGameweeks.Object);
             });
             return base.CreateHost(builder);
         }
@@ -69,6 +72,7 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         _factory.Get.Reset();
         _factory.Standings.Reset();
         _factory.Mine.Reset();
+        _factory.MemberGameweeks.Reset();
         _client = factory.CreateClient();
     }
 
@@ -334,5 +338,70 @@ public class MiniLeagueEndpointTests : IClassFixture<MiniLeagueEndpointTests.Fac
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Empty(body.EnumerateArray());
+    }
+
+    [Fact]
+    public async Task MemberGameweeks_WithoutToken_Returns401()
+    {
+        var resp = await _client.GetAsync("/api/mini-leagues/lg-1/members/rival/gameweeks");
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task MemberGameweeks_NotFound_Returns404()
+    {
+        _factory.MemberGameweeks.Setup(u => u.ExecuteAsync("lg-1", It.IsAny<string>(), "stranger", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetLeagueMemberGameweeksResult.NotFound.Instance);
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1/members/stranger/gameweeks", token));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("not_found", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task MemberGameweeks_HappyPath_ReturnsLineupAndBreakdownPerLockedRound()
+    {
+        string? callerSeen = null;
+        var settled = new MemberGameweek(1, "1", T0,
+            new Lineup(new[] { new LineupSlot("p1", LineupRole.Captain, null), new LineupSlot("p2", LineupRole.Bench, 0) }),
+            new GameweekScore("rival:fantasy", "1", 12, "p1", new[] { new GameweekPlayerScore("p1", 6, 12, true, false, true, 2.0) }));
+        var locked = new MemberGameweek(2, "2", T0.AddDays(7),
+            new Lineup(new[] { new LineupSlot("p2", LineupRole.Starter, null) }), null);
+        var players = new Dictionary<string, Player>
+        {
+            ["p1"] = new("p1", "Max Emil Stenlund", "9", null, null, "t", "c", null, "M", "RB", false),
+            ["p2"] = new("p2", "Bench Guy", "1", null, null, "t", "c", null, "M", "MV", false),
+        };
+        _factory.MemberGameweeks.Setup(u => u.ExecuteAsync("lg-1", It.IsAny<string>(), "rival", null, It.IsAny<CancellationToken>()))
+            .Callback((string _, string caller, string _, int? _, CancellationToken _) => callerSeen = caller)
+            .ReturnsAsync(new GetLeagueMemberGameweeksResult.Found(new MemberGameweeks(12, new[] { settled, locked }, players)));
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Get, "/api/mini-leagues/lg-1/members/rival/gameweeks", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.False(string.IsNullOrEmpty(callerSeen));   // caller comes from the token, not the route
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(12, body.GetProperty("runningTotal").GetDouble());
+        var gws = body.GetProperty("gameweeks");
+        Assert.Equal(2, gws.GetArrayLength());
+
+        var first = gws[0];
+        Assert.True(first.GetProperty("settled").GetBoolean());
+        Assert.Equal(12, first.GetProperty("points").GetDouble());
+        Assert.Equal("p1", first.GetProperty("captainPlayerId").GetString());
+        Assert.Equal("Captain", first.GetProperty("lineup")[0].GetProperty("role").GetString());
+        Assert.Equal("Max Emil Stenlund", first.GetProperty("lineup")[0].GetProperty("name").GetString());
+        Assert.Equal(0, first.GetProperty("lineup")[1].GetProperty("benchOrder").GetInt32());
+        Assert.Equal(2.0, first.GetProperty("breakdown")[0].GetProperty("multiplier").GetDouble());
+
+        var second = gws[1];
+        Assert.False(second.GetProperty("settled").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("points").ValueKind);
+        Assert.Equal(0, second.GetProperty("breakdown").GetArrayLength());
+        Assert.Equal("Bench Guy", second.GetProperty("lineup")[0].GetProperty("name").GetString());
     }
 }
