@@ -12,10 +12,13 @@ public sealed record GameweekPlayerScore(
     bool CaptainApplied,
     double Multiplier);
 
-// A settled gameweek score for one team. Points = Σ Breakdown.Points over effective starters.
+// A settled gameweek score for one team. Points is the net score that counts toward totals and
+// standings: Σ Breakdown.Points over effective starters, minus TransferHit (points deducted for
+// transfers beyond the round's free allowance, #171). It can go below zero.
 public sealed record GameweekScore(
     string TeamId,
     string RoundLabel,
     double Points,
     string? CaptainPlayerId,    // the effective captain (vice if the chosen captain didn't play)
-    IReadOnlyList<GameweekPlayerScore> Breakdown);
+    IReadOnlyList<GameweekPlayerScore> Breakdown,
+    int TransferHit = 0);

@@ -38,13 +38,16 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
     private readonly ILineupConstraintsRepository _constraints;
     private readonly IGameTeamRepository _teams;
     private readonly IGameweekScoringService _scoring;
+    private readonly ITransferConfigRepository _transferConfig;
+    private readonly ITransferCountRepository _transferCounts;
 
     public SettleGameweekUseCase(
         IGameweekConfigRepository config, IGameweekCalendarService calendar,
         IGameweekLineupRepository snapshots, ILineupRepository liveLineup,
         IGameweekScoreRepository scores, IGetSquadUseCase squad, IPlayerStatsRepository stats,
         IScoringRuleSetRepository ruleSets, ILineupConstraintsRepository constraints,
-        IGameTeamRepository teams, IGameweekScoringService scoring)
+        IGameTeamRepository teams, IGameweekScoringService scoring,
+        ITransferConfigRepository transferConfig, ITransferCountRepository transferCounts)
     {
         _config = config;
         _calendar = calendar;
@@ -57,6 +60,8 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         _constraints = constraints;
         _teams = teams;
         _scoring = scoring;
+        _transferConfig = transferConfig;
+        _transferCounts = transferCounts;
     }
 
     // Caller contract: userId and teamId MUST refer to the same team (teamId == GameTeamId.For(userId, Fantasy)). The owned squad (for positions) is resolved from userId.
@@ -112,9 +117,29 @@ public sealed class SettleGameweekUseCase : ISettleGameweekUseCase
         // Build playerId → aggregated stats across the gameweek's member matches (presence = played).
         var played = await BuildPlayedStatsAsync(gw, ct);
 
-        var score = _scoring.Score(teamId, roundLabel, snapshot, found.View.Players, played, ruleSet, constraints);
+        var gross = _scoring.Score(teamId, roundLabel, snapshot, found.View.Players, played, ruleSet, constraints);
+        var hit = await TransferHitAsync(teamId, team?.CreatedAt, calendar, roundLabel, ct);
+        var score = gross with { Points = gross.Points - hit, TransferHit = hit };
         await _scores.SaveAsync(score, ct);
         return new SettleGameweekResult.Settled(score);
+    }
+
+    // Points deducted for transfers beyond the round's free allowance (#171). Reuses the calendar
+    // already loaded for this settle rather than going through IGetTransferAllowanceUseCase, which
+    // would re-read it for every team on every auto-settle tick. No transfer config = rules off = 0.
+    // Stable on re-settle: once a round's deadline passes, new transfers count toward a later round.
+    private async Task<int> TransferHitAsync(
+        string teamId, DateTimeOffset? teamCreatedAt, IReadOnlyList<Gameweek> calendar, string roundLabel,
+        CancellationToken ct)
+    {
+        var config = await _transferConfig.GetAsync(DefaultVersion, ct);
+        if (config is null) return 0;
+
+        var counts = await _transferCounts.ListAsync(teamId, ct);
+        // Wildcard rounds come from chip state once it exists (#173).
+        var allowance = TransferAllowanceCalculator.Compute(
+            config, calendar, counts, teamCreatedAt, roundLabel, wildcardRounds: null);
+        return allowance?.PointsHit ?? 0;
     }
 
     private async Task<IReadOnlyDictionary<string, AggregatedStats>> BuildPlayedStatsAsync(

@@ -263,8 +263,12 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   and the buy/sell responses carry a `transfers` object for the current open round (`roundNumber`,
   `roundLabel`, `freeAvailable`, `used`, `extra`, `pointsHit`, `exempt`; `null` without config or an
   open round). On buy/sell it's read after the commit, so it includes that transfer
-  (#169/#170). Nothing deducts points yet; settlement (#171) builds on
-  `IGetTransferAllowanceUseCase`.
+  (#169/#170). Settlement deducts the round's hit (#171): `GameweekScore.TransferHit` is stored on
+  `GameweekScores`, and `Points` is the net score (it can go below zero), so running totals,
+  standings and rounds won all use it. `SettleGameweekUseCase` runs the calculator on the calendar
+  it already loaded rather than calling the use case. Without the transfer config the hit is 0, so
+  seeding `fantasy-transfers-v1` is what switches the rules on; the auto-settler then applies hits
+  to rounds it re-settles within `Settlement:RecentWindow`.
 - **Scoring rule set v3 (Backend#160):** `fantasy-v3` is `fantasy-v2` with saves raised from 0.5
   to 1, because goalkeepers scored far below every other position. Pricing
   (`FantasyPlayerRatingFunction.DefaultRuleSetVersion`) and the gameweek config both use v3. A
