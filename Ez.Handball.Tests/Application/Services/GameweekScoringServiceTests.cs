@@ -216,4 +216,34 @@ public class GameweekScoringServiceTests
 
         Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp2").AutoSubbedIn);
     }
+
+    [Fact]
+    public void AbsentGkSecondaryStarter_ListedBeforeKeeper_SubbedByFieldPlayerNotBenchKeeper()
+    {
+        // fp1 is FP primary / GK secondary and is solved as an FP (gk1 is the keeper). Its absence
+        // must not demand a GK replacement just because it is GK-eligible.
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("fp1", LineupRole.Captain, null),
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("gk2", LineupRole.Bench, 0),
+            new LineupSlot("fp3", LineupRole.Bench, 1),
+        });
+        var squad = new[]
+        {
+            Owned("fp1", "FP") with { PositionSecondary = "GK" },
+            Owned("gk1", "GK"), Owned("gk2", "GK"), Owned("fp3", "FP"),
+        };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["gk1"] = Played(0),
+            ["gk2"] = Played(0),
+            ["fp3"] = Played(1),
+        };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, Constraints);
+
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp3").AutoSubbedIn);
+        Assert.False(score.Breakdown.Single(b => b.PlayerId == "gk2").AutoSubbedIn);
+    }
 }

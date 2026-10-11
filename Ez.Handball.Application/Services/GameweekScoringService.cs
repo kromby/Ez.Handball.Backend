@@ -51,6 +51,19 @@ public sealed class GameweekScoringService : IGameweekScoringService
         var usedBench = new HashSet<string>();
         var eligibleById = ownedSquad.ToDictionary(p => p.PlayerId, p => p.EligiblePositions);
 
+        // Position each original starter was solved into; a starter's absence only needs its own
+        // assigned position refilled, not every position it is merely eligible for.
+        var assigned = PositionAssignment.TrySolve(
+            starters.Select(s => new PositionCandidate(
+                s.PlayerId,
+                eligibleById.TryGetValue(s.PlayerId, out var e) ? e : Array.Empty<string>())).ToList(),
+            constraints.PositionStart);
+
+        IReadOnlyList<string> MinPositions(string starterId)
+            => assigned is not null && assigned.TryGetValue(starterId, out var pos) && pos is not null
+                ? new[] { pos }
+                : eligibleById.TryGetValue(starterId, out var e) ? e : Array.Empty<string>();
+
         // Build an ordered list of effective (playing) ids decided before the current slot, used
         // to check position validity for sub candidates.
         var decidedEffective = new List<string>();
@@ -66,7 +79,7 @@ public sealed class GameweekScoringService : IGameweekScoringService
 
             // Non-playing starter: look for a valid bench sub.
             var sub = FindValidSub(
-                starter.PlayerId, decidedEffective, bench, usedBench, eligibleById, constraints, Played);
+                MinPositions(starter.PlayerId), decidedEffective, bench, usedBench, eligibleById, constraints, Played);
 
             if (sub is not null)
             {
@@ -154,7 +167,7 @@ public sealed class GameweekScoringService : IGameweekScoringService
     // and replacing the non-playing starter with them keeps the whole effective lineup
     // position-valid (see KeepsPositionsValid for the solver-based check, #108).
     private static string? FindValidSub(
-        string nonPlayingStarterId,
+        IReadOnlyList<string> minPositions,
         IReadOnlyList<string> decidedEffective,
         IReadOnlyList<LineupSlot> bench,
         HashSet<string> usedBench,
@@ -166,18 +179,18 @@ public sealed class GameweekScoringService : IGameweekScoringService
         {
             if (usedBench.Contains(b.PlayerId) || !played(b.PlayerId)) continue;
             if (KeepsPositionsValid(
-                    nonPlayingStarterId, b.PlayerId, decidedEffective, eligibleById, constraints))
+                    minPositions, b.PlayerId, decidedEffective, eligibleById, constraints))
                 return b.PlayerId;
         }
         return null;
     }
 
     // After the swap, the decided-effective players plus the candidate must still be arrangeable
-    // (primary or secondary, #108) with no position over its max, and every position the outgoing
-    // starter could have covered must still reach its min. Mins elsewhere aren't enforced: future
-    // starters aren't decided yet, so this stays as conservative as the single-position rule was.
+    // (primary or secondary, #108) with no position over its max, and the outgoing starter's
+    // assigned position (minPositions) must still reach its min. Mins elsewhere aren't enforced:
+    // future starters aren't decided yet, so this stays as conservative as the single-position rule.
     private static bool KeepsPositionsValid(
-        string nonPlayingStarterId,
+        IReadOnlyList<string> minPositions,
         string candidateId,
         IReadOnlyList<string> decidedEffective,
         IReadOnlyDictionary<string, IReadOnlyList<string>> eligibleById,
@@ -186,10 +199,9 @@ public sealed class GameweekScoringService : IGameweekScoringService
         IReadOnlyList<string> Eligible(string id)
             => eligibleById.TryGetValue(id, out var e) ? e : Array.Empty<string>();
 
-        var outgoing = Eligible(nonPlayingStarterId);
         var limits = constraints.PositionStart.ToDictionary(
             kv => kv.Key,
-            kv => (outgoing.Contains(kv.Key) ? kv.Value.Min : 0, kv.Value.Max),
+            kv => (minPositions.Contains(kv.Key) ? kv.Value.Min : 0, kv.Value.Max),
             StringComparer.Ordinal);
 
         var players = decidedEffective.Append(candidateId)
