@@ -69,9 +69,26 @@ public class GetBuyDecisionUseCase : IGetBuyDecisionUseCase
         if (constraints is null) return BuyDecisionResult.RuleSetNotFound.Instance;
 
         var squad = await _squad.GetAsync(userId, flavor, ct);
+        squad = await WithLiveEligibilityAsync(squad, ct);
 
         var inputs = new BuyPlayerInputs(
-            playerId, player.Position, price.Price, price.Version, constraints, squad, context);
+            playerId, player.Position, price.Price, price.Version, constraints, squad, context,
+            PositionAssignment.EligibleFor(player.Position, player.PositionSecondary));
         return new BuyDecisionResult.Decided(function.Evaluate(inputs));
+    }
+
+    // #108: eligibility is live — a player's secondary can change after purchase. Falls back to
+    // the buy-time snapshot when the player row no longer resolves.
+    private async Task<Squad> WithLiveEligibilityAsync(Squad squad, CancellationToken ct)
+    {
+        var slots = new List<SquadSlot>(squad.Players.Count);
+        foreach (var slot in squad.Players)
+        {
+            var live = await _players.GetByIdAsync(slot.PlayerId, ct);
+            slots.Add(live is null
+                ? slot
+                : slot with { Eligible = PositionAssignment.EligibleFor(live.Position, live.PositionSecondary) });
+        }
+        return squad with { Players = slots };
     }
 }

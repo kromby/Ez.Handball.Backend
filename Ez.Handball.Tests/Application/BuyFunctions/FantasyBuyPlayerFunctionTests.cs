@@ -97,4 +97,63 @@ public class FantasyBuyPlayerFunctionTests
         Assert.Contains("duplicate_player", codes);
         Assert.Contains("position_limit", codes);
     }
+
+    private static SquadSlot Dual(string id, string pos, string sec) =>
+        new(id, pos, new PlayerPrice(10_000_000, "ISK"), new[] { pos, sec });
+
+    private static BuyPlayerInputs DualInputs(Squad squad, SquadConstraints constraints, string pos, string? sec) =>
+        new("p1", pos, Cost, "fantasy-price-v1", constraints, squad, new BuyPlayerContext(null, null, null),
+            PositionAssignment.EligibleFor(pos, sec));
+
+    [Fact]
+    public void PrimaryFull_CandidateSecondaryHasRoom_Allowed()
+    {
+        var limits = new Dictionary<string, int> { ["CB"] = 1, ["LB"] = 1 };
+        var result = _sut.Evaluate(DualInputs(Squad(100_000_000, Slot("x", "CB")), Constraints(posLimits: limits), "CB", "LB"));
+
+        Assert.True(result.Allowed);
+    }
+
+    [Fact]
+    public void PrimaryFull_ExistingDualPlayerCanMove_Allowed()
+    {
+        var limits = new Dictionary<string, int> { ["CB"] = 1, ["LB"] = 1 };
+        var result = _sut.Evaluate(Inputs(Squad(100_000_000, Dual("x", "CB", "LB")), Constraints(posLimits: limits), "CB"));
+
+        Assert.True(result.Allowed);
+    }
+
+    [Fact]
+    public void PrimaryFull_NobodyCanMove_PositionLimit()
+    {
+        var limits = new Dictionary<string, int> { ["CB"] = 1, ["LB"] = 1 };
+        var result = _sut.Evaluate(DualInputs(
+            Squad(100_000_000, Slot("x", "CB"), Slot("y", "LB")), Constraints(posLimits: limits), "CB", "LB"));
+
+        Assert.False(result.Allowed);
+        var v = Assert.Single(result.Violations, v => v.Code == "position_limit");
+        Assert.Contains("CB", v.Message);
+    }
+
+    [Fact]
+    public void SquadAlreadyOverCap_UnrelatedBuyStillAllowed()
+    {
+        // Two CBs owned under a CB cap of 1 (a live position change after purchase) — the squad
+        // alone has no valid assignment, so the rule falls back to the primary-only count.
+        var limits = new Dictionary<string, int> { ["CB"] = 1, ["LW"] = 2 };
+        var result = _sut.Evaluate(Inputs(
+            Squad(100_000_000, Slot("x", "CB"), Slot("y", "CB")), Constraints(posLimits: limits), "LW"));
+
+        Assert.True(result.Allowed);
+    }
+
+    [Fact]
+    public void SquadAlreadyOverCap_SamePrimaryBuyBlocked()
+    {
+        var limits = new Dictionary<string, int> { ["CB"] = 1 };
+        var result = _sut.Evaluate(Inputs(
+            Squad(100_000_000, Slot("x", "CB"), Slot("y", "CB")), Constraints(posLimits: limits), "CB"));
+
+        Assert.Contains(result.Violations, v => v.Code == "position_limit");
+    }
 }

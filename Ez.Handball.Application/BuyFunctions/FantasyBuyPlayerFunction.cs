@@ -23,13 +23,39 @@ public sealed class FantasyBuyPlayerFunction : IBuyPlayerFunction
         if (squad.Players.Any(p => p.PlayerId == inputs.PlayerId))
             violations.Add(new("duplicate_player", "Player is already in the squad"));
 
-        if (inputs.Position is { } position
-            && constraints.PositionLimits.TryGetValue(position, out var limit)
-            && squad.Players.Count(p => p.Position == position) >= limit)
-            violations.Add(new("position_limit",
-                $"Squad already has the maximum of {limit} players in position {position}"));
+        if (ExceedsPositionLimits(inputs))
+            violations.Add(new("position_limit", PositionLimitMessage(inputs)));
 
         return new BuyDecision(
             inputs.PlayerId, "fantasy", violations.Count == 0, inputs.Cost, violations, inputs.Version);
     }
+
+    // #108: a buy fits if some assignment of every player (squad + candidate) to one of their
+    // eligible positions stays within the caps. A squad already over a cap (positions changed
+    // after purchase) can't be solved at all, so it falls back to the old primary-only count —
+    // caps only ever gate new buys.
+    private static bool ExceedsPositionLimits(BuyPlayerInputs inputs)
+    {
+        var limits = inputs.Constraints.PositionLimits;
+        if (limits.Count == 0) return false;
+
+        var maxOnly = PositionAssignment.MaxOnly(limits);
+        var squad = inputs.Squad.Players
+            .Select(p => new PositionCandidate(p.PlayerId, p.EligiblePositions))
+            .ToList();
+
+        if (PositionAssignment.TrySolve(squad, maxOnly) is null)
+            return inputs.Position is { } position
+                && limits.TryGetValue(position, out var limit)
+                && inputs.Squad.Players.Count(p => p.Position == position) >= limit;
+
+        var candidate = new PositionCandidate(
+            inputs.PlayerId, inputs.Eligible ?? PositionAssignment.EligibleFor(inputs.Position, null));
+        return PositionAssignment.TrySolve(squad.Append(candidate).ToList(), maxOnly) is null;
+    }
+
+    private static string PositionLimitMessage(BuyPlayerInputs inputs)
+        => inputs.Position is { } position && inputs.Constraints.PositionLimits.TryGetValue(position, out var limit)
+            ? $"Squad already has the maximum of {limit} players in position {position}"
+            : "Squad position limits cannot accommodate this player";
 }
