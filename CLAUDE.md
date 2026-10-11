@@ -259,8 +259,12 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   counts for the next round) in `GameTransferCounts`, via `TransferCountRecorder`, which never fails
   a committed transfer. `TransferAllowanceCalculator` replays the calendar. Round 1, rounds before
   `startsFromRound`, and rounds a team is still building its squad for (it didn't exist at the
-  previous deadline, same rule as #158) are exempt and bank nothing. Nothing deducts points yet:
-  settlement (#171) and the API surface (#169/#170) build on `IGetTransferAllowanceUseCase`.
+  previous deadline, same rule as #158) are exempt and bank nothing. `GET /api/users/me/squad`
+  and the buy/sell responses carry a `transfers` object for the current open round (`roundNumber`,
+  `roundLabel`, `freeAvailable`, `used`, `extra`, `pointsHit`, `exempt`; `null` without config or an
+  open round). On buy/sell it's read after the commit, so it includes that transfer
+  (#169/#170). Nothing deducts points yet; settlement (#171) builds on
+  `IGetTransferAllowanceUseCase`.
 - **Scoring rule set v3 (Backend#160):** `fantasy-v3` is `fantasy-v2` with saves raised from 0.5
   to 1, because goalkeepers scored far below every other position. Pricing
   (`FantasyPlayerRatingFunction.DefaultRuleSetVersion`) and the gameweek config both use v3. A

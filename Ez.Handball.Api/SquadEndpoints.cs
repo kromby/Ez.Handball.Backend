@@ -24,6 +24,7 @@ public static class SquadEndpoints
             int? ruleSetVersion,
             HttpContext http,
             IGetSquadUseCase uc,
+            TransferEcho transferEcho,
             CancellationToken ct) =>
         {
             // Fantasy-only: blank or "fantasy" is accepted; anything else is rejected.
@@ -38,13 +39,14 @@ public static class SquadEndpoints
             return result switch
             {
                 GetSquadResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
-                GetSquadResult.Found f         => Results.Ok(SquadBody(f.View)),
+                GetSquadResult.Found f         => Results.Ok(SquadWithTransfersBody(f.View, await transferEcho.BuildAsync(userId, ct))),
                 _                              => Results.Problem()
             };
         });
 
         group.MapPost("/players", async (
-            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
+            TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(req.PlayerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -58,7 +60,8 @@ public static class SquadEndpoints
             if (result is BuyPlayerResult.Committed c)
             {
                 var gameweek = await GameweekEcho.BuildAsync(gw, ct);
-                return Results.Json(new { squad = SquadBody(c.View), gameweek }, statusCode: StatusCodes.Status201Created);
+                var transfers = await transferEcho.BuildAsync(userId, ct);
+                return Results.Json(new { squad = SquadBody(c.View), gameweek, transfers }, statusCode: StatusCodes.Status201Created);
             }
             return result switch
             {
@@ -73,7 +76,8 @@ public static class SquadEndpoints
 
         group.MapDelete("/players/{playerId}", async (
             string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
-            HttpContext http, ISellPlayerUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+            HttpContext http, ISellPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
+            TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -87,7 +91,8 @@ public static class SquadEndpoints
             if (result is SellPlayerResult.Sold s)
             {
                 var gameweek = await GameweekEcho.BuildAsync(gw, ct);
-                return Results.Ok(new { squad = SquadBody(s.View), gameweek });
+                var transfers = await transferEcho.BuildAsync(userId, ct);
+                return Results.Ok(new { squad = SquadBody(s.View), gameweek, transfers });
             }
             return result switch
             {
@@ -161,23 +166,37 @@ public static class SquadEndpoints
     private static object SquadBody(SquadView view) => new
     {
         flavor = "fantasy",
-        players = view.Players.Select(p => new
-        {
-            playerId = p.PlayerId,
-            name = p.Name,
-            clubId = p.ClubId,
-            clubName = p.ClubName,
-            position = p.Position,
-            positionSecondary = p.PositionSecondary,
-            assignedPosition = p.AssignedPosition,
-            playAs = p.ValidPlayAs,
-            gender = p.Gender,
-            price = p.Price,
-            pricePaid = p.PricePaid,
-            rating = p.Rating
-        }),
+        players = PlayersBody(view),
         budgetUsed = view.BudgetUsed,
         remainingBudget = view.RemainingBudget,
         squadValue = view.SquadValue
     };
+
+    // GET returns the squad at the top level, so the allowance sits beside it rather than under a
+    // separate key as on the buy/sell responses.
+    private static object SquadWithTransfersBody(SquadView view, object? transfers) => new
+    {
+        flavor = "fantasy",
+        players = PlayersBody(view),
+        budgetUsed = view.BudgetUsed,
+        remainingBudget = view.RemainingBudget,
+        squadValue = view.SquadValue,
+        transfers
+    };
+
+    private static IEnumerable<object> PlayersBody(SquadView view) => view.Players.Select(p => (object)new
+    {
+        playerId = p.PlayerId,
+        name = p.Name,
+        clubId = p.ClubId,
+        clubName = p.ClubName,
+        position = p.Position,
+        positionSecondary = p.PositionSecondary,
+        assignedPosition = p.AssignedPosition,
+        playAs = p.ValidPlayAs,
+        gender = p.Gender,
+        price = p.Price,
+        pricePaid = p.PricePaid,
+        rating = p.Rating
+    });
 }
