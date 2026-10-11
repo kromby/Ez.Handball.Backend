@@ -197,4 +197,23 @@ public class GameweekScoringServiceTests
         Assert.Equal(4, gk.Points);
         Assert.Equal(4 + 4, score.Points);
     }
+
+    [Fact]
+    public void AbsentKeeper_SubbedByBenchPlayerWithGkSecondary()
+    {
+        var squad = new[]
+        {
+            Owned("gk1", "GK"), Owned("fp1", "FP"),
+            Owned("fp2", "FP") with { PositionSecondary = "GK" },
+        };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["fp1"] = Played(0),
+            ["fp2"] = Played(1),
+        };
+
+        var score = CreateSut().Score("team", "1", Snapshot(), squad, stats, Rules, Constraints);
+
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp2").AutoSubbedIn);
+    }
 }
