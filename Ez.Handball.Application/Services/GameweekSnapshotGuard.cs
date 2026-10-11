@@ -21,7 +21,7 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
     private readonly IGameweekCalendarService _calendar;
     private readonly IGameweekLockRepository _locks;
     private readonly IGameweekLineupRepository _snapshots;
-    private readonly ILineupRepository _liveLineup;
+    private readonly IEffectiveLineupService _effective;
     private readonly IGetSquadUseCase _squad;
     private readonly ILineupConstraintsRepository _constraints;
     private readonly IGameTeamRepository _teams;
@@ -29,14 +29,14 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
     public GameweekSnapshotGuard(
         IGameweekConfigRepository config, IGameweekCalendarService calendar, IGameweekLockRepository locks,
-        IGameweekLineupRepository snapshots, ILineupRepository liveLineup, IGetSquadUseCase squad,
+        IGameweekLineupRepository snapshots, IEffectiveLineupService effective, IGetSquadUseCase squad,
         ILineupConstraintsRepository constraints, IGameTeamRepository teams, TimeProvider clock)
     {
         _config = config;
         _calendar = calendar;
         _locks = locks;
         _snapshots = snapshots;
-        _liveLineup = liveLineup;
+        _effective = effective;
         _squad = squad;
         _constraints = constraints;
         _teams = teams;
@@ -99,12 +99,9 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
     }
 
     // The saved lineup, or — for a manager who never saved one — the default lineup from the squad
-    // as it stands now, i.e. before the mutation this guard runs ahead of (#142).
+    // as it stands now, i.e. before the mutation this guard runs ahead of (#142), with pins stamped (#166).
     private async Task<Lineup?> EffectiveLineupAsync(string teamId, GameweekConfig config, CancellationToken ct)
     {
-        var saved = await _liveLineup.GetAsync(teamId, ct);
-        if (saved is not null) return saved;
-
         var userId = GameTeamId.UserIdOf(teamId, GameFlavor.Fantasy);
         if (userId is null) return null;
 
@@ -113,7 +110,6 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
         if (await _squad.ExecuteAsync(userId, null, null, null, ct) is not GetSquadResult.Found found) return null;
 
-        var fallback = DefaultLineup.From(found.View.Players, constraints);
-        return fallback.Slots.Count == 0 ? null : fallback;
+        return await _effective.GetAsync(teamId, found.View.Players, constraints, ct);
     }
 }
