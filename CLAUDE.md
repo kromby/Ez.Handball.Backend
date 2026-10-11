@@ -262,4 +262,4 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   players to one eligible position each fits the limits — nobody counts twice. A squad already
   over a cap (positions changed after purchase) falls back to the primary-only count so unrelated
   buys still go through. Squad and lineup views return `positionSecondary` and the solved
-  `assignedPosition`; the pool's `position` filter matches either position.
+  `assignedPosition`; the pool's `position` filter matches either position. Lineup snapshots stay frozen, but bench auto-subs are recomputed from the live squad/eligibility on every settle, so a deploy (or a later HBStatz position change) can re-score rounds the auto-settler re-settles within `Settlement:RecentWindow`.
