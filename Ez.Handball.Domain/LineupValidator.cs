@@ -50,13 +50,23 @@ public static class LineupValidator
             violations.Add(new("wrong_starter_count", $"A lineup must have exactly {constraints.StarterCount} starters."));
     }
 
-    // position_min / position_max among starters — position resolved from the owned roster snapshot
+    // position_min / position_max among starters — position resolved from the owned roster snapshot.
+    // #108: valid if some assignment of starters to their primary/secondary positions meets every
+    // min/max. Only when none exists do we report, via the primary-only count, so managers see the
+    // familiar per-position messages.
     private static void CheckPositions(
         IReadOnlyList<LineupSlot> starters,
         IReadOnlyDictionary<string, SquadPlayer> ownedById,
         LineupConstraints constraints,
         List<LineupViolation> violations)
     {
+        var candidates = starters
+            .Where(s => ownedById.ContainsKey(s.PlayerId))
+            .Select(s => new PositionCandidate(s.PlayerId, ownedById[s.PlayerId].EligiblePositions))
+            .ToList();
+        if (PositionAssignment.TrySolve(candidates, constraints.PositionStart) is not null) return;
+
+        var before = violations.Count;
         var startersByPosition = starters
             .Select(s => ownedById.TryGetValue(s.PlayerId, out var p) ? p.Position : null)
             .Where(pos => pos is not null)
@@ -72,6 +82,10 @@ public static class LineupValidator
             if (count > max)
                 violations.Add(new("position_max", $"At most {max} starter(s) allowed at {kv.Key}."));
         }
+
+        // Primary counts look fine but no arrangement works (e.g. secondaries all collide).
+        if (violations.Count == before)
+            violations.Add(new("position_min", "Starters cannot be arranged to meet the position rules."));
     }
 
     // missing_captain / multiple_captains / missing_vice / multiple_vices

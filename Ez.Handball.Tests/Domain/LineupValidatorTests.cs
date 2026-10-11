@@ -160,4 +160,54 @@ public class LineupValidatorTests
         var result = LineupValidator.Validate(new Lineup(slots), owned, Constraints);
         Assert.True(Has(result, "bench_order"));
     }
+
+    private static SquadPlayer Dual(string id, string pos, string sec) => new(
+        PlayerId: id, Name: id, ClubId: "385", ClubName: "Stjarnan", Position: pos, Gender: "karlar",
+        Price: new PlayerPrice(10_000_000, "ISK"), PricePaid: new PlayerPrice(10_000_000, "ISK"),
+        Rating: 0, PositionSecondary: sec);
+
+    private static Lineup StartAll(IReadOnlyList<SquadPlayer> squad) => new(
+        squad.Select((p, i) => new LineupSlot(p.PlayerId, i == 0 ? LineupRole.Captain : LineupRole.Starter, null)).ToList());
+
+    [Fact]
+    public void NoNaturalKeeper_StarterWithGkSecondary_IsValid()
+    {
+        var squad = Owned("LW", "RW", "LB", "CB", "RB", "LP").Append(Dual("d", "CB", "GK")).ToList();
+
+        var result = LineupValidator.Validate(StartAll(squad), squad, Constraints);
+
+        Assert.DoesNotContain(result.Violations, v => v.Code is "position_min" or "position_max");
+    }
+
+    [Fact]
+    public void ThreeCbStarters_OneWithLbSecondary_IsValid()
+    {
+        var squad = Owned("GK", "LW", "RW", "LP", "CB", "CB").Append(Dual("d", "CB", "LB")).ToList();
+
+        var result = LineupValidator.Validate(StartAll(squad), squad, Constraints);
+
+        Assert.DoesNotContain(result.Violations, v => v.Code is "position_min" or "position_max");
+    }
+
+    [Fact]
+    public void NoKeeperAnywhere_StillReportsPositionMin()
+    {
+        var squad = Owned("LW", "RW", "LB", "CB", "RB", "LP", "LP");
+
+        var result = LineupValidator.Validate(StartAll(squad), squad, Constraints);
+
+        Assert.Contains(result.Violations, v => v.Code == "position_min" && v.Message.Contains("GK"));
+    }
+
+    [Fact]
+    public void UnownedStarter_IsSkippedByPositionCheck()
+    {
+        var squad = Owned("GK", "LW", "RW", "LB", "CB", "RB");
+        var lineup = new Lineup(StartAll(squad).Slots.Append(new LineupSlot("ghost", LineupRole.Starter, null)).ToList());
+
+        var result = LineupValidator.Validate(lineup, squad, Constraints);
+
+        Assert.Contains(result.Violations, v => v.Code == "unowned_player");
+        Assert.DoesNotContain(result.Violations, v => v.Code is "position_min" or "position_max");
+    }
 }
