@@ -44,6 +44,8 @@ public sealed class FantasyBuyPlayerFunction : IBuyPlayerFunction
             .Select(p => new PositionCandidate(p.PlayerId, p.EligiblePositions))
             .ToList();
 
+        // Over-cap fallback deliberately counts buy-time snapshot primaries and ignores the
+        // candidate's secondary (legacy behaviour for an already-illegal squad).
         if (PositionAssignment.TrySolve(squad, maxOnly) is null)
             return inputs.Position is { } position
                 && limits.TryGetValue(position, out var limit)

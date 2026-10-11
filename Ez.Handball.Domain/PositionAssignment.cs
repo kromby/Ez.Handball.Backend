@@ -26,7 +26,8 @@ public static class PositionAssignment
         => limits.ToDictionary(kv => kv.Key, kv => (0, kv.Value.Max), StringComparer.Ordinal);
 
     // playerId -> assigned position (null for unconstrained players), or null when no assignment
-    // meets every limit. Positions absent from `limits` have no min and no max.
+    // meets every limit. Positions absent from `limits` have no min and no max. `limits` is looked
+    // up with its own comparer, so callers pass ordinal-keyed dictionaries (MaxOnly does).
     public static IReadOnlyDictionary<string, string?>? TrySolve(
         IReadOnlyList<PositionCandidate> players,
         IReadOnlyDictionary<string, (int Min, int Max)> limits)
