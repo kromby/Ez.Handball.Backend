@@ -51,7 +51,8 @@ public sealed class GameweekScoringService : IGameweekScoringService
         var usedBench = new HashSet<string>();
         // Frozen pins only (#166): the snapshot slot's PlayAs, when still one of the player's natural
         // positions. The live SquadPlayer pin is ignored so post-deadline moves can't touch locked rounds.
-        var frozenPins = snapshot.Slots.ToDictionary(s => s.PlayerId, s => s.PlayAs, StringComparer.Ordinal);
+        var frozenPins = snapshot.Slots.GroupBy(s => s.PlayerId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().PlayAs, StringComparer.Ordinal); // first-wins: tolerate duplicate slots
         var eligibleById = ownedSquad.ToDictionary(p => p.PlayerId, p =>
         {
             var natural = p.NaturalPositions;

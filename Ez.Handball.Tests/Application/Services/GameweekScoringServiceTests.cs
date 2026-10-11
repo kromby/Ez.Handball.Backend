@@ -335,4 +335,25 @@ public class GameweekScoringServiceTests
         var r = PinnedBenchSub("RW", null);
         Assert.True(r.SubbedIn("d"));
     }
+
+    [Fact]
+    public void DuplicateSnapshotSlot_DoesNotThrow()
+    {
+        // A legacy/hand-written snapshot can list a player as both starter (pinned) and bench; scoring must still complete.
+        var constraints = new LineupConstraints(1, 2,
+            new Dictionary<string, (int Min, int Max)> { ["GK"] = (1, 1), ["CB"] = (0, 2) },
+            CaptainMultiplier: 2, CaptainRequired: true, ViceRequired: false);
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("cb1", LineupRole.Captain, null, "CB"),
+            new LineupSlot("cb1", LineupRole.Bench, 0),
+        });
+        var squad = new[] { Owned("gk1", "GK"), Owned("cb1", "CB") };
+        var stats = new Dictionary<string, AggregatedStats> { ["gk1"] = Played(0), ["cb1"] = Played(0) };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, constraints);
+
+        Assert.NotNull(score);
+    }
 }
