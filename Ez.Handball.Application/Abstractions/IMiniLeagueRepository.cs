@@ -15,6 +15,9 @@ public interface IMiniLeagueRepository
     // and the matching reverse-index row (PartitionKey = member.UserId, RowKey = leagueId).
     Task AddMemberAsync(string leagueId, MiniLeagueMember member, CancellationToken ct);
 
+    // Set (or clear, with null) the header's start round. False if no league with that id exists.
+    Task<bool> SetStartRoundAsync(string leagueId, string? startRound, CancellationToken ct);
+
     // Point read of the header; null if no league with that id exists.
     Task<MiniLeague?> GetAsync(string leagueId, CancellationToken ct);
 

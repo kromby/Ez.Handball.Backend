@@ -10,6 +10,8 @@ internal static class MiniLeagueResponse
         id            = view.League.Id,
         name          = view.League.Name,
         season        = view.League.Season,
+        // Round label standings count from; null = every round.
+        startRound    = view.League.StartRound,
         creatorUserId = view.League.CreatorUserId,
         memberCount   = view.Members.Count,
         role          = view.Members.FirstOrDefault(m => m.UserId == callerUserId)?.Role,

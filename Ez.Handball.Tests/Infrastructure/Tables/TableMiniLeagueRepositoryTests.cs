@@ -48,6 +48,42 @@ public class TableMiniLeagueRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Create_WithStartRound_RoundTrips()
+    {
+        await Sut().CreateAsync(new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0, "6"), default);
+
+        var got = await Sut().GetAsync("lg-1", default);
+
+        Assert.Equal("6", got!.StartRound);
+    }
+
+    [Fact]
+    public async Task Create_WithoutStartRound_ReadsBackNull()
+    {
+        await Sut().CreateAsync(new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0), default);
+
+        Assert.Null((await Sut().GetAsync("lg-1", default))!.StartRound);
+    }
+
+    [Fact]
+    public async Task SetStartRound_SetsThenClears_KeepingTheRestOfTheHeader()
+    {
+        await Sut().CreateAsync(new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0), default);
+
+        Assert.True(await Sut().SetStartRoundAsync("lg-1", "6", default));
+        Assert.Equal(new MiniLeague("lg-1", "Office League", "2025-26", "u-1", T0, "6"), await Sut().GetAsync("lg-1", default));
+
+        Assert.True(await Sut().SetStartRoundAsync("lg-1", null, default));
+        Assert.Null((await Sut().GetAsync("lg-1", default))!.StartRound);
+    }
+
+    [Fact]
+    public async Task SetStartRound_MissingLeague_ReturnsFalse()
+    {
+        Assert.False(await Sut().SetStartRoundAsync("missing", "6", default));
+    }
+
+    [Fact]
     public async Task Get_MissingLeague_ReturnsNull()
         => Assert.Null(await Sut().GetAsync("does-not-exist", default));
 
