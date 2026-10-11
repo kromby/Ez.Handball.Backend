@@ -106,5 +106,55 @@ public static class MiniLeagueEndpoints
                 _                                     => Results.Problem()
             };
         });
+
+        // A member's team for rounds whose deadline has passed (Backend#156). 404 unless both the
+        // caller and the target are members, so it never reveals whether a league or user exists.
+        group.MapGet("/{id}/members/{userId}/gameweeks", async (
+            string id, string userId, int? version, HttpContext http,
+            IGetLeagueMemberGameweeksUseCase uc, CancellationToken ct) =>
+        {
+            var callerId = http.User.UserId();
+            if (string.IsNullOrEmpty(callerId))
+                return Results.Json(new { error = "unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var result = await uc.ExecuteAsync(id, callerId, userId, version, ct);
+            return result switch
+            {
+                GetLeagueMemberGameweeksResult.NotFound         => Results.NotFound(new { error = "not_found" }),
+                GetLeagueMemberGameweeksResult.ConfigMissing    => Results.BadRequest(new { error = "gameweek_config_missing" }),
+                GetLeagueMemberGameweeksResult.CalendarNotFound => Results.NotFound(new { error = "tournament_not_found" }),
+                GetLeagueMemberGameweeksResult.Found f          => Results.Ok(MemberGameweeksBody(f.View)),
+                _                                               => Results.Problem()
+            };
+        });
     }
+
+    // The /api/users/me/gameweeks shape, plus each round's frozen lineup and whether it is settled.
+    // An unsettled round has null points and an empty breakdown.
+    private static object MemberGameweeksBody(MemberGameweeks view) => new
+    {
+        runningTotal = view.RunningTotal,
+        gameweeks = view.Gameweeks.Select(g => new
+        {
+            number = g.Number,
+            roundLabel = g.RoundLabel,
+            deadline = g.Deadline,
+            settled = g.Score is not null,
+            points = g.Score?.Points,
+            captainPlayerId = g.Score?.CaptainPlayerId,
+            lineup = (g.Lineup?.Slots ?? Array.Empty<LineupSlot>()).Select(s =>
+            {
+                view.Players.TryGetValue(s.PlayerId, out var player);
+                return new
+                {
+                    s.PlayerId,
+                    name = player?.Name,
+                    position = player?.Position,
+                    role = s.Role.ToString(),
+                    s.BenchOrder
+                };
+            }),
+            breakdown = g.Score is null ? Enumerable.Empty<object>() : GameweekEndpoints.Breakdown(g.Score, view.Players)
+        })
+    };
 }

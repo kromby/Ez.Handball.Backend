@@ -244,6 +244,15 @@ builder.Services.AddScoped<IGameweekSnapshotGuard>(sp => new GameweekSnapshotGua
     sp.GetRequiredService<ILineupConstraintsRepository>(),
     sp.GetRequiredService<IGameTeamRepository>(),
     sp.GetRequiredService<GameClock>()));
+builder.Services.AddScoped<IGetLeagueMemberGameweeksUseCase>(sp => new GetLeagueMemberGameweeksUseCase(
+    sp.GetRequiredService<IMiniLeagueRepository>(),
+    sp.GetRequiredService<IGameweekConfigRepository>(),
+    sp.GetRequiredService<IGameweekCalendarService>(),
+    sp.GetRequiredService<IGameweekSnapshotGuard>(),
+    sp.GetRequiredService<IGameweekLineupRepository>(),
+    sp.GetRequiredService<IGetMyGameweekScoresUseCase>(),
+    sp.GetRequiredService<IPlayerRepository>(),
+    sp.GetRequiredService<GameClock>()));
 
 var app = builder.Build();
 

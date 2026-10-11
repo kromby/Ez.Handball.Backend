@@ -81,7 +81,7 @@ public class ManagerStandingsEndpointTests : IClassFixture<ManagerStandingsEndpo
         _factory.Uc.Setup(u => u.ExecuteAsync(0, 50, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManagerStandings(1, 0, 50, "2", new[]
             {
-                new ManagerStanding(1, 2, 1, "a:fantasy", "Alpha", "#abcdef", 95, 40, 1, 95, new[] { new RoundScore("1", 95, 95) }),
+                new ManagerStanding(1, 2, 1, "a:fantasy", "Alpha", "#abcdef", 95, 40, 1, 95, new[] { new RoundScore("1", 95, 95) }, 1, true),
             }));
 
         var resp = await _client.GetAsync("/api/managers/leaderboard");
@@ -93,5 +93,7 @@ public class ManagerStandingsEndpointTests : IClassFixture<ManagerStandingsEndpo
         var entry = body.GetProperty("entries")[0];
         Assert.Equal("Alpha", entry.GetProperty("teamName").GetString());
         Assert.Equal(1, entry.GetProperty("rankDelta").GetInt32());
+        Assert.Equal(1, entry.GetProperty("roundsWon").GetInt32());
+        Assert.True(entry.GetProperty("wonLatestRound").GetBoolean());
     }
 }
