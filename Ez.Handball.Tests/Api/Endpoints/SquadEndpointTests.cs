@@ -21,6 +21,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
     public class Factory : WebApplicationFactory<Program>
     {
         public Mock<IGetSquadUseCase> Uc { get; } = new();
+        public Mock<IGetTransferAllowanceUseCase> Allowance { get; } = new();
 
         static Factory()
         {
@@ -46,6 +47,8 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
                 var descriptor = services.Single(d => d.ServiceType == typeof(IGetSquadUseCase));
                 services.Remove(descriptor);
                 services.AddSingleton(Uc.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetTransferAllowanceUseCase)));
+                services.AddSingleton(Allowance.Object);
             });
             return base.CreateHost(builder);
         }
@@ -59,6 +62,7 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
     {
         _factory = factory;
         _factory.Uc.Reset();
+        _factory.Allowance.Reset();
         _client = factory.CreateClient();
     }
 
@@ -179,5 +183,74 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_rule_set", body.GetProperty("error").GetString());
+    }
+
+    private void SquadFound() => _factory.Uc.Setup(s => s.ExecuteAsync(
+            It.IsAny<string>(), null, null, null, It.IsAny<CancellationToken>()))
+        .ReturnsAsync(new GetSquadResult.Found(SampleView()));
+
+    [Fact]
+    public async Task Found_IncludesTheCurrentRoundsTransferAllowance()
+    {
+        SquadFound();
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTransferAllowanceResult.Found(
+                new TransferAllowance("7", 7, FreeAvailable: 2, Used: 3, Extra: 1, PointsHit: 4, Exempt: false)));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed("/api/users/me/squad?flavor=fantasy", token));
+
+        var transfers = (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers");
+        Assert.Equal("7", transfers.GetProperty("roundLabel").GetString());
+        Assert.Equal(7, transfers.GetProperty("roundNumber").GetInt32());
+        Assert.Equal(2, transfers.GetProperty("freeAvailable").GetInt32());
+        Assert.Equal(3, transfers.GetProperty("used").GetInt32());
+        Assert.Equal(1, transfers.GetProperty("extra").GetInt32());
+        Assert.Equal(4, transfers.GetProperty("pointsHit").GetInt32());
+        Assert.False(transfers.GetProperty("exempt").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Found_WhileBuildingTheSquad_ReportsExempt()
+    {
+        SquadFound();
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTransferAllowanceResult.Found(
+                new TransferAllowance("1", 1, FreeAvailable: 1, Used: 7, Extra: 0, PointsHit: 0, Exempt: true)));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed("/api/users/me/squad?flavor=fantasy", token));
+
+        var transfers = (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers");
+        Assert.True(transfers.GetProperty("exempt").GetBoolean());
+        Assert.Equal(0, transfers.GetProperty("pointsHit").GetInt32());
+    }
+
+    [Fact]
+    public async Task Found_WithNoAllowanceAvailable_ReturnsTransfersNull()
+    {
+        SquadFound();
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetTransferAllowanceResult.NotAvailable.Instance);
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed("/api/users/me/squad?flavor=fantasy", token));
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("transfers").ValueKind);
+    }
+
+    [Fact]
+    public async Task Found_WhenAllowanceLookupFails_StillReturns200WithTransfersNull()
+    {
+        SquadFound();
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("storage down"));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed("/api/users/me/squad?flavor=fantasy", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(JsonValueKind.Null, (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers").ValueKind);
     }
 }
