@@ -239,4 +239,18 @@ public class SquadEndpointTests : IClassFixture<SquadEndpointTests.Factory>, IAs
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(JsonValueKind.Null, body.GetProperty("transfers").ValueKind);
     }
+
+    [Fact]
+    public async Task Found_WhenAllowanceLookupFails_StillReturns200WithTransfersNull()
+    {
+        SquadFound();
+        _factory.Allowance.Setup(a => a.ExecuteAsync(It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("storage down"));
+        var token = await RegisterAndGetTokenAsync();
+
+        var resp = await _client.SendAsync(Authed("/api/users/me/squad?flavor=fantasy", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(JsonValueKind.Null, (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers").ValueKind);
+    }
 }

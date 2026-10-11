@@ -22,7 +22,7 @@ public static class SquadEndpoints
             int? ruleSetVersion,
             HttpContext http,
             IGetSquadUseCase uc,
-            IGetTransferAllowanceUseCase allowance,
+            TransferEcho transferEcho,
             CancellationToken ct) =>
         {
             // Fantasy-only: blank or "fantasy" is accepted; anything else is rejected.
@@ -37,14 +37,14 @@ public static class SquadEndpoints
             return result switch
             {
                 GetSquadResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
-                GetSquadResult.Found f         => Results.Ok(SquadWithTransfersBody(f.View, await TransferEcho.BuildAsync(allowance, userId, ct))),
+                GetSquadResult.Found f         => Results.Ok(SquadWithTransfersBody(f.View, await transferEcho.BuildAsync(userId, ct))),
                 _                              => Results.Problem()
             };
         });
 
         group.MapPost("/players", async (
             BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
-            IGetTransferAllowanceUseCase allowance, CancellationToken ct) =>
+            TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(req.PlayerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -58,7 +58,7 @@ public static class SquadEndpoints
             if (result is BuyPlayerResult.Committed c)
             {
                 var gameweek = await GameweekEcho.BuildAsync(gw, ct);
-                var transfers = await TransferEcho.BuildAsync(allowance, userId, ct);
+                var transfers = await transferEcho.BuildAsync(userId, ct);
                 return Results.Json(new { squad = SquadBody(c.View), gameweek, transfers }, statusCode: StatusCodes.Status201Created);
             }
             return result switch
@@ -75,7 +75,7 @@ public static class SquadEndpoints
         group.MapDelete("/players/{playerId}", async (
             string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
             HttpContext http, ISellPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
-            IGetTransferAllowanceUseCase allowance, CancellationToken ct) =>
+            TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -89,7 +89,7 @@ public static class SquadEndpoints
             if (result is SellPlayerResult.Sold s)
             {
                 var gameweek = await GameweekEcho.BuildAsync(gw, ct);
-                var transfers = await TransferEcho.BuildAsync(allowance, userId, ct);
+                var transfers = await transferEcho.BuildAsync(userId, ct);
                 return Results.Ok(new { squad = SquadBody(s.View), gameweek, transfers });
             }
             return result switch
