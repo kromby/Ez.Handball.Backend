@@ -64,22 +64,7 @@ public static class GameweekEndpoints
                     roundLabel = g.RoundLabel,
                     points = g.Points,
                     captainPlayerId = g.CaptainPlayerId,
-                    breakdown = g.Breakdown.Select(b =>
-                    {
-                        result.Players.TryGetValue(b.PlayerId, out var player);
-                        return new
-                        {
-                            b.PlayerId,
-                            name = player?.Name,
-                            position = player?.Position,
-                            b.RawPoints,
-                            b.Points,
-                            b.Played,
-                            b.AutoSubbedIn,
-                            b.CaptainApplied,
-                            b.Multiplier
-                        };
-                    })
+                    breakdown = Breakdown(g, result.Players)
                 })
             });
         }).RequireAuthorization();
@@ -110,6 +95,25 @@ public static class GameweekEndpoints
             };
         }).RequireAuthorization();
     }
+
+    // Shared with the league-member view (MiniLeagueEndpoints) so both breakdowns stay one shape.
+    internal static IEnumerable<object> Breakdown(GameweekScore score, IReadOnlyDictionary<string, Player> players) =>
+        score.Breakdown.Select(b =>
+        {
+            players.TryGetValue(b.PlayerId, out var player);
+            return (object)new
+            {
+                b.PlayerId,
+                name = player?.Name,
+                position = player?.Position,
+                b.RawPoints,
+                b.Points,
+                b.Played,
+                b.AutoSubbedIn,
+                b.CaptainApplied,
+                b.Multiplier
+            };
+        });
 
     internal static object Body(Gameweek g) => new
     {

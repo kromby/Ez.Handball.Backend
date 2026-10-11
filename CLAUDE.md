@@ -213,6 +213,13 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   Returns `not_ready` (409) until every member match is final.
 - **Reads:** public `GET /api/gameweeks` (calendar) and `GET /api/gameweeks/current`;
   authed `GET /api/users/me/gameweeks` (per-gameweek scores + running total).
+- **League member view (Backend#156):** authed
+  `GET /api/mini-leagues/{id}/members/{userId}/gameweeks` returns another member's team, but only
+  for rounds whose deadline has passed: the frozen `GameweekLineups` snapshot and, once the round
+  is settled, its breakdown (`settled`, nullable `points`). It never reads the live squad/lineup, so
+  transfers stay hidden until the deadline. It returns 404 unless both the caller and the target are
+  members of the league. It runs the snapshot guard for the target first, so a member who hasn't
+  touched their team since a deadline still shows that round's lineup.
 - **Final override (Backend#147):** hsi.is occasionally leaves a played match non-final (e.g.
   status `U`), which blocks its whole gameweek from settling. An admin can
   `PUT /api/admin/matches/{matchId}/final-override` (`DELETE` to clear) to treat it as final. The
