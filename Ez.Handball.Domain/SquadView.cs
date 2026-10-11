@@ -12,7 +12,12 @@ public sealed record SquadPlayer(
     string? Gender,
     PlayerPrice Price,
     PlayerPrice PricePaid,
-    double Rating);   // current-season fantasy rating (#52); 0 = below min-games guard
+    double Rating,   // current-season fantasy rating (#52); 0 = below min-games guard
+    string? PositionSecondary = null,
+    string? AssignedPosition = null)   // the slot this player fills under the squad caps (#108)
+{
+    public IReadOnlyList<string> EligiblePositions => PositionAssignment.EligibleFor(Position, PositionSecondary);
+}
 
 public sealed record SquadView(
     IReadOnlyList<SquadPlayer> Players,

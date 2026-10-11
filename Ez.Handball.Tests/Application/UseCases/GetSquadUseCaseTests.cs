@@ -11,7 +11,9 @@ public class GetSquadUseCaseTests
     private readonly Mock<IPlayerRepository> _players = new();
     private readonly Mock<IPlayerPriceService> _price = new();
 
-    private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _price.Object);
+    private readonly Mock<ISquadConstraintsRepository> _constraints = new();
+
+    private GetSquadUseCase CreateSut() => new(_squad.Object, _players.Object, _price.Object, _constraints.Object);
 
     private static Player AnyPlayer(string id, string position) => new(
         id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
@@ -22,6 +24,43 @@ public class GetSquadUseCaseTests
     private void SetupSquad(double budget, params SquadSlot[] slots) =>
         _squad.Setup(r => r.GetAsync("u-1", GameFlavor.Fantasy, It.IsAny<CancellationToken>()))
               .ReturnsAsync(new Squad(slots, budget, "ISK"));
+
+    [Fact]
+    public async Task Found_AssignsDualPlayerToSecondary_WhenPrimaryCapped()
+    {
+        SetupSquad(0,
+            new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK")),
+            new SquadSlot("p-2", "CB", new PlayerPrice(1, "ISK")));
+        _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(AnyPlayer("p-1", "CB"));
+        _players.Setup(r => r.GetByIdAsync("p-2", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(AnyPlayer("p-2", "CB") with { PositionSecondary = "LB" });
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 2) with { Rating = 9 });
+        _price.Setup(s => s.GetPriceAsync("p-2", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-2", 1) with { Rating = 1 });
+        _constraints.Setup(c => c.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new SquadConstraints(1, 15, new Dictionary<string, int> { ["CB"] = 1, ["LB"] = 1 }, 100_000_000, "ISK"));
+
+        var view = Assert.IsType<GetSquadResult.Found>(
+            await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None)).View;
+
+        var p2 = view.Players.Single(p => p.PlayerId == "p-2");
+        Assert.Equal("LB", p2.PositionSecondary);
+        Assert.Equal("LB", p2.AssignedPosition);
+        Assert.Equal("CB", view.Players.Single(p => p.PlayerId == "p-1").AssignedPosition);
+    }
+
+    [Fact]
+    public async Task Found_NoConstraints_AssignedPositionIsPrimary()
+    {
+        SetupSquad(0, new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK")));
+        _players.Setup(r => r.GetByIdAsync("p-1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(AnyPlayer("p-1", "CB") with { PositionSecondary = "LB" });
+        _price.Setup(s => s.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>())).ReturnsAsync(PriceOf("p-1", 1));
+
+        var view = Assert.IsType<GetSquadResult.Found>(
+            await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None)).View;
+
+        Assert.Equal("CB", view.Players.Single().AssignedPosition);
+    }
 
     [Fact]
     public async Task Found_EnrichesPlayers_AndComputesMoneyFields()

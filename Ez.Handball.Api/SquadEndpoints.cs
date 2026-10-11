@@ -110,6 +110,8 @@ public static class SquadEndpoints
             clubId = p.ClubId,
             clubName = p.ClubName,
             position = p.Position,
+            positionSecondary = p.PositionSecondary,
+            assignedPosition = p.AssignedPosition,
             gender = p.Gender,
             price = p.Price,
             pricePaid = p.PricePaid,
