@@ -209,4 +209,72 @@ public class ManagerStandingsRankerTests
         Assert.Null(bravo.RankDelta);
         Assert.Equal(1, result.Entries.Single(e => e.TeamId == "a:fantasy").PreviousRank);
     }
+
+    [Fact]
+    public void Rank_CreditsEveryTiedRoundWinner()
+    {
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "1", 40),
+            new GameweekScoreSummary("b:fantasy", "1", 40),
+            new GameweekScoreSummary("c:fantasy", "1", 10),
+            new GameweekScoreSummary("a:fantasy", "2", 20),
+            new GameweekScoreSummary("b:fantasy", "2", 30),
+            new GameweekScoreSummary("c:fantasy", "2", 30),
+        };
+
+        var result = ManagerStandingsRanker.Rank(
+            summaries, Names(("a:fantasy", "Alpha"), ("b:fantasy", "Bravo"), ("c:fantasy", "Charlie")));
+
+        var byTeam = result.Entries.ToDictionary(e => e.TeamId);
+        Assert.Equal((1, false), (byTeam["a:fantasy"].RoundsWon, byTeam["a:fantasy"].WonLatestRound));
+        Assert.Equal((2, true), (byTeam["b:fantasy"].RoundsWon, byTeam["b:fantasy"].WonLatestRound));
+        Assert.Equal((1, true), (byTeam["c:fantasy"].RoundsWon, byTeam["c:fantasy"].WonLatestRound));
+    }
+
+    [Fact]
+    public void Rank_TeamMissingARound_CannotWinIt_AndOthersStillCompete()
+    {
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "1", 50),
+            new GameweekScoreSummary("b:fantasy", "1", 10),
+            // a has no round-2 score; b's low score still wins round 2.
+            new GameweekScoreSummary("b:fantasy", "2", 5),
+        };
+
+        var result = ManagerStandingsRanker.Rank(
+            summaries, Names(("a:fantasy", "Alpha"), ("b:fantasy", "Bravo")), new[] { "c:fantasy" });
+
+        var byTeam = result.Entries.ToDictionary(e => e.TeamId);
+        Assert.Equal((1, false), (byTeam["a:fantasy"].RoundsWon, byTeam["a:fantasy"].WonLatestRound));
+        Assert.Equal((1, true), (byTeam["b:fantasy"].RoundsWon, byTeam["b:fantasy"].WonLatestRound));
+        Assert.Equal((0, false), (byTeam["c:fantasy"].RoundsWon, byTeam["c:fantasy"].WonLatestRound));
+    }
+
+    [Fact]
+    public void Rank_SingleRoundSeason_WinnerHasOneRoundAndWonLatest()
+    {
+        var summaries = new[]
+        {
+            new GameweekScoreSummary("a:fantasy", "1", 25),
+            new GameweekScoreSummary("b:fantasy", "1", 35),
+        };
+
+        var result = ManagerStandingsRanker.Rank(summaries, Names(("a:fantasy", "Alpha"), ("b:fantasy", "Bravo")));
+
+        var byTeam = result.Entries.ToDictionary(e => e.TeamId);
+        Assert.Equal((1, true), (byTeam["b:fantasy"].RoundsWon, byTeam["b:fantasy"].WonLatestRound));
+        Assert.Equal((0, false), (byTeam["a:fantasy"].RoundsWon, byTeam["a:fantasy"].WonLatestRound));
+    }
+
+    [Fact]
+    public void Rank_RosterOnlyLeague_HasNoRoundWinners()
+    {
+        var result = ManagerStandingsRanker.Rank(
+            Array.Empty<GameweekScoreSummary>(), Names(("a:fantasy", "Alpha")), new[] { "a:fantasy" });
+
+        var alpha = Assert.Single(result.Entries);
+        Assert.Equal((0, false), (alpha.RoundsWon, alpha.WonLatestRound));
+    }
 }
