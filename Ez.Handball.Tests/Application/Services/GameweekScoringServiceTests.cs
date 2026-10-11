@@ -330,6 +330,15 @@ public class GameweekScoringServiceTests
     }
 
     [Fact]
+    public void FrozenPin_WinsOverADifferingLivePin()
+    {
+        // Frozen CB, live LB (both natural): scoring follows the snapshot, so d still can't cover LB.
+        var r = PinnedBenchSub("CB", "LB");
+        Assert.False(r.SubbedIn("d"));
+        Assert.True(r.SubbedIn("l"));
+    }
+
+    [Fact]
     public void StaleFrozenPin_IsIgnored()
     {
         var r = PinnedBenchSub("RW", null);
