@@ -71,18 +71,24 @@ public sealed class GameweekScoringService : IGameweekScoringService
         // to check position validity for sub candidates.
         var decidedEffective = new List<string>();
 
+        // Positions already-filled slots cover. Later subs must keep them covered, or the solver
+        // could shuffle a dual-position sub off the slot it was brought on to fill.
+        var coveredPositions = new HashSet<string>(StringComparer.Ordinal);
+
         foreach (var starter in starters)
         {
             if (Played(starter.PlayerId))
             {
                 effectiveMap[starter.PlayerId] = starter.PlayerId;
                 decidedEffective.Add(starter.PlayerId);
+                coveredPositions.UnionWith(MinPositions(starter.PlayerId));
                 continue;
             }
 
             // Non-playing starter: look for a valid bench sub.
+            var required = coveredPositions.Union(MinPositions(starter.PlayerId)).ToList();
             var sub = FindValidSub(
-                MinPositions(starter.PlayerId), decidedEffective, bench, usedBench, eligibleById, constraints, Played);
+                required, decidedEffective, bench, usedBench, eligibleById, constraints, Played);
 
             if (sub is not null)
             {
@@ -91,6 +97,7 @@ public sealed class GameweekScoringService : IGameweekScoringService
                 replacedStarterIds.Add(starter.PlayerId);
                 effectiveMap[starter.PlayerId] = sub;
                 decidedEffective.Add(sub);
+                coveredPositions.UnionWith(MinPositions(starter.PlayerId));
             }
             else
             {
@@ -189,9 +196,9 @@ public sealed class GameweekScoringService : IGameweekScoringService
     }
 
     // After the swap, the decided-effective players plus the candidate must still be arrangeable
-    // (primary or secondary, #108) with no position over its max, and the outgoing starter's
-    // assigned position (minPositions) must still reach its min. Mins elsewhere aren't enforced:
-    // future starters aren't decided yet, so this stays as conservative as the single-position rule.
+    // (primary or secondary, #108) with no position over its max, and every position in
+    // minPositions — the outgoing starter's plus those already-filled slots cover — must still
+    // reach its min. Future slots' mins aren't enforced: those starters aren't decided yet.
     private static bool KeepsPositionsValid(
         IReadOnlyList<string> minPositions,
         string candidateId,

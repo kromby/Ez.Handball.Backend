@@ -246,4 +246,39 @@ public class GameweekScoringServiceTests
         Assert.True(score.Breakdown.Single(b => b.PlayerId == "fp3").AutoSubbedIn);
         Assert.False(score.Breakdown.Single(b => b.PlayerId == "gk2").AutoSubbedIn);
     }
+
+    [Fact]
+    public void LaterSub_CannotPullEarlierSubOffThePositionItFilled()
+    {
+        // Two positions with a min: d (LB/GK) is subbed in for the absent lb1. When gk1 is then
+        // also absent, x (CB) only fits if d moves to GK — which would leave LB empty, so x must be
+        // passed over for the keeper e.
+        var constraints = new LineupConstraints(1, 3,
+            new Dictionary<string, (int Min, int Max)> { ["GK"] = (1, 1), ["LB"] = (1, 1), ["CB"] = (0, 2) },
+            CaptainMultiplier: 2, CaptainRequired: true, ViceRequired: false);
+        var snapshot = new Lineup(new[]
+        {
+            new LineupSlot("lb1", LineupRole.Starter, null),
+            new LineupSlot("gk1", LineupRole.Starter, null),
+            new LineupSlot("cb1", LineupRole.Captain, null),
+            new LineupSlot("d", LineupRole.Bench, 0),
+            new LineupSlot("x", LineupRole.Bench, 1),
+            new LineupSlot("e", LineupRole.Bench, 2),
+        });
+        var squad = new[]
+        {
+            Owned("lb1", "LB"), Owned("gk1", "GK"), Owned("cb1", "CB"),
+            Owned("d", "LB") with { PositionSecondary = "GK" }, Owned("x", "CB"), Owned("e", "GK"),
+        };
+        var stats = new Dictionary<string, AggregatedStats>
+        {
+            ["cb1"] = Played(0), ["d"] = Played(0), ["x"] = Played(0), ["e"] = Played(0),
+        };
+
+        var score = CreateSut().Score("team", "1", snapshot, squad, stats, Rules, constraints);
+
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "d").AutoSubbedIn);
+        Assert.True(score.Breakdown.Single(b => b.PlayerId == "e").AutoSubbedIn);
+        Assert.False(score.Breakdown.Single(b => b.PlayerId == "x").AutoSubbedIn);
+    }
 }
