@@ -104,23 +104,44 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
         }
     }
 
+    // A conditional replace can lose its ETag race not only to a concurrent sell but — since #166 —
+    // to a pin write on the still-active row. Treating every 412 as "already deleted" would let a sell
+    // credit the money while the player stays in the squad, so re-read and retry until the row is
+    // seen soft-deleted (or gone); if it keeps conflicting, throw so the sell aborts before crediting.
+    private const int SoftDeleteAttempts = 3;
+
     public async Task SoftDeleteAsync(string teamId, string playerId, DateTimeOffset now, CancellationToken ct)
     {
         var table = _client.GetTableClient(Tables.GameRosters);
-        try
+        for (var attempt = 1; attempt <= SoftDeleteAttempts; attempt++)
         {
-            var e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
+            GameRosterEntity e;
+            try
+            {
+                e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                return; // nothing to delete
+            }
+            if (e.DeletedAt is not null) return; // idempotent: already out of the active set
+
             e.DeletedAt = now;
-            await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+            try
+            {
+                await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+                return;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                return; // removed between our read and write
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412)
+            {
+                // A concurrent writer changed the row; re-read to see whether it is now deleted.
+            }
         }
-        catch (RequestFailedException ex) when (ex.Status == 404)
-        {
-            // nothing to delete
-        }
-        catch (RequestFailedException ex) when (ex.Status == 412)
-        {
-            // ETag mismatch: a concurrent writer already updated or soft-deleted the row.
-            // Soft-delete is idempotent — the row is already gone from the active set.
-        }
+        throw new InvalidOperationException(
+            $"Could not soft-delete roster row {teamId}/{playerId}: still conflicting after {SoftDeleteAttempts} attempts.");
     }
 }
