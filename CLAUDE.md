@@ -251,6 +251,16 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   saves. The unrounded rating still drives pricing. After deploying, run the admin settle with
   no `round` so already-settled rounds are re-scored; rounds a late team can't be settled for
   (#158) keep their old values.
+- **Transfer allowance (Backend#168):** per round, one buy and one sell are free
+  (`used = max(buys, sells)`), up to `maxBankedFreeTransfers` unused free transfers carry into the
+  next round, and each transfer beyond them costs `pointsPerExtraTransfer` (Config group
+  `fantasy-transfers-v1`, seeded by `POST /api/seed/transfer-config`). Buy/sell count against the
+  round they apply to (`SnapshotGuardResult.CurrentGameweek`, so a transfer made after a deadline
+  counts for the next round) in `GameTransferCounts`, via `TransferCountRecorder`, which never fails
+  a committed transfer. `TransferAllowanceCalculator` replays the calendar. Round 1, rounds before
+  `startsFromRound`, and rounds a team is still building its squad for (it didn't exist at the
+  previous deadline, same rule as #158) are exempt and bank nothing. Nothing deducts points yet:
+  settlement (#171) and the API surface (#169/#170) build on `IGetTransferAllowanceUseCase`.
 - **Scoring rule set v3 (Backend#160):** `fantasy-v3` is `fantasy-v2` with saves raised from 0.5
   to 1, because goalkeepers scored far below every other position. Pricing
   (`FantasyPlayerRatingFunction.DefaultRuleSetVersion`) and the gameweek config both use v3. A

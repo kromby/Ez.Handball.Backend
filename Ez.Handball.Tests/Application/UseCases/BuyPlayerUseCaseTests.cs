@@ -17,6 +17,7 @@ public class BuyPlayerUseCaseTests
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private readonly Mock<ITransferLedgerRecorder> _ledger = new();
     private readonly Mock<ILineupRepository> _lineup = new();
+    private readonly Mock<ITransferCountRecorder> _counts = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public BuyPlayerUseCaseTests()
@@ -27,7 +28,7 @@ public class BuyPlayerUseCaseTests
 
     private BuyPlayerUseCase Sut() => new(
         _decision.Object, _squadView.Object, _players.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object, _counts.Object);
 
     private static Player AnyPlayer(string id, string position) =>
         new(id, "Aron", "23", null, 35, "385-karlar", "385", "Stjarnan", "karlar", position, false);
@@ -255,5 +256,64 @@ public class BuyPlayerUseCaseTests
         await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
 
         _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private static readonly Gameweek OpenRound4 =
+        new(4, "4", "9142", Now.AddDays(1), GameweekStatus.Open, []);
+
+    private void CurrentRoundIs(Gameweek? round) =>
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new SnapshotGuardResult(round, false));
+
+    private void CommitSucceeds()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); DecisionReturns(Allowed("p-1", 42_000_000)); SquadViewReturns();
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+        _budget.Setup(b => b.TryDeductAsync("u-1:fantasy", 42_000_000, Now, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.Added);
+    }
+
+    [Fact]
+    public async Task Committed_CountsABuyForTheRoundItAppliesTo()
+    {
+        CommitSucceeds(); CurrentRoundIs(OpenRound4);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.Verify(c => c.RecordAsync("u-1:fantasy", "4", TransferType.Buy, Now, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Committed_WithNoOpenRound_CountsNothing()
+    {
+        CommitSucceeds(); CurrentRoundIs(null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RejectedByRule_CountsNothing()
+    {
+        TeamExists(); PlayerExists("p-1", "VS"); CurrentRoundIs(OpenRound4);
+        DecisionReturns(Rejected("p-1", 42_000_000, new BuyRuleViolation("insufficient_budget", "x")));
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task AddRacesToAlreadyActive_CountsNothing()
+    {
+        CommitSucceeds(); CurrentRoundIs(OpenRound4);
+        _roster.Setup(r => r.AddOrResurrectAsync("u-1:fantasy", "p-1", "VS", 42_000_000, Now, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(RosterAddOutcome.AlreadyActive);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.VerifyNoOtherCalls();
     }
 }

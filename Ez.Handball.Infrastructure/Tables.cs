@@ -31,4 +31,5 @@ public static class Tables
     public const string NotificationPreferences = "NotificationPreferences";
     public const string Config = "Config";
     public const string GameTransferLedger = "GameTransferLedger";
+    public const string GameTransferCounts = "GameTransferCounts";
 }

@@ -31,12 +31,13 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
     private readonly IGameweekSnapshotGuard _guard;
     private readonly ITransferLedgerRecorder _ledger;
     private readonly ILineupRepository _lineup;
+    private readonly ITransferCountRecorder _counts;
 
     public SellPlayerUseCase(
         IGetSquadUseCase squadView, IPlayerPriceService price, ISquadConstraintsRepository constraints,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
         Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger,
-        ILineupRepository lineup)
+        ILineupRepository lineup, ITransferCountRecorder counts)
     {
         _squadView = squadView;
         _price = price;
@@ -48,6 +49,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
         _guard = guard;
         _ledger = ledger;
         _lineup = lineup;
+        _counts = counts;
     }
 
     public async Task<SellPlayerResult> ExecuteAsync(
@@ -57,7 +59,7 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
             return SellPlayerResult.NoTeam.Instance;
 
         var teamId = GameTeamId.For(userId, GameFlavor.Fantasy);
-        await _guard.EnsureSnapshotsAsync(teamId, null, ct);
+        var guard = await _guard.EnsureSnapshotsAsync(teamId, null, ct);
         var entry = await _roster.GetAsync(teamId, playerId, ct);
         if (entry is null || entry.DeletedAt is not null)
             return SellPlayerResult.NotInSquad.Instance;
@@ -83,6 +85,10 @@ public sealed class SellPlayerUseCase : ISellPlayerUseCase
 
         await _ledger.RecordAsync(
             new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Sell, credit, context.Season, now), ct);
+
+        // Counts toward the free-transfer allowance of the round this sell applies to (#168).
+        if (guard.CurrentGameweek is not null)
+            await _counts.RecordAsync(teamId, guard.CurrentGameweek.RoundLabel, TransferType.Sell, now, ct);
 
         var view = await _squadView.ExecuteAsync(userId, context.Season, context.TournamentId, context.RuleSetVersion, ct);
         return view is GetSquadResult.Found f
