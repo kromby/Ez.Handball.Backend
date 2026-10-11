@@ -30,11 +30,17 @@ public class SetPlayAsUseCaseTests
                .Callback(() => _calls.Add("write"))
                .ReturnsAsync(SetPlayAsOutcome.Updated);
         _squadView.Setup(u => u.ExecuteAsync("u-1", It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+                  .Callback(() => _calls.Add("squad"))
                   .ReturnsAsync(new GetSquadResult.Found(View()));
+        _lineup.Setup(l => l.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+               .Callback(() => _calls.Add("lineup"))
+               .ReturnsAsync((Lineup?)null);
         _config.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>()))
+               .Callback(() => _calls.Add("config"))
                .ReturnsAsync(new GameweekConfig(1, "t", 1, 1, 2, 1));
         // Version 2 proves the lineup-constraints version comes from the gameweek config.
         _constraints.Setup(c => c.GetAsync(2, It.IsAny<CancellationToken>()))
+                    .Callback(() => _calls.Add("constraints"))
                     .ReturnsAsync(new LineupConstraints(2, 2, new Dictionary<string, (int Min, int Max)>
                     {
                         ["CB"] = (1, 2), ["LB"] = (0, 1)
@@ -135,6 +141,18 @@ public class SetPlayAsUseCaseTests
     }
 
     [Fact]
+    public async Task SavedLineupWithMissingCaptainAndPositionViolation_RejectsOnlyPositionCodes()
+    {
+        _lineup.Setup(l => l.GetAsync(TeamId, It.IsAny<CancellationToken>())).ReturnsAsync(Saved(withCaptain: false));
+
+        var result = await Sut().ExecuteAsync("u-1", "p1", "LB", Ctx, CancellationToken.None);
+
+        var rejected = Assert.IsType<SetPlayAsResult.Rejected>(result);
+        Assert.NotEmpty(rejected.Violations);
+        Assert.All(rejected.Violations, v => Assert.StartsWith("position_", v.Code));
+    }
+
+    [Fact]
     public async Task SavedLineupWithoutCaptain_DoesNotBlockAValidPin()
     {
         _lineup.Setup(l => l.GetAsync(TeamId, It.IsAny<CancellationToken>())).ReturnsAsync(Saved(withCaptain: false));
@@ -160,10 +178,19 @@ public class SetPlayAsUseCaseTests
     }
 
     [Fact]
-    public async Task Guard_RunsBeforeTheWrite()
+    public async Task Guard_RunsBeforeEveryReadAndTheWrite()
     {
-        await Sut().ExecuteAsync("u-1", "p1", "LB", Ctx, CancellationToken.None);
+        _lineup.Setup(l => l.GetAsync(TeamId, It.IsAny<CancellationToken>()))
+               .Callback(() => _calls.Add("lineup"))
+               .ReturnsAsync(Saved(withCaptain: true));
 
-        Assert.Equal(new[] { "guard", "write" }, _calls);
+        await Sut().ExecuteAsync("u-1", "p1", "CB", Ctx, CancellationToken.None);
+
+        Assert.Equal("guard", _calls[0]);
+        Assert.Equal(1, _calls.Count(c => c == "guard"));
+        Assert.Contains("squad", _calls);
+        Assert.Contains("lineup", _calls);
+        Assert.Contains("constraints", _calls);
+        Assert.Equal("write", _calls[^2]); // last write precedes only the post-write squad re-read
     }
 }
