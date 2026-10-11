@@ -17,6 +17,7 @@ public class SellPlayerUseCaseTests
     private readonly Mock<IGameweekSnapshotGuard> _guard = new();
     private readonly Mock<ITransferLedgerRecorder> _ledger = new();
     private readonly Mock<ILineupRepository> _lineup = new();
+    private readonly Mock<ITransferCountRecorder> _counts = new();
     private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
 
     public SellPlayerUseCaseTests()
@@ -27,7 +28,7 @@ public class SellPlayerUseCaseTests
 
     private SellPlayerUseCase Sut() => new(
         _squadView.Object, _price.Object, _constraints.Object,
-        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object);
+        _teams.Object, _roster.Object, _budget.Object, () => Now, _guard.Object, _ledger.Object, _lineup.Object, _counts.Object);
 
     private static PlayerPricing PriceOf(string id, double amount) =>
         new(id, new PlayerPrice(amount, "ISK"), 5.0, 10, "fantasy-price-v1", 50.0);
@@ -199,5 +200,43 @@ public class SellPlayerUseCaseTests
         await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
 
         _lineup.Verify(l => l.ReplaceAsync(It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private static readonly Gameweek OpenRound4 =
+        new(4, "4", "9142", Now.AddDays(1), GameweekStatus.Open, []);
+
+    private void CurrentRoundIs(Gameweek? round) =>
+        _guard.Setup(g => g.EnsureSnapshotsAsync(It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new SnapshotGuardResult(round, false));
+
+    [Fact]
+    public async Task Sold_CountsASellForTheRoundItAppliesTo()
+    {
+        SellSucceeds(); CurrentRoundIs(OpenRound4);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.Verify(c => c.RecordAsync("u-1:fantasy", "4", TransferType.Sell, Now, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sold_WithNoOpenRound_CountsNothing()
+    {
+        SellSucceeds(); CurrentRoundIs(null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task NotInSquad_CountsNothing()
+    {
+        TeamExists(); CurrentRoundIs(OpenRound4);
+        _roster.Setup(r => r.GetAsync("u-1:fantasy", "p-1", It.IsAny<CancellationToken>())).ReturnsAsync((RosterEntry?)null);
+
+        await Sut().ExecuteAsync("u-1", "p-1", Ctx, CancellationToken.None);
+
+        _counts.VerifyNoOtherCalls();
     }
 }

@@ -33,12 +33,13 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
     private readonly IGameweekSnapshotGuard _guard;
     private readonly ITransferLedgerRecorder _ledger;
     private readonly ILineupRepository _lineup;
+    private readonly ITransferCountRecorder _counts;
 
     public BuyPlayerUseCase(
         IGetBuyDecisionUseCase decision, IGetSquadUseCase squadView, IPlayerRepository players,
         IGameTeamRepository teams, IGameRosterRepository roster, IGameBudgetRepository budget,
         Func<DateTimeOffset> now, IGameweekSnapshotGuard guard, ITransferLedgerRecorder ledger,
-        ILineupRepository lineup)
+        ILineupRepository lineup, ITransferCountRecorder counts)
     {
         _decision = decision;
         _squadView = squadView;
@@ -50,6 +51,7 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         _guard = guard;
         _ledger = ledger;
         _lineup = lineup;
+        _counts = counts;
     }
 
     public async Task<BuyPlayerResult> ExecuteAsync(
@@ -58,7 +60,7 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
         if (!await _teams.ExistsAsync(userId, GameFlavor.Fantasy, ct))
             return BuyPlayerResult.NoTeam.Instance;
 
-        await _guard.EnsureSnapshotsAsync(GameTeamId.For(userId, GameFlavor.Fantasy), null, ct);
+        var guard = await _guard.EnsureSnapshotsAsync(GameTeamId.For(userId, GameFlavor.Fantasy), null, ct);
 
         var player = await _players.GetByIdAsync(playerId, ct);
         if (player is null) return BuyPlayerResult.PlayerNotFound.Instance;
@@ -74,14 +76,15 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
                     ? BuyPlayerResult.Duplicate.Instance
                     : new BuyPlayerResult.Rejected(d.Decision.Violations);
             case BuyDecisionResult.Decided d:
-                return await CommitAsync(userId, playerId, player.Position, d.Decision, context, ct);
+                return await CommitAsync(userId, playerId, player.Position, d.Decision, context, guard.CurrentGameweek, ct);
             default:
                 return BuyPlayerResult.RuleSetNotFound.Instance;
         }
     }
 
     private async Task<BuyPlayerResult> CommitAsync(
-        string userId, string playerId, string? position, BuyDecision decision, BuyPlayerContext context, CancellationToken ct)
+        string userId, string playerId, string? position, BuyDecision decision, BuyPlayerContext context,
+        Gameweek? appliesTo, CancellationToken ct)
     {
         var teamId = GameTeamId.For(userId, GameFlavor.Fantasy);
         var cost = decision.Cost.Amount;
@@ -106,6 +109,10 @@ public sealed class BuyPlayerUseCase : IBuyPlayerUseCase
 
         await _ledger.RecordAsync(
             new TransferEntry(userId, playerId, GameFlavor.Fantasy, TransferType.Buy, cost, context.Season, now), ct);
+
+        // Counts toward the free-transfer allowance of the round this buy applies to (#168).
+        if (appliesTo is not null)
+            await _counts.RecordAsync(teamId, appliesTo.RoundLabel, TransferType.Buy, now, ct);
 
         var view = await _squadView.ExecuteAsync(userId, context.Season, context.TournamentId, context.RuleSetVersion, ct);
         return view is GetSquadResult.Found f

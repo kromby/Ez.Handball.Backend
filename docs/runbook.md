@@ -115,3 +115,19 @@ The API prices players with `fantasy-v3` as soon as it deploys, and `/api/player
    ```
    Rounds a late team isn't settled for (Backend#158) keep their old scores.
 
+
+## Seed the transfer rules (Backend#168)
+
+Buy/sell now count transfers per round in `GameTransferCounts` (PK teamId, RK roundLabel). Counting
+starts as soon as this deploys, but nothing reads the allowance until the transfer config exists,
+so seed it once the ingestion app has deployed:
+
+```bash
+curl -X POST "https://ez-handball-ingestion.azurewebsites.net/api/seed/transfer-config?code=<function key>"
+```
+
+It writes the `fantasy-transfers-v1` Config group: `freeTransfersPerRound=1`,
+`maxBankedFreeTransfers=1`, `pointsPerExtraTransfer=4`, `startsFromRound=7`. Check
+`startsFromRound` against `GET /api/gameweeks/current` first: it should be the first round that is
+still `Open` when the rules go live. Rounds before it are unlimited and bank nothing. If the seeded
+value is wrong, edit that single `Config` row rather than re-running the seed. Idempotent.
