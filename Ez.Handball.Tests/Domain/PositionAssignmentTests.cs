@@ -16,10 +16,14 @@ public class PositionAssignmentTests
     [InlineData("CB", "  ", new[] { "CB" })]
     [InlineData("CB", null, new[] { "CB" })]
     [InlineData("CB", "CB", new[] { "CB" })]
-    [InlineData(null, "LB", new string[0])]
-    [InlineData("", "LB", new string[0])]
     public void EligibleFor_PrimaryFirst_DropsEmptyOrDuplicateSecondary(string? pos, string? sec, string[] expected)
         => Assert.Equal(expected, PositionAssignment.EligibleFor(pos, sec));
+
+    [Theory]
+    [InlineData(null, "LB")]
+    [InlineData("", "LB")]
+    public void EligibleFor_UnknownPrimary_IsEmpty(string? pos, string? sec)
+        => Assert.Empty(PositionAssignment.EligibleFor(pos, sec));
 
     [Fact]
     public void SinglePositionPlayers_WithinMax_Solves()

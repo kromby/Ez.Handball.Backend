@@ -54,15 +54,18 @@ public sealed class GameweekScoringService : IGameweekScoringService
         // Position each original starter was solved into; a starter's absence only needs its own
         // assigned position refilled, not every position it is merely eligible for.
         var assigned = PositionAssignment.TrySolve(
-            starters.Select(s => new PositionCandidate(
-                s.PlayerId,
-                eligibleById.TryGetValue(s.PlayerId, out var e) ? e : Array.Empty<string>())).ToList(),
+            starters.Select(s => new PositionCandidate(s.PlayerId, EligibleOf(s.PlayerId))).ToList(),
             constraints.PositionStart);
 
+        IReadOnlyList<string> EligibleOf(string playerId)
+            => eligibleById.TryGetValue(playerId, out var eligible) ? eligible : Array.Empty<string>();
+
         IReadOnlyList<string> MinPositions(string starterId)
-            => assigned is not null && assigned.TryGetValue(starterId, out var pos) && pos is not null
-                ? new[] { pos }
-                : eligibleById.TryGetValue(starterId, out var e) ? e : Array.Empty<string>();
+        {
+            if (assigned is not null && assigned.TryGetValue(starterId, out var pos) && pos is not null)
+                return new[] { pos };
+            return EligibleOf(starterId);
+        }
 
         // Build an ordered list of effective (playing) ids decided before the current slot, used
         // to check position validity for sub candidates.
