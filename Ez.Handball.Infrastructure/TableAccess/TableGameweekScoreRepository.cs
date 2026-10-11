@@ -28,7 +28,8 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
             RowKey = score.RoundLabel,
             Points = score.Points,
             CaptainPlayerId = score.CaptainPlayerId,
-            BreakdownJson = JsonSerializer.Serialize(score.Breakdown)
+            BreakdownJson = JsonSerializer.Serialize(score.Breakdown),
+            TransferHit = score.TransferHit
         }, TableUpdateMode.Replace, ct);
     }
 
@@ -41,7 +42,7 @@ internal sealed class TableGameweekScoreRepository : IGameweekScoreRepository
             var breakdown = string.IsNullOrWhiteSpace(e.BreakdownJson)
                 ? Array.Empty<GameweekPlayerScore>()
                 : JsonSerializer.Deserialize<GameweekPlayerScore[]>(e.BreakdownJson) ?? Array.Empty<GameweekPlayerScore>();
-            result.Add(new GameweekScore(e.PartitionKey, e.RowKey, e.Points, e.CaptainPlayerId, breakdown));
+            result.Add(new GameweekScore(e.PartitionKey, e.RowKey, e.Points, e.CaptainPlayerId, breakdown, e.TransferHit));
         }
         return result;
     }

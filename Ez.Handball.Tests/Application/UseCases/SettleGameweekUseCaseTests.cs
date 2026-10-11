@@ -19,6 +19,8 @@ public class SettleGameweekUseCaseTests
     private readonly Mock<IScoringRuleSetRepository> _ruleSets = new();
     private readonly Mock<ILineupConstraintsRepository> _constraints = new();
     private readonly Mock<IGameTeamRepository> _teams = new();
+    private readonly Mock<ITransferConfigRepository> _transferConfig = new();
+    private readonly Mock<ITransferCountRepository> _transferCounts = new();
 
     // The use case enforces teamId == GameTeamId.For(userId, Fantasy), so the test team id must
     // be the real composite for "user".
@@ -33,7 +35,8 @@ public class SettleGameweekUseCaseTests
     private SettleGameweekUseCase CreateSut() => new(
         _config.Object, _calendar.Object, _snapshots.Object, _liveLineup.Object,
         _scores.Object, _squad.Object, _stats.Object, _ruleSets.Object, _constraints.Object,
-        _teams.Object, new GameweekScoringService(new FantasyPlayerRatingFunction()));
+        _teams.Object, new GameweekScoringService(new FantasyPlayerRatingFunction()),
+        _transferConfig.Object, _transferCounts.Object);
 
     private static Gameweek GW(string round, GameweekStatus status, params GameweekMatch[] m) =>
         new(1, round, "8444", DateTimeOffset.UnixEpoch, status, m);
@@ -230,5 +233,103 @@ public class SettleGameweekUseCaseTests
         var result = await CreateSut().ExecuteAsync("user", Team, "1", null, default);
 
         Assert.IsType<SettleGameweekResult.TeamCreatedAfterDeadline>(result);
+    }
+
+    // --- Transfer point hits (#171) ---
+
+    private static readonly TransferConfig Transfers = new(1, FreeTransfersPerRound: 1, MaxBankedFreeTransfers: 1,
+        PointsPerExtraTransfer: 4, StartsFromRound: 1);
+
+    // Round 1 is always exempt (everyone builds a squad), so the hit is tested on round 2. The team
+    // existed well before round 1's deadline. Round 2 scores 9 gross (gk1 1 + fp1 4 × 2 captain).
+    private void SetupRoundTwo(IReadOnlyList<RoundTransferCount> counts, TransferConfig? config)
+    {
+        SetupCommon(GameweekStatus.Settled, snapshotExists: true);
+        SetupTeamCreatedAt(DateTimeOffset.UnixEpoch.AddDays(-30));
+        _calendar.Setup(c => c.GetCalendarAsync(Config, It.IsAny<CancellationToken>())).ReturnsAsync(new[]
+        {
+            new Gameweek(1, "1", "8444", DateTimeOffset.UnixEpoch.AddDays(-7), GameweekStatus.Settled, new[] { Match("m0", true) }),
+            new Gameweek(2, "2", "8444", DateTimeOffset.UnixEpoch, GameweekStatus.Settled, new[] { Match("m1", true) }),
+        });
+        _snapshots.Setup(s => s.GetSnapshotAsync(Team, "2", It.IsAny<CancellationToken>())).ReturnsAsync(Lineup());
+        _transferConfig.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(config);
+        _transferCounts.Setup(c => c.ListAsync(Team, It.IsAny<CancellationToken>())).ReturnsAsync(counts);
+    }
+
+    [Fact]
+    public async Task ExtraTransfers_AreDeductedFromTheRoundScore()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 2, Sells: 2)], Transfers);
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(
+            await CreateSut().ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(4, settled.Score.TransferHit);
+        Assert.Equal(9 - 4, settled.Score.Points);
+        _scores.Verify(s => s.SaveAsync(
+            It.Is<GameweekScore>(g => g.RoundLabel == "2" && g.TransferHit == 4 && g.Points == 5),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TransfersWithinTheFreeAllowance_CostNothing()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 1, Sells: 1)], Transfers);
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(
+            await CreateSut().ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(0, settled.Score.TransferHit);
+        Assert.Equal(9, settled.Score.Points);
+    }
+
+    [Fact]
+    public async Task WithoutTransferConfig_NoHitIsApplied()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 5, Sells: 5)], config: null);
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(
+            await CreateSut().ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(0, settled.Score.TransferHit);
+        Assert.Equal(9, settled.Score.Points);
+    }
+
+    [Fact]
+    public async Task SquadBuildingRound_IsNotCharged()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 7, Sells: 0)], Transfers);
+        // Created after round 1's deadline, so round 2 is the team's first round.
+        SetupTeamCreatedAt(DateTimeOffset.UnixEpoch.AddDays(-3));
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(
+            await CreateSut().ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(0, settled.Score.TransferHit);
+    }
+
+    [Fact]
+    public async Task AHitLargerThanTheRoundScore_LeavesItNegative()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 4, Sells: 4)], Transfers);
+
+        var settled = Assert.IsType<SettleGameweekResult.Settled>(
+            await CreateSut().ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(12, settled.Score.TransferHit);
+        Assert.Equal(9 - 12, settled.Score.Points);
+    }
+
+    [Fact]
+    public async Task ReSettling_GivesTheSameNetScore()
+    {
+        SetupRoundTwo([new RoundTransferCount("2", Buys: 2, Sells: 2)], Transfers);
+        var sut = CreateSut();
+
+        var first = Assert.IsType<SettleGameweekResult.Settled>(await sut.ExecuteAsync("user", Team, "2", null, default));
+        var second = Assert.IsType<SettleGameweekResult.Settled>(await sut.ExecuteAsync("user", Team, "2", null, default));
+
+        Assert.Equal(first.Score.Points, second.Score.Points);
+        Assert.Equal(first.Score.TransferHit, second.Score.TransferHit);
     }
 }
