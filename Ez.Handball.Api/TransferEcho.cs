@@ -18,10 +18,9 @@ public sealed class TransferEcho
 
     public async Task<object?> BuildAsync(string userId, CancellationToken ct)
     {
-        GetTransferAllowanceResult result;
         try
         {
-            result = await _allowance.ExecuteAsync(userId, null, ct);
+            return Body(await _allowance.ExecuteAsync(userId, null, ct));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -31,8 +30,10 @@ public sealed class TransferEcho
             _logger.LogError(ex, "Failed to read the transfer allowance for user {UserId}", userId);
             return null;
         }
+    }
 
-        return result is GetTransferAllowanceResult.Found { Allowance: var a }
+    private static object? Body(GetTransferAllowanceResult result)
+        => result is GetTransferAllowanceResult.Found { Allowance: var a }
             ? new
             {
                 roundNumber = a.RoundNumber,
@@ -44,5 +45,4 @@ public sealed class TransferEcho
                 exempt = a.Exempt
             }
             : null;
-    }
 }
