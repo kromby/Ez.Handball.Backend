@@ -89,14 +89,69 @@ public class GameweekSnapshotGuardTests
     [Fact]
     public async Task NoLiveLineup_SkipsSnapshot_StillReportsCurrent()
     {
+        // A resolvable team with an empty squad and no saved lineup: genuinely nothing to freeze.
+        const string team = "u1:fantasy";
         Setup(GW(1, "1", _now.AddDays(-1), GameweekStatus.Settled), GW(2, "2", _now.AddDays(7), GameweekStatus.Open));
-        _snapshots.Setup(s => s.GetSnapshotAsync("team", "1", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
-        _liveLineup.Setup(l => l.GetAsync("team", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _snapshots.Setup(s => s.GetSnapshotAsync(team, "1", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _liveLineup.Setup(l => l.GetAsync(team, It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _squad.Setup(s => s.ExecuteAsync("u1", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSquadResult.Found(new SquadView(
+                Array.Empty<SquadPlayer>(), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"), new PlayerPrice(0, "ISK"))));
 
-        var result = await CreateSut().EnsureSnapshotsAsync("team", null, default);
+        var result = await CreateSut().EnsureSnapshotsAsync(team, null, default);
 
         _snapshots.Verify(s => s.SaveSnapshotAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Lineup>(), It.IsAny<CancellationToken>()), Times.Never);
         Assert.Equal(2, result.CurrentGameweek!.Number);
+    }
+
+    // Without constraints or a squad no pins can be stamped, but a saved lineup must still be frozen
+    // as-is (scoring then uses natural positions) rather than leaving the round unsnapshotted.
+    [Fact]
+    public async Task SavedLineup_ConstraintsMissing_FreezesSavedLineupWithoutPins()
+    {
+        const string team = "u1:fantasy";
+        Setup(GW(1, "1", _now.AddDays(-1), GameweekStatus.Settled), GW(2, "2", _now.AddDays(7), GameweekStatus.Open));
+        _snapshots.Setup(s => s.GetSnapshotAsync(team, "1", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _liveLineup.Setup(l => l.GetAsync(team, It.IsAny<CancellationToken>())).ReturnsAsync(Live());
+        _constraints.Setup(c => c.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((LineupConstraints?)null);
+
+        await CreateSut().EnsureSnapshotsAsync(team, null, default);
+
+        _snapshots.Verify(s => s.SaveSnapshotAsync(team, "1",
+            It.Is<Lineup>(l => l.Slots.Count == 1 && l.Slots[0].PlayerId == "p1" && l.Slots[0].Role == LineupRole.Starter
+                               && l.Slots[0].PlayAs == null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SavedLineup_SquadUnavailable_FreezesSavedLineupWithoutPins()
+    {
+        const string team = "u1:fantasy";
+        Setup(GW(1, "1", _now.AddDays(-1), GameweekStatus.Settled), GW(2, "2", _now.AddDays(7), GameweekStatus.Open));
+        _snapshots.Setup(s => s.GetSnapshotAsync(team, "1", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+        _liveLineup.Setup(l => l.GetAsync(team, It.IsAny<CancellationToken>())).ReturnsAsync(Live());
+        _squad.Setup(s => s.ExecuteAsync("u1", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetSquadResult.RuleSetNotFound.Instance);
+
+        await CreateSut().EnsureSnapshotsAsync(team, null, default);
+
+        _snapshots.Verify(s => s.SaveSnapshotAsync(team, "1",
+            It.Is<Lineup>(l => l.Slots.Single().PlayerId == "p1" && l.Slots.Single().PlayAs == null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SavedLineup_NonFantasyTeamId_FreezesSavedLineup()
+    {
+        // No userId can be derived, so there is no squad to read — the saved lineup is still frozen.
+        Setup(GW(1, "1", _now.AddDays(-1), GameweekStatus.Settled), GW(2, "2", _now.AddDays(7), GameweekStatus.Open));
+        _snapshots.Setup(s => s.GetSnapshotAsync("team", "1", It.IsAny<CancellationToken>())).ReturnsAsync((Lineup?)null);
+
+        await CreateSut().EnsureSnapshotsAsync("team", null, default);
+
+        _snapshots.Verify(s => s.SaveSnapshotAsync("team", "1",
+            It.Is<Lineup>(l => l.Slots.Single().PlayerId == "p1" && l.Slots.Single().PlayAs == null),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

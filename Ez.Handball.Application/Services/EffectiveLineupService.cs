@@ -8,6 +8,10 @@ public interface IEffectiveLineupService
     // The lineup the team plays right now: the saved lineup, or the default one (#142), with each
     // slot stamped with the player's valid position pin (#166). Null when there is nothing to play.
     Task<Lineup?> GetAsync(string teamId, IReadOnlyList<SquadPlayer> squad, LineupConstraints constraints, CancellationToken ct);
+
+    // The saved lineup as-is, with no pins (they need the squad). For when the squad or constraints
+    // can't be resolved; null when nothing is saved.
+    Task<Lineup?> GetSavedAsync(string teamId, CancellationToken ct);
 }
 
 public sealed class EffectiveLineupService : IEffectiveLineupService
@@ -27,5 +31,12 @@ public sealed class EffectiveLineupService : IEffectiveLineupService
         return new Lineup(lineup.Slots
             .Select(s => s with { PlayAs = pins.TryGetValue(s.PlayerId, out var pin) ? pin : null })
             .ToList());
+    }
+
+    public async Task<Lineup?> GetSavedAsync(string teamId, CancellationToken ct)
+    {
+        var lineup = await _saved.GetAsync(teamId, ct);
+        if (lineup is null || lineup.Slots.Count == 0) return null;
+        return new Lineup(lineup.Slots.Select(s => s with { PlayAs = null }).ToList());
     }
 }

@@ -100,15 +100,18 @@ public sealed class GameweekSnapshotGuard : IGameweekSnapshotGuard
 
     // The saved lineup, or — for a manager who never saved one — the default lineup from the squad
     // as it stands now, i.e. before the mutation this guard runs ahead of (#142), with pins stamped (#166).
+    // Without the squad or constraints neither pins nor a default can be built, but a saved lineup is
+    // still frozen as-is (scoring then uses natural positions), as it was before #166.
     private async Task<Lineup?> EffectiveLineupAsync(string teamId, GameweekConfig config, CancellationToken ct)
     {
         var userId = GameTeamId.UserIdOf(teamId, GameFlavor.Fantasy);
-        if (userId is null) return null;
+        if (userId is null) return await _effective.GetSavedAsync(teamId, ct);
 
         var constraints = await _constraints.GetAsync(config.LineupConstraintsVersion, ct);
-        if (constraints is null) return null;
+        if (constraints is null) return await _effective.GetSavedAsync(teamId, ct);
 
-        if (await _squad.ExecuteAsync(userId, null, null, null, ct) is not GetSquadResult.Found found) return null;
+        if (await _squad.ExecuteAsync(userId, null, null, null, ct) is not GetSquadResult.Found found)
+            return await _effective.GetSavedAsync(teamId, ct);
 
         return await _effective.GetAsync(teamId, found.View.Players, constraints, ct);
     }
