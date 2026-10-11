@@ -51,7 +51,7 @@ public class GetSquadUseCaseTests
     private void SetupDual(string id, string primary, string? secondary, double rating)
     {
         _players.Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(AnyPlayer(id, primary) with { PositionSecondary = secondary });
+                .ReturnsAsync(AnyPlayer(id, primary) with { PositionSecondary = secondary ?? "" });
         _price.Setup(s => s.GetPriceAsync(id, 1, null, null, It.IsAny<CancellationToken>()))
               .ReturnsAsync(PriceOf(id, 1) with { Rating = rating });
     }
@@ -63,15 +63,16 @@ public class GetSquadUseCaseTests
     [Fact]
     public async Task Found_PinnedPlayer_AssignedToPin()
     {
-        SetupSquad(0, new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK"), PlayAs: "CB"));
+        // CB has room, so the unpinned solve would keep this CB/LB player at its primary CB; the LB pin must win.
+        SetupSquad(0, new SquadSlot("p-1", "CB", new PlayerPrice(1, "ISK"), PlayAs: "LB"));
         SetupDual("p-1", "CB", "LB", 1);
         SetupCaps(2, 1);
 
         var p = Assert.IsType<GetSquadResult.Found>(
             await CreateSut().ExecuteAsync("u-1", null, null, null, CancellationToken.None)).View.Players.Single();
 
-        Assert.Equal("CB", p.PlayAs);
-        Assert.Equal("CB", p.AssignedPosition);
+        Assert.Equal("LB", p.PlayAs);
+        Assert.Equal("LB", p.AssignedPosition);
     }
 
     [Fact]
