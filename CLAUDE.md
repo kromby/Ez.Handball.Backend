@@ -280,7 +280,7 @@ gameweek (`GameweekLocks`), a frozen per-(team, gameweek) lineup snapshot
   players to one eligible position each fits the limits — nobody counts twice. A squad already
   over a cap (positions changed after purchase) falls back to the primary-only count so unrelated
   buys still go through. Squad and lineup views return `positionSecondary` and the solved
-  `assignedPosition`; the pool's `position` filter matches either position. Lineup snapshots stay frozen, but bench auto-subs are recomputed from the live squad/eligibility on every settle, so a deploy (or a later HBStatz position change) can re-score rounds the auto-settler re-settles within `Settlement:RecentWindow`.
+  `assignedPosition`; the pool's `position` filter matches either position. Lineup snapshots stay frozen, but bench auto-subs are recomputed from the live squad/eligibility on every settle, so a deploy (or a later HBStatz position change) can re-score rounds the auto-settler re-settles within `Settlement:RecentWindow`. HBStatz data may correct positions but never clears one (`PositionMerge`, Backend#167): when the observations show no secondary, the existing secondary — or the old primary if the primary moved — is kept, so an admin-set secondary (`POST /api/admin/players/{id}/position`) survives syncs and backfills. Club transfers carry both positions to the new `Players` row.
 - **Position pins (Backend#166):** a manager can pin an owned dual-position player to their
   primary or secondary (`PUT`/`DELETE /api/users/me/squad/players/{playerId}/position`). The pin
   is `GameRosters.PlayAs` (null = auto-solve, cleared on re-buy); `SquadPlayer.EligiblePositions`

@@ -104,12 +104,22 @@ public class PlayerParser : IPlayerParser
                     ? existingPlayer.Position
                     : player.Position;
 
+                // Carried across a transfer so the new row doesn't lose it (#167). Set only when
+                // moving partitions with a non-blank value: a same-row write leaves it null so
+                // Merge keeps whatever is stored.
+                var carriedSecondary = existingPlayer is not null
+                    && existingPlayer.PartitionKey != teamId
+                    && !string.IsNullOrWhiteSpace(existingPlayer.PositionSecondary)
+                        ? existingPlayer.PositionSecondary
+                        : null;
+
                 await _tableWriter.UpsertAsync("Players", new PlayerEntity
                 {
                     PartitionKey = teamId,
                     RowKey = playerId,
                     Name = player.Name,
                     Position = position,
+                    PositionSecondary = carriedSecondary,
                     JerseyNumber = player.PlayerJerseyNumber,
                     DateOfBirth = ParseDateOfBirth(player.Identifier),
                     Gender = derivedGender,
