@@ -45,7 +45,7 @@ public static class SquadEndpoints
         });
 
         group.MapPost("/players", async (
-            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
+            BuySquadPlayerRequest req, HttpContext http, IBuyPlayerUseCase uc, GameweekEcho gameweekEcho,
             TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
@@ -59,7 +59,7 @@ public static class SquadEndpoints
                 req.PlayerId, new BuyPlayerContext(req.Season, req.TournamentId, req.RuleSetVersion), ct);
             if (result is BuyPlayerResult.Committed c)
             {
-                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                var gameweek = await gameweekEcho.BuildAsync(userId, ct);
                 var transfers = await transferEcho.BuildAsync(userId, ct);
                 return Results.Json(new { squad = SquadBody(c.View), gameweek, transfers }, statusCode: StatusCodes.Status201Created);
             }
@@ -76,7 +76,7 @@ public static class SquadEndpoints
 
         group.MapDelete("/players/{playerId}", async (
             string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
-            HttpContext http, ISellPlayerUseCase uc, IGetCurrentGameweekUseCase gw,
+            HttpContext http, ISellPlayerUseCase uc, GameweekEcho gameweekEcho,
             TransferEcho transferEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
@@ -90,7 +90,7 @@ public static class SquadEndpoints
                 playerId, new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
             if (result is SellPlayerResult.Sold s)
             {
-                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                var gameweek = await gameweekEcho.BuildAsync(userId, ct);
                 var transfers = await transferEcho.BuildAsync(userId, ct);
                 return Results.Ok(new { squad = SquadBody(s.View), gameweek, transfers });
             }
@@ -105,7 +105,7 @@ public static class SquadEndpoints
 
         group.MapPut("/players/{playerId}/position", async (
             string playerId, SetPlayerPositionBody? body, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
-            HttpContext http, ISetPlayAsUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+            HttpContext http, ISetPlayAsUseCase uc, GameweekEcho gameweekEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -117,12 +117,12 @@ public static class SquadEndpoints
 
             var result = await uc.ExecuteAsync(userId, playerId, body.Position,
                 new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
-            return await PlayAsResponseAsync(result, gw, ct);
+            return await PlayAsResponseAsync(result, userId, gameweekEcho, ct);
         });
 
         group.MapDelete("/players/{playerId}/position", async (
             string playerId, string? flavor, string? season, string? tournamentId, int? ruleSetVersion,
-            HttpContext http, ISetPlayAsUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+            HttpContext http, ISetPlayAsUseCase uc, GameweekEcho gameweekEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
             if (string.IsNullOrWhiteSpace(playerId)) return Results.BadRequest(new { error = "invalid_player_id" });
@@ -133,15 +133,15 @@ public static class SquadEndpoints
 
             var result = await uc.ExecuteAsync(userId, playerId, null,
                 new BuyPlayerContext(season, tournamentId, ruleSetVersion), ct);
-            return await PlayAsResponseAsync(result, gw, ct);
+            return await PlayAsResponseAsync(result, userId, gameweekEcho, ct);
         });
     }
 
-    private static async Task<IResult> PlayAsResponseAsync(SetPlayAsResult result, IGetCurrentGameweekUseCase gw, CancellationToken ct)
+    private static async Task<IResult> PlayAsResponseAsync(SetPlayAsResult result, string userId, GameweekEcho gameweekEcho, CancellationToken ct)
     {
         if (result is SetPlayAsResult.Updated u)
         {
-            var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+            var gameweek = await gameweekEcho.BuildAsync(userId, ct);
             return Results.Ok(new { squad = SquadBody(u.View), gameweek });
         }
         return result switch

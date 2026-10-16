@@ -180,6 +180,7 @@ builder.Services.AddScoped<ITransferLedgerRecorder, TransferLedgerRecorder>();
 builder.Services.AddScoped<ITransferCountRecorder, TransferCountRecorder>();
 builder.Services.AddScoped<IGetTransferAllowanceUseCase, GetTransferAllowanceUseCase>();
 builder.Services.AddScoped<TransferEcho>();
+builder.Services.AddScoped<GameweekEcho>();
 builder.Services.AddScoped<IGetTransferTrendsUseCase, GetTransferTrendsUseCase>();
 builder.Services.AddScoped<ITeamProvisioningService, TeamProvisioningService>();
 builder.Services.AddScoped<IGetSquadConstraintsUseCase, GetSquadConstraintsUseCase>();

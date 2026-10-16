@@ -24,6 +24,7 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
         public Mock<ISellPlayerUseCase> Sell { get; } = new();
         public Mock<ISetPlayAsUseCase> SetPlayAs { get; } = new();
         public Mock<IGetTransferAllowanceUseCase> Allowance { get; } = new();
+        public Mock<IGetCurrentGameweekUseCase> Gameweek { get; } = new();
 
         static Factory() => Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
 
@@ -48,6 +49,8 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
                 services.AddSingleton(SetPlayAs.Object);
                 services.Remove(services.Single(d => d.ServiceType == typeof(IGetTransferAllowanceUseCase)));
                 services.AddSingleton(Allowance.Object);
+                services.Remove(services.Single(d => d.ServiceType == typeof(IGetCurrentGameweekUseCase)));
+                services.AddSingleton(Gameweek.Object);
             });
             return base.CreateHost(builder);
         }
@@ -60,6 +63,9 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
     public SquadMutationEndpointTests(Factory factory)
     {
         _factory = factory; _factory.Buy.Reset(); _factory.Sell.Reset(); _factory.SetPlayAs.Reset(); _factory.Allowance.Reset();
+        _factory.Gameweek.Reset();
+        _factory.Gameweek.Setup(g => g.ExecuteAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GetCurrentGameweekResult.ConfigMissing.Instance);
         _client = factory.CreateClient();
     }
 
@@ -492,5 +498,46 @@ public class SquadMutationEndpointTests : IClassFixture<SquadMutationEndpointTes
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         Assert.Equal(JsonValueKind.Null, (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("transfers").ValueKind);
+    }
+
+    private void GameweekLookupThrows() =>
+        _factory.Gameweek.Setup(g => g.ExecuteAsync(null, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Matches table unavailable"));
+
+    // The gameweek echo is read after the transfer commits, so a failure there must not turn a
+    // committed buy/sell into a 500 (a retry would then hit duplicate_player / not_in_squad).
+    private static void AssertGameweekUnknown(JsonElement body)
+    {
+        var gameweek = body.GetProperty("gameweek");
+        Assert.Equal(JsonValueKind.Null, gameweek.GetProperty("appliedToGameweek").ValueKind);
+        Assert.Equal(JsonValueKind.Null, gameweek.GetProperty("currentGameweekLocked").ValueKind);
+    }
+
+    [Fact]
+    public async Task Buy_Committed_WhenGameweekLookupFails_StillReturns201WithGameweekUnknown()
+    {
+        _factory.Buy.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BuyPlayerResult.Committed(View()));
+        GameweekLookupThrows();
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Post, "/api/users/me/squad/players", token, new { playerId = "p-1", flavor = "fantasy" }));
+
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+        AssertGameweekUnknown(await resp.Content.ReadFromJsonAsync<JsonElement>());
+    }
+
+    [Fact]
+    public async Task Sell_Sold_WhenGameweekLookupFails_StillReturns200WithGameweekUnknown()
+    {
+        _factory.Sell.Setup(u => u.ExecuteAsync(It.IsAny<string>(), "p-1", It.IsAny<BuyPlayerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SellPlayerResult.Sold(View()));
+        GameweekLookupThrows();
+        var token = await TokenAsync();
+
+        var resp = await _client.SendAsync(Req(HttpMethod.Delete, "/api/users/me/squad/players/p-1?flavor=fantasy", token));
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        AssertGameweekUnknown(await resp.Content.ReadFromJsonAsync<JsonElement>());
     }
 }
