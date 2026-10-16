@@ -43,7 +43,7 @@ public static class LineupEndpoints
         });
 
         group.MapPut("", async (
-            SetLineupRequest req, HttpContext http, ISetLineupUseCase uc, IGetCurrentGameweekUseCase gw, CancellationToken ct) =>
+            SetLineupRequest req, HttpContext http, ISetLineupUseCase uc, GameweekEcho gameweekEcho, CancellationToken ct) =>
         {
             if (!IsFantasy(req.Flavor)) return Results.BadRequest(new { error = "invalid_flavor" });
 
@@ -57,7 +57,7 @@ public static class LineupEndpoints
             var result = await uc.ExecuteAsync(userId, lineup, req.Season, req.TournamentId, req.RuleSetVersion, ct);
             if (result is SetLineupResult.Committed c)
             {
-                var gameweek = await GameweekEcho.BuildAsync(gw, ct);
+                var gameweek = await gameweekEcho.BuildAsync(userId, ct);
                 return Results.Ok(new { lineup = LineupBody(c.View), gameweek });
             }
             return result switch
