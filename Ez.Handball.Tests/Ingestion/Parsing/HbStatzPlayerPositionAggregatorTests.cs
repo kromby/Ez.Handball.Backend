@@ -136,4 +136,16 @@ public class HbStatzPlayerPositionAggregatorTests
             It.Is<PlayerEntity>(e => e.Position == "LB" && e.PositionSecondary == "CB"),
             It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
     }
+
+    [Fact]
+    public async Task RecordAndRecomputeAsync_StoredPlaceholderPosition_IsNotPromotedToSecondary()
+    {
+        SetupHistory("CB", 2, new PlayerEntity { PartitionKey = "385-karlar", RowKey = "hsi-1", Position = "Leikmaður", PositionSecondary = "" });
+
+        await CreateSut().RecordAndRecomputeAsync("hsi-1", "m2", Day(2), "CB");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.Position == "CB" && e.PositionSecondary == ""),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
+    }
 }

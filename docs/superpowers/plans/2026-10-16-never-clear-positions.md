@@ -20,6 +20,9 @@ newSecondary = computedSecondary, if non-blank and != newPrimary  // data correc
              else ""
 ```
 
+Candidates are filtered to known position codes (`PositionVocabulary.Codes`): hsi.is's "Leikmaður"
+placeholder is never kept as a secondary, because the solver treats unknown positions as unconstrained.
+
 Examples:
 
 | Existing (primary/secondary) | Computed (primary/secondary) | Result |

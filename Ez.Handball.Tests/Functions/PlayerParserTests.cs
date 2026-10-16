@@ -293,8 +293,9 @@ public class PlayerParserTests
     {
         // A player who has transferred clubs since we last saw them still has their old row
         // sitting under the old club's partition (Table Storage can't rename a PartitionKey in
-        // place). The reparse for their new club should inherit the known position instead of
-        // falling back to hsi.is's unreliable POSITION field, and clean up the stale old row.
+        // place). The reparse for their new club should inherit the known position and its
+        // secondary (#167) instead of falling back to hsi.is's unreliable POSITION field, and
+        // clean up the stale old row.
         const string matchId = "5001";
         const string clubId = "385";
         const string teamId = "385-karlar";
@@ -328,6 +329,78 @@ public class PlayerParserTests
         _tableWriter
             .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
             .ReturnsAsync(new List<PlayerEntity> { staleRow });
+
+        var player = new PlayerStatDto
+        {
+            PlayerId = "42",
+            Name = "Jón Jónsson",
+            Position = "Leikmaður", // hsi.is's unreliable placeholder for the new club
+            Player = "1",
+            Goals = "1"
+        };
+
+        var blobContent = BuildPlayerStatsJson(new[] { player });
+
+        // Act
+        await CreateSut().ParseAsync(blobContent, matchId, clubId);
+
+        // Assert — the secondary position travels with the primary so the transfer doesn't lose it (#167)
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e =>
+                e.PartitionKey == teamId &&
+                e.RowKey == "42" &&
+                e.Position == "CB" &&
+                e.PositionSecondary == "LB"),
+            default, Azure.Data.Tables.TableUpdateMode.Merge), Times.Once);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ExistingPlayerHasRowUnderDifferentClub_CarriesSecondaryFromAnotherRow_WhenPositionSourceHasNone()
+    {
+        // With two stale rows the one supplying Position may have no secondary while another
+        // holds it; the other row is deleted right after, so the secondary must be carried (#167).
+        const string matchId = "5001";
+        const string clubId = "385";
+        const string teamId = "385-karlar";
+        const string oldTeamId = "453-karlar";
+
+        var match = BuildMatch(matchId: matchId, homeTeamId: teamId, awayTeamId: "390-karlar");
+        _tableWriter
+            .Setup(t => t.QueryAsync<MatchEntity>("Matches", $"RowKey eq '{matchId}'", default))
+            .ReturnsAsync(new List<MatchEntity> { match });
+
+        _tableWriter
+            .Setup(t => t.QueryAsync<TournamentEntity>("Tournaments", "RowKey eq '8444'", default))
+            .ReturnsAsync(new List<TournamentEntity>
+            {
+                new() { PartitionKey = "2025-26", RowKey = "8444", Name = "Olís deild karla", Gender = "karlar" }
+            });
+
+        _tableWriter
+            .Setup(t => t.GetAsync<ClubEntity>("Clubs", "club", clubId, default))
+            .ReturnsAsync(new ClubEntity { PartitionKey = "club", RowKey = clubId, Name = "Stjarnan" });
+
+        var staleRow = new PlayerEntity
+        {
+            PartitionKey = oldTeamId,
+            RowKey = "42",
+            Name = "Jón Jónsson",
+            ClubName = "Valur",
+            Position = "CB",
+            PositionSecondary = ""
+        };
+        var otherStaleRow = new PlayerEntity
+        {
+            PartitionKey = "390-karlar",
+            RowKey = "42",
+            Name = "Jón Jónsson",
+            ClubName = "Fram",
+            Position = "",
+            PositionSecondary = "LB"
+        };
+        _tableWriter
+            .Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq '42'", default))
+            .ReturnsAsync(new List<PlayerEntity> { staleRow, otherStaleRow });
 
         var player = new PlayerStatDto
         {

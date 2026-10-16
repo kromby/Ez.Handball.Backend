@@ -5,8 +5,9 @@ using Ez.Handball.Shared.Entities;
 namespace Ez.Handball.Ingestion.Parsing;
 
 // Records one (player, match) position observation and immediately recomputes and merges (without
-// clearing, #167) that player's Position/PositionSecondary from their full observation history. Called once per reconciled,
-// position-mapped HBStatz player line by TriggerHbStatzSyncFunction's live sync path.
+// clearing, #167) that player's Position/PositionSecondary from their full observation history.
+// Called once per reconciled, position-mapped HBStatz player line by TriggerHbStatzSyncFunction's
+// live sync path.
 public class HbStatzPlayerPositionAggregator : IHbStatzPlayerPositionAggregator
 {
     private readonly ITableWriter _tableWriter;
