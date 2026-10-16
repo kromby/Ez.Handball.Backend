@@ -102,4 +102,38 @@ public class HbStatzPlayerPositionAggregatorTests
         _tableWriter.Verify(t => t.UpsertAsync("Players", It.IsAny<PlayerEntity>(),
             It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
     }
+
+    private void SetupHistory(string pos, int count, PlayerEntity player)
+    {
+        _tableWriter.Setup(t => t.QueryAsync<PlayerPositionObservationEntity>(
+                "PlayerPositionObservations", "PartitionKey eq 'hsi-1'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Enumerable.Range(1, count).Select(i =>
+                new PlayerPositionObservationEntity { PartitionKey = "hsi-1", RowKey = $"m{i}", Position = pos, MatchDate = Day(i) }).ToList());
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>(
+                "Players", "RowKey eq 'hsi-1'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity> { player });
+    }
+
+    [Fact]
+    public async Task RecordAndRecomputeAsync_ObservationsAgreeWithPrimary_KeepsAdminSecondary()
+    {
+        SetupHistory("CB", 2, new PlayerEntity { PartitionKey = "385-karlar", RowKey = "hsi-1", Position = "CB", PositionSecondary = "LB" });
+
+        await CreateSut().RecordAndRecomputeAsync("hsi-1", "m2", Day(2), "CB");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players", It.IsAny<PlayerEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RecordAndRecomputeAsync_ObservationsSayLb_DemotesOldPrimaryToSecondary()
+    {
+        SetupHistory("LB", 2, new PlayerEntity { PartitionKey = "385-karlar", RowKey = "hsi-1", Position = "CB", PositionSecondary = "LB" });
+
+        await CreateSut().RecordAndRecomputeAsync("hsi-1", "m2", Day(2), "LB");
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.Position == "LB" && e.PositionSecondary == "CB"),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
+    }
 }

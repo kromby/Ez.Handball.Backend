@@ -4,8 +4,8 @@ using Ez.Handball.Shared.Entities;
 
 namespace Ez.Handball.Ingestion.Parsing;
 
-// Records one (player, match) position observation and immediately recomputes that player's
-// Position/PositionSecondary from their full observation history. Called once per reconciled,
+// Records one (player, match) position observation and immediately recomputes and merges (without
+// clearing, #167) that player's Position/PositionSecondary from their full observation history. Called once per reconciled,
 // position-mapped HBStatz player line by TriggerHbStatzSyncFunction's live sync path.
 public class HbStatzPlayerPositionAggregator : IHbStatzPlayerPositionAggregator
 {
@@ -30,7 +30,7 @@ public class HbStatzPlayerPositionAggregator : IHbStatzPlayerPositionAggregator
         var observations = await _tableWriter.QueryAsync<PlayerPositionObservationEntity>(
             "PlayerPositionObservations", $"PartitionKey eq '{Escape(playerId)}'", ct);
 
-        var (primary, secondary) = PositionModeCalculator.Compute(
+        var (computedPrimary, computedSecondary) = PositionModeCalculator.Compute(
             observations.Select(o => (o.Position, o.MatchDate)).ToList());
 
         var players = await _tableWriter.QueryAsync<PlayerEntity>(
@@ -38,11 +38,12 @@ public class HbStatzPlayerPositionAggregator : IHbStatzPlayerPositionAggregator
         var player = players.FirstOrDefault();
         if (player is null) return;
 
-        var newSecondary = secondary ?? string.Empty;
-        if (player.Position == primary && player.PositionSecondary == newSecondary) return;
+        var (primary, secondary) = PositionMerge.Apply(
+            player.Position, player.PositionSecondary, computedPrimary, computedSecondary);
+        if (player.Position == primary && player.PositionSecondary == secondary) return;
 
         player.Position = primary;
-        player.PositionSecondary = newSecondary;
+        player.PositionSecondary = secondary;
         await _tableWriter.UpsertAsync("Players", player, ct, TableUpdateMode.Merge);
     }
 
