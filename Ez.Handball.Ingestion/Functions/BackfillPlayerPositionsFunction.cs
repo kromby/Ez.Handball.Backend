@@ -91,14 +91,15 @@ public class BackfillPlayerPositionsFunction
         var changes = new List<BackfillPositionResult>();
         foreach (var (playerId, observations) in observationsByPlayer)
         {
-            var (primary, secondary) = PositionModeCalculator.Compute(
+            var (computedPrimary, computedSecondary) = PositionModeCalculator.Compute(
                 observations.Select(o => (o.Code, o.MatchDate)).ToList());
 
             var players = await _tableWriter.QueryAsync<PlayerEntity>("Players", $"RowKey eq '{Escape(playerId)}'", ct);
             var player = players.FirstOrDefault();
             if (player is null) continue;
 
-            var newSecondary = secondary ?? string.Empty;
+            var (primary, newSecondary) = PositionMerge.Apply(
+                player.Position, player.PositionSecondary, computedPrimary, computedSecondary);
             var changed = player.Position != primary || player.PositionSecondary != newSecondary;
             if (changed)
             {

@@ -104,12 +104,29 @@ public class PlayerParser : IPlayerParser
                     ? existingPlayer.Position
                     : player.Position;
 
+                // Carried across a transfer so the new row doesn't lose it (#167): the position
+                // source's own secondary, else one from any other stale row (they're deleted
+                // below). Set only when moving partitions: a same-row write leaves it null so
+                // Merge keeps whatever is stored.
+                string? carriedSecondary = null;
+                if (existingPlayer is not null && existingPlayer.PartitionKey != teamId)
+                {
+                    carriedSecondary = !string.IsNullOrWhiteSpace(existingPlayer.PositionSecondary)
+                        ? existingPlayer.PositionSecondary
+                        : existingRows
+                            .Where(p => p.PartitionKey != teamId)
+                            .Select(p => p.PositionSecondary)
+                            .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)
+                                && !string.Equals(c, position, StringComparison.Ordinal));
+                }
+
                 await _tableWriter.UpsertAsync("Players", new PlayerEntity
                 {
                     PartitionKey = teamId,
                     RowKey = playerId,
                     Name = player.Name,
                     Position = position,
+                    PositionSecondary = carriedSecondary,
                     JerseyNumber = player.PlayerJerseyNumber,
                     DateOfBirth = ParseDateOfBirth(player.Identifier),
                     Gender = derivedGender,

@@ -143,6 +143,13 @@ public class MergePlayersFunction
         keepPlayer.DateOfBirth ??= mergePlayer.DateOfBirth;
         keepPlayer.JerseyNumber ??= mergePlayer.JerseyNumber;
         if (string.IsNullOrWhiteSpace(keepPlayer.Position)) keepPlayer.Position = mergePlayer.Position;
+        // Never drop a secondary position (#167); only when it differs from the kept primary.
+        if (string.IsNullOrWhiteSpace(keepPlayer.PositionSecondary)
+            && !string.IsNullOrWhiteSpace(mergePlayer.PositionSecondary)
+            && !string.Equals(mergePlayer.PositionSecondary, keepPlayer.Position, StringComparison.Ordinal))
+        {
+            keepPlayer.PositionSecondary = mergePlayer.PositionSecondary;
+        }
         keepPlayer.ClubName ??= mergePlayer.ClubName;
 
         await _tableWriter.UpsertAsync("Players", keepPlayer, ct);
