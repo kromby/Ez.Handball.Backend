@@ -46,6 +46,7 @@ public class TransferAllowanceRegistrationTests : IClassFixture<TransferAllowanc
     [InlineData(typeof(IGetTransferAllowanceUseCase))]
     [InlineData(typeof(ISettleGameweekUseCase))]
     [InlineData(typeof(Ez.Handball.Api.TransferEcho))]
+    [InlineData(typeof(Ez.Handball.Api.GameweekEcho))]
     public void ResolvesFromTheApiContainer(Type service)
     {
         using var scope = _factory.Services.CreateScope();
