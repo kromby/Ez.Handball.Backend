@@ -11,9 +11,17 @@ internal static class TestModuleInitializer
     // order-dependent flake (issue #69). Setting the key here, before any test or host builds,
     // makes every factory build deterministically. Auth tests still override it via their own
     // in-memory configuration, so their behaviour is unchanged.
+    //
+    // Storage:ConnectionString has the same problem: appsettings.json ships it as "", which
+    // Program.cs's `??` fallback does not catch, and Program.cs reads it before a factory's
+    // ConfigureAppConfiguration overrides apply. Any request that resolves TableServiceClient
+    // then 500s (e.g. DebugReplay's 401/403 cases, AuthEndpointTests) unless another class's
+    // static constructor happened to set the env var first. Locally the gitignored
+    // appsettings.Development.json hides this; a clean checkout does not.
     [ModuleInitializer]
     public static void Init()
     {
         Environment.SetEnvironmentVariable("Jwt__SigningKey", "test-module-init-signing-key-32-bytes-min!!");
+        Environment.SetEnvironmentVariable("Storage__ConnectionString", "UseDevelopmentStorage=true");
     }
 }
