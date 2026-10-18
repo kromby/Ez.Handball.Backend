@@ -101,7 +101,8 @@ public static class AdminEndpoints
                 clubId = p.ClubId,
                 clubName = p.ClubName,
                 gender = p.Gender,
-                position = p.Position
+                position = p.Position,
+                positionSecondary = p.PositionSecondary
             }));
         });
 
