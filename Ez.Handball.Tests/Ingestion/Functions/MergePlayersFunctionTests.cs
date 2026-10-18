@@ -84,6 +84,27 @@ public class MergePlayersFunctionTests
     }
 
     [Fact]
+    public async Task Merge_KeptPlayerHasNoSecondary_TakesMergedAwayPlayersSecondary()
+    {
+        var keep = Plr("385", "181704", "Jóhannes Bjorgvin");
+        keep.Position = "CB";
+        var merge = Plr("385", "181844", "Jóhannes Björgvin");
+        merge.Position = "CB";
+        merge.PositionSecondary = "LB";
+        SetupPlayer("181704", keep);
+        SetupPlayer("181844", merge);
+        SetupNoFantasyReferences("181844");
+        SetupObservations("181844");
+        SetupStats("181844");
+
+        await CreateSut().ProcessAsync([new MergePlayersRequest("181704", "181844", null)], dryRun: false);
+
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.RowKey == "181704" && e.Position == "CB" && e.PositionSecondary == "LB"),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Replace), Times.Once);
+    }
+
+    [Fact]
     public async Task Merge_RekeysPositionObservationsToKeptPlayer()
     {
         SetupPlayer("181704", Plr("385", "181704", "Jóhannes Bjorgvin"));

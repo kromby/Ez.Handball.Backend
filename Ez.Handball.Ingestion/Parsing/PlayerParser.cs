@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Azure.Data.Tables;
+using Ez.Handball.Domain;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -104,12 +105,30 @@ public class PlayerParser : IPlayerParser
                     ? existingPlayer.Position
                     : player.Position;
 
+                // Rows under other partitions are deleted below, so carry a secondary from them
+                // (#167) — the position source's first, then any other — but only when the new
+                // club's row has none: null leaves a stored secondary alone under Merge. Same
+                // checks as PositionMerge: a known code that isn't the primary.
+                var currentRow = existingRows.FirstOrDefault(p => p.PartitionKey == teamId);
+                string? carriedSecondary = null;
+                if (string.IsNullOrWhiteSpace(currentRow?.PositionSecondary))
+                {
+                    carriedSecondary = existingRows
+                        .Where(p => p.PartitionKey != teamId)
+                        .OrderBy(p => p == existingPlayer ? 0 : 1)
+                        .Select(p => p.PositionSecondary)
+                        .FirstOrDefault(code => !string.IsNullOrWhiteSpace(code)
+                            && PositionVocabulary.Codes.Contains(code)
+                            && !string.Equals(code, position, StringComparison.Ordinal));
+                }
+
                 await _tableWriter.UpsertAsync("Players", new PlayerEntity
                 {
                     PartitionKey = teamId,
                     RowKey = playerId,
                     Name = player.Name,
                     Position = position,
+                    PositionSecondary = carriedSecondary,
                     JerseyNumber = player.PlayerJerseyNumber,
                     DateOfBirth = ParseDateOfBirth(player.Identifier),
                     Gender = derivedGender,

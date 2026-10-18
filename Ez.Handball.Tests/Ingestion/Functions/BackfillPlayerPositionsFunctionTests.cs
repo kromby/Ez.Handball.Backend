@@ -125,4 +125,63 @@ public class BackfillPlayerPositionsFunctionTests
         Assert.Contains("103414", result.Errors[0]);
         Assert.Contains("Arnór", result.Errors[0]);
     }
+
+    private void SetupRoster(PlayerEntity stored)
+    {
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '385-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity> { new() { PartitionKey = "385-karlar", RowKey = "hsi-1", Name = "Arnór", JerseyNumber = "6", Position = stored.Position } });
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "PartitionKey eq '390-karlar'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity>());
+        _tableWriter.Setup(t => t.QueryAsync<PlayerEntity>("Players", "RowKey eq 'hsi-1'", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PlayerEntity> { stored });
+    }
+
+    private static PlayerEntity Stored(string pos, string secondary) =>
+        new() { PartitionKey = "385-karlar", RowKey = "hsi-1", Name = "Arnór", Position = pos, PositionSecondary = secondary };
+
+    private static readonly string GameJsonCenter = GameJsonLeftBack.Replace("Left Back", "Center");
+
+    [Fact]
+    public async Task ProcessAsync_ObservationsAgreeWithPrimary_KeepsSecondaryAndWritesNothing()
+    {
+        SetupOneArchivedMatch("103414", Day(1), GameJsonCenter);
+        SetupRoster(Stored("CB", "LB"));
+
+        var result = await CreateSut().ProcessAsync(dryRun: false);
+
+        Assert.Empty(result.Changes);
+        Assert.Equal(0, result.PlayersUpdated);
+        _tableWriter.Verify(t => t.UpsertAsync("Players", It.IsAny<PlayerEntity>(),
+            It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_NewPrimaryFromData_KeepsOldPrimaryAsSecondary_InChangeAndWrite()
+    {
+        SetupOneArchivedMatch("103414", Day(1), GameJsonLeftBack);
+        SetupRoster(Stored("CB", ""));
+
+        var result = await CreateSut().ProcessAsync(dryRun: false);
+
+        var change = Assert.Single(result.Changes);
+        Assert.Equal("LB", change.NewPosition);
+        Assert.Equal("CB", change.NewSecondary);
+        _tableWriter.Verify(t => t.UpsertAsync("Players",
+            It.Is<PlayerEntity>(e => e.Position == "LB" && e.PositionSecondary == "CB"),
+            It.IsAny<CancellationToken>(), TableUpdateMode.Merge), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DryRun_ReportsMergedValues()
+    {
+        SetupOneArchivedMatch("103414", Day(1), GameJsonLeftBack);
+        SetupRoster(Stored("CB", ""));
+
+        var result = await CreateSut().ProcessAsync(dryRun: true);
+
+        var change = Assert.Single(result.Changes);
+        Assert.Equal("CB", change.OldPosition);
+        Assert.Equal("LB", change.NewPosition);
+        Assert.Equal("CB", change.NewSecondary);
+    }
 }
