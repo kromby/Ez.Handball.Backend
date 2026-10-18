@@ -58,7 +58,7 @@ public class AdminPlayersMissingPositionEndpointTests : IClassFixture<AdminPlaye
     private static Player SamplePlayer(string id = "1") => new(
         PlayerId: id, Name: "Aron Pálmarsson", JerseyNumber: "23", DateOfBirth: null, Age: null,
         TeamId: "385-karlar", ClubId: "385", ClubName: "Stjarnan", Gender: "karlar",
-        Position: "Leikmaður", Retired: false);
+        Position: "Leikmaður", Retired: false, PositionSecondary: "LB");
 
     [Fact]
     public async Task Get_WithoutToken_Returns401()
@@ -93,6 +93,8 @@ public class AdminPlayersMissingPositionEndpointTests : IClassFixture<AdminPlaye
         Assert.Equal("Stjarnan", player.GetProperty("clubName").GetString());
         Assert.Equal("karlar", player.GetProperty("gender").GetString());
         Assert.Equal("Leikmaður", player.GetProperty("position").GetString());
+        // The admin editor sends both positions back, so it needs the current secondary (#167).
+        Assert.Equal("LB", player.GetProperty("positionSecondary").GetString());
     }
 
     [Fact]
