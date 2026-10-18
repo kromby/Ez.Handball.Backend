@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Azure.Data.Tables;
+using Ez.Handball.Domain;
 using Ez.Handball.Ingestion.Models;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -104,20 +105,21 @@ public class PlayerParser : IPlayerParser
                     ? existingPlayer.Position
                     : player.Position;
 
-                // Carried across a transfer so the new row doesn't lose it (#167): the position
-                // source's own secondary, else one from any other stale row (they're deleted
-                // below). Set only when moving partitions: a same-row write leaves it null so
-                // Merge keeps whatever is stored.
+                // Rows under other partitions are deleted below, so carry a secondary from them
+                // (#167) — the position source's first, then any other — but only when the new
+                // club's row has none: null leaves a stored secondary alone under Merge. Same
+                // checks as PositionMerge: a known code that isn't the primary.
+                var currentRow = existingRows.FirstOrDefault(p => p.PartitionKey == teamId);
                 string? carriedSecondary = null;
-                if (existingPlayer is not null && existingPlayer.PartitionKey != teamId)
+                if (string.IsNullOrWhiteSpace(currentRow?.PositionSecondary))
                 {
-                    carriedSecondary = !string.IsNullOrWhiteSpace(existingPlayer.PositionSecondary)
-                        ? existingPlayer.PositionSecondary
-                        : existingRows
-                            .Where(p => p.PartitionKey != teamId)
-                            .Select(p => p.PositionSecondary)
-                            .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)
-                                && !string.Equals(c, position, StringComparison.Ordinal));
+                    carriedSecondary = existingRows
+                        .Where(p => p.PartitionKey != teamId)
+                        .OrderBy(p => p == existingPlayer ? 0 : 1)
+                        .Select(p => p.PositionSecondary)
+                        .FirstOrDefault(code => !string.IsNullOrWhiteSpace(code)
+                            && PositionVocabulary.Codes.Contains(code)
+                            && !string.Equals(code, position, StringComparison.Ordinal));
                 }
 
                 await _tableWriter.UpsertAsync("Players", new PlayerEntity

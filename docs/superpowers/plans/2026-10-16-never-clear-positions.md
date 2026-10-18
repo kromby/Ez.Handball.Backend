@@ -6,7 +6,7 @@
 
 **Architecture:** One pure merge rule, `PositionMerge.Apply`, decides what to store from the existing positions and the freshly computed ones. The live aggregator and the bulk backfill call it instead of overwriting. `PlayerParser` also stops dropping `PositionSecondary` when a club transfer recreates the player's row. No new columns, tables, endpoints or backfill. The admin endpoint `POST /api/admin/players/{id}/position` already sets both positions.
 
-**Tech Stack:** .NET 8, C#, Azure Functions (isolated), xUnit, Moq.
+**Tech Stack:** C# on .NET 9 (`Ez.Handball.Ingestion`, `Ez.Handball.Api`) and .NET 10 (`Ez.Handball.Tests`), so both SDKs are needed; Azure Functions (isolated), xUnit, Moq.
 
 **Spec:** none written — the design was approved in chat on 2026-10-16. It is captured in full in this header and in the Rule section below.
 
@@ -84,6 +84,7 @@ public static class PositionMerge
     {
         var secondary = new[] { computedSecondary, existingSecondary, existingPrimary }
             .FirstOrDefault(code => !string.IsNullOrWhiteSpace(code)
+                && PositionVocabulary.Codes.Contains(code)
                 && !string.Equals(code, computedPrimary, StringComparison.Ordinal));
         return (computedPrimary, secondary ?? string.Empty);
     }
