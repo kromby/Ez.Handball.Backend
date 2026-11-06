@@ -57,6 +57,13 @@ public class TableGameTeamNameIndexRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Reserve_DistinctNames_BothSucceed()
+    {
+        Assert.True(await Sut().TryReserveAsync("a#", "u-1:fantasy", default));
+        Assert.True(await Sut().TryReserveAsync("a", "u-2:fantasy", default));
+    }
+
+    [Fact]
     public async Task Reserve_PlainName_KeepsRawRowKey()
     {
         // Existing reservations were written with the raw name; plain names must keep matching them.
