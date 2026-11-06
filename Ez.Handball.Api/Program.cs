@@ -189,6 +189,7 @@ builder.Services.AddScoped<IGetMiniLeagueUseCase, GetMiniLeagueUseCase>();
 builder.Services.AddScoped<ISetMiniLeagueStartRoundUseCase, SetMiniLeagueStartRoundUseCase>();
 builder.Services.AddScoped<IGetMyMiniLeaguesUseCase, GetMyMiniLeaguesUseCase>();
 builder.Services.AddScoped<IBackfillMiniLeagueMembershipIndexUseCase, BackfillMiniLeagueMembershipIndexUseCase>();
+builder.Services.AddScoped<IRefundPriceDropsUseCase, RefundPriceDropsUseCase>();
 builder.Services.AddScoped<IGenerateInviteUseCase, GenerateInviteUseCase>();
 builder.Services.AddScoped<IGetInviteUseCase, GetInviteUseCase>();
 builder.Services.AddScoped<IPreviewInviteUseCase, PreviewInviteUseCase>();

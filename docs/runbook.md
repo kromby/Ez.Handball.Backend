@@ -138,3 +138,36 @@ It writes the `fantasy-transfers-v1` Config group: `freeTransfersPerRound=1`,
 `startsFromRound` against `GET /api/gameweeks/current` first: it should be the first round that is
 still `Open` when the rules go live. Rounds before it are unlimited and bank nothing. If the seeded
 value is wrong, edit that single `Config` row rather than re-running the seed. Idempotent.
+
+## Re-price players in 2M steps (5–35M)
+
+The `fantasy-price-v1` bands now run 5M, 7M … 35M (+2M every 1.2 points per game from 3.2, 35M from
+20). Prices are computed live, so they change for everyone the moment the bands are reseeded. Once
+the ingestion app has deployed, run these back to back (a sale in between pays the new, lower price
+without a refund):
+
+1. Reseed the bands. This also deletes any `band:*` row in that group the seed doesn't define, so hand
+   edits to the old bands are removed. The deletes and writes go in one transaction, so a buy during
+   the reseed sees either the old prices or the new ones, never a mix:
+   ```bash
+   curl -X POST "https://ez-handball-ingestion.azurewebsites.net/api/seed/price-rule-sets?code=<function key>"
+   ```
+2. Refund managers whose players got cheaper. It's a dry run by default, so check the totals first:
+   ```bash
+   curl -X POST -H "Authorization: Bearer <admin token>" \
+     "https://ez-handball-api.azurewebsites.net/api/admin/prices/refund-drops"
+   curl -X POST -H "Authorization: Bearer <admin token>" \
+     "https://ez-handball-api.azurewebsites.net/api/admin/prices/refund-drops?dryRun=false"
+   ```
+   For each owned player now priced below what was paid, it lowers `PricePaidAmount` to the current
+   price and credits the difference to the team's balance (not the transfer ledger, so it never
+   counts as a transfer). Price rises are left alone. Re-running is safe: refunded rows already
+   match the current price.
+
+   The two writes are in different tables, so they can't be atomic. Each `failures` entry names a
+   `teamId/playerId` and says what to do:
+   - "price paid not updated ... safe to re-run": the row changed mid-run. Re-run to pick it up.
+   - "price paid updated but X ISK not credited" (or "may not have applied"): a re-run will skip
+     this row. Check the team's `GameBudgets` balance and add X by hand if it's missing.
+   - "updating the price paid failed": check the row's `PricePaidAmount`. If it already shows
+     the new price, credit the amount by hand; otherwise re-run.

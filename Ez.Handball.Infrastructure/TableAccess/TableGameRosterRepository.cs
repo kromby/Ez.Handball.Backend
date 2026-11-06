@@ -104,6 +104,25 @@ internal sealed class TableGameRosterRepository : IGameRosterRepository
         }
     }
 
+    // No retry on a 412: the caller (a one-off admin refund) reports the row and can simply re-run.
+    public async Task<bool> TryRebasePricePaidAsync(
+        string teamId, string playerId, double expectedPricePaid, double newPricePaid, CancellationToken ct)
+    {
+        var table = _client.GetTableClient(Tables.GameRosters);
+        try
+        {
+            var e = (await table.GetEntityAsync<GameRosterEntity>(teamId, playerId, cancellationToken: ct)).Value;
+            if (e.DeletedAt is not null || e.PricePaidAmount != expectedPricePaid) return false;
+            e.PricePaidAmount = newPricePaid;
+            await table.UpdateEntityAsync(e, e.ETag, TableUpdateMode.Replace, ct);
+            return true;
+        }
+        catch (RequestFailedException ex) when (ex.Status is 404 or 412)
+        {
+            return false;
+        }
+    }
+
     // A conditional replace can lose its ETag race not only to a concurrent sell but — since #166 —
     // to a pin write on the still-active row. Treating every 412 as "already deleted" would let a sell
     // credit the money while the player stays in the squad, so re-read and retry until the row is

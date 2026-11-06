@@ -69,4 +69,13 @@ public class TableWriter : ITableWriter
             // Already gone — deleting is idempotent.
         }
     }
+
+    public async Task SubmitTransactionAsync(
+        string tableName, IReadOnlyList<TableTransactionAction> actions, CancellationToken ct = default)
+    {
+        if (actions.Count == 0) return;
+        var table = _serviceClient.GetTableClient(tableName);
+        await table.CreateIfNotExistsAsync(cancellationToken: ct);
+        await table.SubmitTransactionAsync(actions, ct);
+    }
 }
