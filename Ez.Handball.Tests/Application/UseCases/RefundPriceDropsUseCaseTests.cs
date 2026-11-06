@@ -161,15 +161,48 @@ public class RefundPriceDropsUseCaseTests
     }
 
     [Fact]
-    public async Task Cancellation_IsNotSwallowedAsARowFailure()
+    public async Task CancelledDuringScan_StopsBeforeAnyWrite()
+    {
+        Teams("u-1:fantasy");
+        Owns("u-1:fantasy", ("p-1", 40_000_000));
+        _price.Setup(p => p.GetPriceAsync("p-1", 1, null, null, It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
+        _roster.Verify(r => r.TryRebasePricePaidAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Writes_IgnoreTheCallersToken_SoTheReportIsNeverLost()
+    {
+        Teams("u-1:fantasy");
+        Owns("u-1:fantasy", ("p-1", 40_000_000));
+        PriceIs("p-1", 35_000_000);
+        using var cts = new CancellationTokenSource();
+        _roster.Setup(r => r.TryRebasePricePaidAsync("u-1:fantasy", "p-1", 40_000_000, 35_000_000, It.IsAny<CancellationToken>()))
+               .Callback(() => cts.Cancel()) // the client disconnects mid-run
+               .ReturnsAsync(true);
+
+        var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, cts.Token));
+
+        _roster.Verify(r => r.TryRebasePricePaidAsync("u-1:fantasy", "p-1", 40_000_000, 35_000_000, CancellationToken.None), Times.Once);
+        _budget.Verify(b => b.TryCreditAsync("u-1:fantasy", 5_000_000, Now, CancellationToken.None), Times.Once);
+        Assert.Equal(5_000_000, result.Report.TotalRefunded);
+    }
+
+    [Fact]
+    public async Task CreditTimeout_IsReportedAsARowFailure()
     {
         Teams("u-1:fantasy");
         Owns("u-1:fantasy", ("p-1", 40_000_000));
         PriceIs("p-1", 35_000_000);
         _budget.Setup(b => b.TryCreditAsync("u-1:fantasy", 5_000_000, Now, It.IsAny<CancellationToken>()))
-               .ThrowsAsync(new OperationCanceledException());
+               .ThrowsAsync(new TaskCanceledException("request timed out"));
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
+        var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
+
+        var failure = Assert.Single(result.Report.Failures);
+        Assert.StartsWith("u-1:fantasy/p-1: price paid updated but the 5000000 ISK credit may not have applied", failure);
     }
 
     [Fact]

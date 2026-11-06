@@ -79,6 +79,8 @@ public sealed class RefundPriceDropsUseCase : IRefundPriceDropsUseCase
         double refunded = 0;
         var failures = new List<string>();
         var now = _now();
+        // From here on the caller's token is ignored: a cancelled run would lose the report, leaving rows
+        // that were rebased but not credited unrecorded. The list is at most a few players per team.
         foreach (var (teamId, playerId, paid, current) in drops)
         {
             // The roster and the balance live in different tables, so the two writes can't share a
@@ -87,12 +89,12 @@ public sealed class RefundPriceDropsUseCase : IRefundPriceDropsUseCase
             var row = $"{teamId}/{playerId}";
             var owed = paid - current;
 
-            bool wasRebased;
+            var wasRebased = false;
             try
             {
-                wasRebased = await _roster.TryRebasePricePaidAsync(teamId, playerId, paid, current, ct);
+                wasRebased = await _roster.TryRebasePricePaidAsync(teamId, playerId, paid, current, CancellationToken.None);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
                 failures.Add($"{row}: updating the price paid failed ({ex.Message}); if it now shows {current}, " +
                              $"{owed} ISK is owed, so credit it by hand, otherwise re-run");
@@ -109,12 +111,12 @@ public sealed class RefundPriceDropsUseCase : IRefundPriceDropsUseCase
             rebased++;
             try
             {
-                if (await _budget.TryCreditAsync(teamId, owed, now, ct))
+                if (await _budget.TryCreditAsync(teamId, owed, now, CancellationToken.None))
                     refunded += owed;
                 else
                     failures.Add($"{row}: price paid updated but {owed} ISK not credited; credit it by hand");
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
                 failures.Add($"{row}: price paid updated but the {owed} ISK credit may not have applied ({ex.Message}); " +
                              "check the balance and credit it by hand if needed");
