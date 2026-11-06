@@ -1,3 +1,4 @@
+using System.Text;
 using Azure;
 using Azure.Data.Tables;
 using Ez.Handball.Application.Abstractions;
@@ -18,7 +19,7 @@ internal sealed class TableGameTeamNameIndexRepository : IGameTeamNameIndexRepos
         try
         {
             await table.AddEntityAsync(
-                new GameTeamNameIndexEntity { RowKey = normalizedName, TeamId = teamId }, ct);
+                new GameTeamNameIndexEntity { RowKey = ToRowKey(normalizedName), TeamId = teamId }, ct);
             return true;
         }
         catch (RequestFailedException ex) when (ex.Status == 409)
@@ -31,6 +32,23 @@ internal sealed class TableGameTeamNameIndexRepository : IGameTeamNameIndexRepos
     {
         var table = _client.GetTableClient(Tables.GameTeamNameIndex);
         await table.CreateIfNotExistsAsync(cancellationToken: ct);
-        await table.DeleteEntityAsync("name", normalizedName, ETag.All, ct); // 404 swallowed by SDK
+        await table.DeleteEntityAsync("name", ToRowKey(normalizedName), ETag.All, ct); // 404 swallowed by SDK
+    }
+
+    // Table keys reject '/', '\', '#', '?' and control characters, so those are percent-encoded.
+    // Every other character (including '%') is kept as-is so reservations written before this
+    // escaping still match. "a#" and "a%23" therefore share a key, which only makes one of them
+    // look taken.
+    internal static string ToRowKey(string normalizedName)
+    {
+        var sb = new StringBuilder(normalizedName.Length);
+        foreach (var c in normalizedName)
+        {
+            if (c is '/' or '\\' or '#' or '?' || char.IsControl(c))
+                sb.Append('%').Append(((int)c).ToString("X2"));
+            else
+                sb.Append(c);
+        }
+        return sb.ToString();
     }
 }
