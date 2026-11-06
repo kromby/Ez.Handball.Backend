@@ -32,17 +32,17 @@ public class SeedPriceRuleSetsFunctionTests
         var bands = SeedPriceRuleSetsFunction.RuleSetDefinitions
             .Where(d => d.Key.StartsWith("band:"))
             .Select(d => (Threshold: decimal.Parse(d.Key["band:".Length..], System.Globalization.CultureInfo.InvariantCulture),
-                          Price: long.Parse(d.Value)))
+                          Price: int.Parse(d.Value)))
             .OrderBy(b => b.Threshold)
             .ToList();
 
         Assert.Equal(16, bands.Count);
-        Assert.Equal((0m, 5_000_000L), bands[0]);
-        Assert.Equal((3.2m, 7_000_000L), bands[1]);
-        Assert.Equal((20m, 35_000_000L), bands[^1]);
+        Assert.Equal((0m, 5_000_000), bands[0]);
+        Assert.Equal((3.2m, 7_000_000), bands[1]);
+        Assert.Equal((20m, 35_000_000), bands[^1]);
         for (var i = 1; i < bands.Count; i++)
         {
-            Assert.Equal(2_000_000L, bands[i].Price - bands[i - 1].Price);
+            Assert.Equal(2_000_000, bands[i].Price - bands[i - 1].Price);
             Assert.Equal(i == 1 ? 3.2m : 1.2m, bands[i].Threshold - bands[i - 1].Threshold);
         }
     }
