@@ -1,4 +1,5 @@
 using System.Net;
+using Azure;
 using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -59,27 +60,26 @@ public class SeedPriceRuleSetsFunction
 
     public async Task<int> ProcessAsync()
     {
-        // Upserts never remove a band, so a leftover threshold from an earlier calibration
-        // would keep overriding the new steps. Drop every band row this seed doesn't define.
+        // Upserts never remove a band, so a leftover threshold from an earlier calibration would
+        // keep overriding the new steps: every band row this seed doesn't define is deleted. Prices
+        // are read live, so the deletes and upserts go in one transaction per group (the rows share
+        // a PartitionKey) — a buy mid-seed must never see a half-written set, e.g. only the 5M floor.
         var current = RuleSetDefinitions.Select(d => (d.Group, d.Key)).ToHashSet();
         foreach (var group in RuleSetDefinitions.Select(d => d.Group).Distinct())
         {
             var existing = await _tableWriter.QueryAsync<ConfigEntity>("Config", $"PartitionKey eq '{group}'");
-            foreach (var row in existing)
-            {
-                if (row.RowKey.StartsWith("band:", StringComparison.Ordinal) && !current.Contains((group, row.RowKey)))
-                    await _tableWriter.DeleteAsync("Config", group, row.RowKey);
-            }
-        }
+            var actions = existing
+                .Where(row => row.RowKey.StartsWith("band:", StringComparison.Ordinal) && !current.Contains((group, row.RowKey)))
+                .Select(row => new TableTransactionAction(
+                    TableTransactionActionType.Delete, new TableEntity(group, row.RowKey), ETag.All))
+                .Concat(RuleSetDefinitions
+                    .Where(d => d.Group == group)
+                    .Select(d => new TableTransactionAction(
+                        TableTransactionActionType.UpsertReplace, // Replace keeps seeding idempotent
+                        new ConfigEntity { PartitionKey = group, RowKey = d.Key, Value = d.Value })))
+                .ToList();
 
-        foreach (var (group, key, value) in RuleSetDefinitions)
-        {
-            await _tableWriter.UpsertAsync("Config", new ConfigEntity
-            {
-                PartitionKey = group,
-                RowKey = key,
-                Value = value
-            }, mode: TableUpdateMode.Replace); // explicit Replace keeps seeding idempotent
+            await _tableWriter.SubmitTransactionAsync("Config", actions);
         }
 
         return RuleSetDefinitions.Count;

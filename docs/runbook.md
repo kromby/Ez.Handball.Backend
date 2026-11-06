@@ -147,7 +147,8 @@ the ingestion app has deployed, run these back to back (a sale in between pays t
 without a refund):
 
 1. Reseed the bands. This also deletes any `band:*` row in that group the seed doesn't define, so hand
-   edits to the old bands are removed:
+   edits to the old bands are removed. The deletes and writes go in one transaction, so a buy during
+   the reseed sees either the old prices or the new ones, never a mix:
    ```bash
    curl -X POST "https://ez-handball-ingestion.azurewebsites.net/api/seed/price-rule-sets?code=<function key>"
    ```
@@ -160,6 +161,13 @@ without a refund):
    ```
    For each owned player now priced below what was paid, it lowers `PricePaidAmount` to the current
    price and credits the difference to the team's balance (not the transfer ledger, so it never
-   counts as a transfer). Price rises are left alone. `failures` lists `teamId/playerId` rows that
-   changed mid-run or whose credit failed. Re-running is safe: refunded rows already match the
-   current price.
+   counts as a transfer). Price rises are left alone. Re-running is safe: refunded rows already
+   match the current price.
+
+   The two writes are in different tables, so they can't be atomic. Each `failures` entry names a
+   `teamId/playerId` and says what to do:
+   - "price paid not updated ... safe to re-run": the row changed mid-run. Re-run to pick it up.
+   - "price paid updated but X ISK not credited" (or "may not have applied"): a re-run will skip
+     this row. Check the team's `GameBudgets` balance and add X by hand if it's missing.
+   - "updating the price paid failed": check the row's `PricePaidAmount`. If it already shows
+     the new price, credit the amount by hand; otherwise re-run.

@@ -98,7 +98,9 @@ public class RefundPriceDropsUseCaseTests
         var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
 
         Assert.Equal(0, result.Report.PlayersRebased);
-        Assert.Equal(["u-1:fantasy/p-1"], result.Report.Failures);
+        var failure = Assert.Single(result.Report.Failures);
+        Assert.StartsWith("u-1:fantasy/p-1: price paid not updated", failure);
+        Assert.Contains("safe to re-run", failure);
         _budget.Verify(b => b.TryCreditAsync(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -113,7 +115,61 @@ public class RefundPriceDropsUseCaseTests
         var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
 
         Assert.Equal(0, result.Report.TotalRefunded);
-        Assert.Equal(["u-1:fantasy/p-1"], result.Report.Failures);
+        var failure = Assert.Single(result.Report.Failures);
+        Assert.StartsWith("u-1:fantasy/p-1: price paid updated but 5000000 ISK not credited", failure);
+        Assert.Contains("credit it by hand", failure);
+    }
+
+    [Fact]
+    public async Task CreditThrows_ReportsTheAmountOwed_AndCarriesOnWithTheNextRow()
+    {
+        Teams("u-1:fantasy", "u-2:fantasy");
+        Owns("u-1:fantasy", ("p-1", 40_000_000));
+        Owns("u-2:fantasy", ("p-2", 10_000_000));
+        PriceIs("p-1", 35_000_000);
+        PriceIs("p-2", 7_000_000);
+        _budget.Setup(b => b.TryCreditAsync("u-1:fantasy", 5_000_000, Now, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new InvalidOperationException("storage timeout"));
+
+        var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
+
+        Assert.Equal(2, result.Report.PlayersRebased);
+        Assert.Equal(3_000_000, result.Report.TotalRefunded);   // only u-2's credit is known to have landed
+        var failure = Assert.Single(result.Report.Failures);
+        Assert.StartsWith("u-1:fantasy/p-1: price paid updated but the 5000000 ISK credit may not have applied", failure);
+        Assert.Contains("storage timeout", failure);
+        _budget.Verify(b => b.TryCreditAsync("u-2:fantasy", 3_000_000, Now, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RebaseThrows_ReportsTheAmountThatMayBeOwed_AndSkipsTheCredit()
+    {
+        Teams("u-1:fantasy");
+        Owns("u-1:fantasy", ("p-1", 40_000_000));
+        PriceIs("p-1", 35_000_000);
+        _roster.Setup(r => r.TryRebasePricePaidAsync("u-1:fantasy", "p-1", 40_000_000, 35_000_000, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new InvalidOperationException("storage timeout"));
+
+        var result = Assert.IsType<RefundPriceDropsResult.Done>(await Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
+
+        Assert.Equal(0, result.Report.PlayersRebased);
+        var failure = Assert.Single(result.Report.Failures);
+        Assert.StartsWith("u-1:fantasy/p-1: updating the price paid failed", failure);
+        Assert.Contains("5000000 ISK", failure);
+        Assert.Contains("storage timeout", failure);
+        _budget.Verify(b => b.TryCreditAsync(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cancellation_IsNotSwallowedAsARowFailure()
+    {
+        Teams("u-1:fantasy");
+        Owns("u-1:fantasy", ("p-1", 40_000_000));
+        PriceIs("p-1", 35_000_000);
+        _budget.Setup(b => b.TryCreditAsync("u-1:fantasy", 5_000_000, Now, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => Sut().ExecuteAsync(dryRun: false, CancellationToken.None));
     }
 
     [Fact]

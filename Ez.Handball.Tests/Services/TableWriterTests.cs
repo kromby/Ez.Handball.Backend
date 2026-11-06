@@ -128,4 +128,37 @@ public class TableWriterTests : IAsyncLifetime
 
         Assert.Empty(results);
     }
+
+    [Fact]
+    public async Task SubmitTransactionAsync_AppliesUpsertsAndDeletesTogether()
+    {
+        await _writer.UpsertAsync(TableName, new TournamentEntity { PartitionKey = "2025", RowKey = "old", Name = "Old" });
+        await _writer.UpsertAsync(TableName, new TournamentEntity { PartitionKey = "2025", RowKey = "keep", Name = "Before" });
+
+        await _writer.SubmitTransactionAsync(TableName,
+        [
+            new TableTransactionAction(TableTransactionActionType.Delete, new TableEntity("2025", "old"), Azure.ETag.All),
+            new TableTransactionAction(TableTransactionActionType.UpsertReplace, new TournamentEntity { PartitionKey = "2025", RowKey = "keep", Name = "After" }),
+            new TableTransactionAction(TableTransactionActionType.UpsertReplace, new TournamentEntity { PartitionKey = "2025", RowKey = "new", Name = "New" }),
+        ]);
+
+        Assert.Null(await _writer.GetAsync<TournamentEntity>(TableName, "2025", "old"));
+        Assert.Equal("After", (await _writer.GetAsync<TournamentEntity>(TableName, "2025", "keep"))!.Name);
+        Assert.Equal("New", (await _writer.GetAsync<TournamentEntity>(TableName, "2025", "new"))!.Name);
+    }
+
+    [Fact]
+    public async Task SubmitTransactionAsync_WhenOneActionFails_AppliesNone()
+    {
+        await _writer.UpsertAsync(TableName, new TournamentEntity { PartitionKey = "2025", RowKey = "keep", Name = "Before" });
+
+        // Deleting a row that doesn't exist fails the whole batch, so the upsert must not land either.
+        await Assert.ThrowsAnyAsync<Azure.RequestFailedException>(() => _writer.SubmitTransactionAsync(TableName,
+        [
+            new TableTransactionAction(TableTransactionActionType.UpsertReplace, new TournamentEntity { PartitionKey = "2025", RowKey = "keep", Name = "After" }),
+            new TableTransactionAction(TableTransactionActionType.Delete, new TableEntity("2025", "missing"), Azure.ETag.All),
+        ]));
+
+        Assert.Equal("Before", (await _writer.GetAsync<TournamentEntity>(TableName, "2025", "keep"))!.Name);
+    }
 }

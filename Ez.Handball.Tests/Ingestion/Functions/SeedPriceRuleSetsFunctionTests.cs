@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using Ez.Handball.Ingestion.Functions;
 using Ez.Handball.Ingestion.Services;
 using Ez.Handball.Shared.Entities;
@@ -8,6 +9,13 @@ namespace Ez.Handball.Tests.Ingestion.Functions;
 public class SeedPriceRuleSetsFunctionTests
 {
     private readonly Mock<ITableWriter> _tableWriter = new();
+
+    private readonly List<IReadOnlyList<TableTransactionAction>> _submitted = [];
+
+    public SeedPriceRuleSetsFunctionTests() =>
+        _tableWriter.Setup(t => t.SubmitTransactionAsync("Config", It.IsAny<IReadOnlyList<TableTransactionAction>>(), default))
+            .Callback<string, IReadOnlyList<TableTransactionAction>, CancellationToken>((_, actions, _) => _submitted.Add(actions))
+            .Returns(Task.CompletedTask);
 
     private SeedPriceRuleSetsFunction CreateSut() => new(_tableWriter.Object);
 
@@ -48,41 +56,40 @@ public class SeedPriceRuleSetsFunctionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_UpsertsEveryRow_IntoConfigTable()
+    public async Task ProcessAsync_UpsertsEveryRow_InOneTransaction()
     {
         ExistingRowsAre();
 
         var seeded = await CreateSut().ProcessAsync();
 
         Assert.Equal(SeedPriceRuleSetsFunction.RuleSetDefinitions.Count, seeded);
-
-        _tableWriter.Verify(t => t.UpsertAsync(
-            "Config",
-            It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-price-v1"),
-            default,
-            Azure.Data.Tables.TableUpdateMode.Replace),
-            Times.Exactly(SeedPriceRuleSetsFunction.RuleSetDefinitions.Count));
-
-        _tableWriter.Verify(t => t.UpsertAsync(
-            "Config",
-            It.Is<ConfigEntity>(e => e.PartitionKey == "fantasy-price-v1" && e.RowKey == "band:6.8" && e.Value == "13000000"),
-            default,
-            Azure.Data.Tables.TableUpdateMode.Replace),
-            Times.Once);
+        var actions = Assert.Single(_submitted);
+        Assert.Equal(SeedPriceRuleSetsFunction.RuleSetDefinitions.Count, actions.Count);
+        Assert.All(actions, a =>
+        {
+            Assert.Equal(TableTransactionActionType.UpsertReplace, a.ActionType);
+            Assert.Equal("fantasy-price-v1", a.Entity.PartitionKey);
+        });
+        var band = (ConfigEntity)actions.Single(a => a.Entity.RowKey == "band:6.8").Entity;
+        Assert.Equal("13000000", band.Value);
+        _tableWriter.Verify(t => t.UpsertAsync(It.IsAny<string>(), It.IsAny<ConfigEntity>(), It.IsAny<CancellationToken>(), It.IsAny<TableUpdateMode>()), Times.Never);
     }
 
     [Fact]
-    public async Task ProcessAsync_DeletesStaleBandRows_ButKeepsCurrentBandsAndOtherKeys()
+    public async Task ProcessAsync_DeletesEveryStaleBand_InTheSameTransaction_ButKeepsCurrentBandsAndOtherKeys()
     {
-        // A leftover band (e.g. the old "40M from 13 ppg") would otherwise override the new steps.
-        ExistingRowsAre("band:0", "band:12", "band:13", "minGames", "someOtherKey");
+        // The old production steps (3/6/9/13) and the old seed's band:12. A leftover band would
+        // otherwise override the new steps.
+        ExistingRowsAre("band:0", "band:3", "band:6", "band:9", "band:12", "band:13", "minGames", "someOtherKey");
 
         await CreateSut().ProcessAsync();
 
-        _tableWriter.Verify(t => t.DeleteAsync("Config", "fantasy-price-v1", "band:12", default), Times.Once);
-        _tableWriter.Verify(t => t.DeleteAsync("Config", "fantasy-price-v1", "band:13", default), Times.Once);
-        _tableWriter.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), "band:0", It.IsAny<CancellationToken>()), Times.Never);
-        _tableWriter.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), "minGames", It.IsAny<CancellationToken>()), Times.Never);
-        _tableWriter.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), "someOtherKey", It.IsAny<CancellationToken>()), Times.Never);
+        var actions = Assert.Single(_submitted);
+        var deleted = actions.Where(a => a.ActionType == TableTransactionActionType.Delete)
+                             .Select(a => a.Entity.RowKey).Order().ToList();
+        Assert.Equal(["band:12", "band:13", "band:3", "band:6", "band:9"], deleted);
+        Assert.All(actions.Where(a => a.ActionType == TableTransactionActionType.Delete),
+            a => Assert.Equal("fantasy-price-v1", a.Entity.PartitionKey));
+        _tableWriter.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

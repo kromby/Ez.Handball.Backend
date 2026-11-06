@@ -7,7 +7,7 @@ public sealed record RefundPriceDropsReport(
     int TeamsScanned,
     int PlayersRebased,
     double TotalRefunded,
-    IReadOnlyList<string> Failures);   // "teamId/playerId" rows that need a manual look
+    IReadOnlyList<string> Failures);   // "teamId/playerId: what happened and what to do", one per row that didn't fully land
 
 public abstract record RefundPriceDropsResult
 {
@@ -81,18 +81,44 @@ public sealed class RefundPriceDropsUseCase : IRefundPriceDropsUseCase
         var now = _now();
         foreach (var (teamId, playerId, paid, current) in drops)
         {
-            // Rebase first: if the row changed since we read it (sold or re-bought), skip the credit.
-            if (!await _roster.TryRebasePricePaidAsync(teamId, playerId, paid, current, ct))
+            // The roster and the balance live in different tables, so the two writes can't share a
+            // transaction. Rebase first, so a re-run never credits twice; every row that doesn't fully
+            // land is reported with what's owed, and one bad row doesn't stop the rest.
+            var row = $"{teamId}/{playerId}";
+            var owed = paid - current;
+
+            bool wasRebased;
+            try
             {
-                failures.Add($"{teamId}/{playerId}");
+                wasRebased = await _roster.TryRebasePricePaidAsync(teamId, playerId, paid, current, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                failures.Add($"{row}: updating the price paid failed ({ex.Message}); if it now shows {current}, " +
+                             $"{owed} ISK is owed, so credit it by hand, otherwise re-run");
+                continue;
+            }
+
+            if (!wasRebased)
+            {
+                // Sold, re-bought or otherwise changed since the scan.
+                failures.Add($"{row}: price paid not updated (row changed since the scan); safe to re-run");
                 continue;
             }
 
             rebased++;
-            if (await _budget.TryCreditAsync(teamId, paid - current, now, ct))
-                refunded += paid - current;
-            else
-                failures.Add($"{teamId}/{playerId}");
+            try
+            {
+                if (await _budget.TryCreditAsync(teamId, owed, now, ct))
+                    refunded += owed;
+                else
+                    failures.Add($"{row}: price paid updated but {owed} ISK not credited; credit it by hand");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                failures.Add($"{row}: price paid updated but the {owed} ISK credit may not have applied ({ex.Message}); " +
+                             "check the balance and credit it by hand if needed");
+            }
         }
 
         return new RefundPriceDropsResult.Done(new RefundPriceDropsReport(teams.Count, rebased, refunded, failures));

@@ -15,4 +15,8 @@ public interface ITableWriter
         where T : class, ITableEntity, new();
 
     Task DeleteAsync(string tableName, string partitionKey, string rowKey, CancellationToken ct = default);
+
+    // Applies every action atomically: all succeed or none do. Table Storage only allows this for
+    // up to 100 actions that share one PartitionKey.
+    Task SubmitTransactionAsync(string tableName, IReadOnlyList<TableTransactionAction> actions, CancellationToken ct = default);
 }
