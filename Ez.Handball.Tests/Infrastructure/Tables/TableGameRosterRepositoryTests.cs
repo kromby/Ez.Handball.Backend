@@ -57,6 +57,41 @@ public class TableGameRosterRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RebasePricePaid_OnActiveRowWithExpectedPrice_RelocksPrice_AndKeepsTheRest()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "VS", 40_000_000, T0, default);
+        await Sut().SetPlayAsAsync(Team, "p-1", "LB", default);
+
+        Assert.True(await Sut().TryRebasePricePaidAsync(Team, "p-1", 40_000_000, 35_000_000, default));
+
+        var entry = (await Sut().GetAsync(Team, "p-1", default))!;
+        Assert.Equal(35_000_000, entry.PricePaidAmount);
+        Assert.Equal("VS", entry.Position);
+        Assert.Equal("LB", entry.PlayAs);
+        Assert.Null(entry.DeletedAt);
+    }
+
+    [Fact]
+    public async Task RebasePricePaid_WhenPriceChangedSinceRead_ReturnsFalse_AndLeavesRow()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "VS", 40_000_000, T0, default);
+
+        Assert.False(await Sut().TryRebasePricePaidAsync(Team, "p-1", 30_000_000, 25_000_000, default));
+        Assert.Equal(40_000_000, (await Sut().GetAsync(Team, "p-1", default))!.PricePaidAmount);
+    }
+
+    [Fact]
+    public async Task RebasePricePaid_OnSoldOrMissingRow_ReturnsFalse()
+    {
+        await Sut().AddOrResurrectAsync(Team, "p-1", "VS", 40_000_000, T0, default);
+        await Sut().SoftDeleteAsync(Team, "p-1", T1, default);
+
+        Assert.False(await Sut().TryRebasePricePaidAsync(Team, "p-1", 40_000_000, 35_000_000, default));
+        Assert.False(await Sut().TryRebasePricePaidAsync(Team, "p-missing", 40_000_000, 35_000_000, default));
+        Assert.Equal(40_000_000, (await Sut().GetAsync(Team, "p-1", default))!.PricePaidAmount);
+    }
+
+    [Fact]
     public async Task SoftDelete_IsIdempotent()
     {
         await Sut().AddOrResurrectAsync(Team, "p-1", "VS", 40_000_000, T0, default);

@@ -23,6 +23,11 @@ public interface IGameRosterRepository
     // or soft-deleted row; Conflict if a concurrent writer changed the row first (ETag mismatch).
     Task<SetPlayAsOutcome> SetPlayAsAsync(string teamId, string playerId, string? playAs, CancellationToken ct);
 
+    // Re-lock an active row's PricePaid from `expectedPricePaid` to `newPricePaid` (ETag-guarded). False if
+    // the row is missing, sold, or its PricePaid no longer equals `expectedPricePaid` (changed concurrently).
+    Task<bool> TryRebasePricePaidAsync(
+        string teamId, string playerId, double expectedPricePaid, double newPricePaid, CancellationToken ct);
+
     // Soft-delete (DeletedAt = now). No-op if the row is missing.
     Task SoftDeleteAsync(string teamId, string playerId, DateTimeOffset now, CancellationToken ct);
 }

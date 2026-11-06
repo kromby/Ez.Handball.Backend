@@ -119,6 +119,27 @@ public static class AdminEndpoints
             });
         });
 
+        // One-off after a price recalibration: refunds managers whose owned players got cheaper (see
+        // docs/runbook.md). Dry run by default.
+        admin.MapPost("/prices/refund-drops", async (
+            bool? dryRun, IRefundPriceDropsUseCase uc, CancellationToken ct) =>
+        {
+            var runDry = dryRun ?? true;
+            return await uc.ExecuteAsync(runDry, ct) switch
+            {
+                RefundPriceDropsResult.Done d => Results.Ok(new
+                {
+                    teamsScanned = d.Report.TeamsScanned,
+                    playersRebased = d.Report.PlayersRebased,
+                    totalRefunded = d.Report.TotalRefunded,
+                    failures = d.Report.Failures,
+                    dryRun = runDry
+                }),
+                RefundPriceDropsResult.RuleSetNotFound => Results.BadRequest(new { error = "invalid_rule_set" }),
+                _ => Results.Problem()
+            };
+        });
+
         // Production settlement (#136): settles every team for one round, or — with no round — for every
         // complete gameweek. Idempotent, so it doubles as the backfill for rounds that were never settled.
         admin.MapPost("/gameweeks/settle", async (
